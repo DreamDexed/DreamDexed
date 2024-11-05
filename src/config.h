@@ -241,6 +241,8 @@ public:
 	const char *GetMIDIButtonActionTGUp (void) const;
 	const char *GetMIDIButtonActionTGDown (void) const;
 
+	bool GetDAWControllerEnabled (void) const;
+
 	// KY-040 Rotary Encoder
 	// GPIO pin numbers are chip numbers, not header positions
 	bool GetEncoderEnabled (void) const;
@@ -390,6 +392,8 @@ private:
 	unsigned m_nMIDIButtonBankDown;
 	unsigned m_nMIDIButtonTGUp;
 	unsigned m_nMIDIButtonTGDown;
+
+	bool m_bDAWControllerEnabled;
 
 	bool m_bEncoderEnabled;
 	unsigned m_nEncoderPinClock;
