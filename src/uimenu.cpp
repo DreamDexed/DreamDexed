@@ -74,25 +74,25 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 {
-	{"Voice",	EditProgramNumber},
+	{"Voice",	EditProgramNumber,	0,	CMiniDexed::TGParameterProgram,	"Voice"},
 	{"Bank",	EditVoiceBankNumber},
-	{"Volume",	EditTGParameter,	0,	CMiniDexed::TGParameterVolume},
+	{"Volume",	EditTGParameter,	0,	CMiniDexed::TGParameterVolume,	"Vol"},
 #ifdef ARM_ALLOW_MULTI_CORE
-	{"Pan",		EditTGParameter,	0,	CMiniDexed::TGParameterPan},
-	{"FX1-Send",	EditTGParameter,	0,	CMiniDexed::TGParameterFX1Send},
-	{"FX2-Send",	EditTGParameter,	0,	CMiniDexed::TGParameterFX2Send},
+	{"Pan",		EditTGParameter,	0,	CMiniDexed::TGParameterPan,	"Pan"},
+	{"FX1-Send",	EditTGParameter,	0,	CMiniDexed::TGParameterFX1Send,	"FX1"},
+	{"FX2-Send",	EditTGParameter,	0,	CMiniDexed::TGParameterFX2Send,	"FX2"},
 #endif
-	{"Detune",	EditTGParameter,	0,	CMiniDexed::TGParameterMasterTune},
-	{"Cutoff",	EditTGParameter,	0,	CMiniDexed::TGParameterCutoff},
-	{"Resonance",	EditTGParameter,	0,	CMiniDexed::TGParameterResonance},
+	{"Detune",	EditTGParameter,	0,	CMiniDexed::TGParameterMasterTune,	"DeT"},
+	{"Cutoff",	EditTGParameter,	0,	CMiniDexed::TGParameterCutoff,	"Cut"},
+	{"Resonance",	EditTGParameter,	0,	CMiniDexed::TGParameterResonance,	"Res"},
 	{"Pitch Bend",	MenuHandler,		s_EditPitchBendMenu},
 	{"Portamento",		MenuHandler,		s_EditPortamentoMenu},
 	{"Note Limit",		MenuHandler,	s_EditNoteLimitMenu},
-	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode}, 
+	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode,	"P/M"}, 
 	{"TG-Link",		EditTGParameter,	0,	CMiniDexed::TGParameterTGLink},
 	{"Enabled",			EditTGParameter,	0,	CMiniDexed::TGParameterEnabled},
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
-	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
+	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel,	"Chan"},
 	{"EQ",		MenuHandler,		s_EQMenu},
 	{"Compressor",	MenuHandler,		s_EditCompressorMenu},
 	{"Edit Voice",	MenuHandler,		s_EditVoiceMenu},
@@ -101,28 +101,28 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 {
-	{"Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorEnable},
-	{"Pre Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorPreGain},
-	{"Threshold",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorThresh},
-	{"Ratio",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRatio},
-	{"Attack",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorAttack},
-	{"Release",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRelease},
-	{"Makeup Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorMakeupGain},
+	{"Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorEnable,	"CEn"},
+	{"Pre Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorPreGain,	"CPg"},
+	{"Threshold",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorThresh,	"CTh"},
+	{"Ratio",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRatio,		"CRa"},
+	{"Attack",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorAttack,	"CAt"},
+	{"Release",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRelease,	"CRe"},
+	{"Makeup Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorMakeupGain,	"CPm"},
 	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_EditPitchBendMenu[] =
 {
-	{"Bend Range",	EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendRange},
-	{"Bend Step",		EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendStep},
+	{"Bend Range",	EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendRange,	"PiBR"},
+	{"Bend Step",		EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendStep,	"PiBS"},
 	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_EditPortamentoMenu[] =
 {
-	{"Mode",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoMode},
-	{"Glissando",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoGlissando},
-	{"Time",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoTime},
+	{"Mode",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoMode,	"PorM"},
+	{"Glissando",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoGlissando,	"PorG"},
+	{"Time",		EditTGParameter2,	0,	CMiniDexed::TGParameterPortamentoTime,	"PorT"},
 	{0}
 };
 
@@ -136,10 +136,10 @@ const CUIMenu::TMenuItem CUIMenu::s_EditNoteLimitMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_ModulationMenu[] =
 {
-	{"Mod. Wheel",		MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterMWRange},
-	{"Foot Control",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterFCRange},
-	{"Breath Control",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterBCRange},
-	{"Aftertouch",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterATRange},
+	{"Mod. Wheel",		MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterMWRange,	"MWR"},
+	{"Foot Control",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterFCRange,	"FCR"},
+	{"Breath Control",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterBCRange,	"BCR"},
+	{"Aftertouch",	MenuHandler,	s_ModulationMenuParameters,	CMiniDexed::TGParameterATRange,	"ATR"},
 	{0}
 };
 
@@ -154,12 +154,12 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 {
-	{"Low Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQLow},
-	{"Mid Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQMid},
-	{"High Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQHigh},
-	{"Gain",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQGain},
-	{"Low-Mid Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQLowMidFreq},
-	{"Mid-High Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQMidHighFreq},
+	{"Low Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQLow,		"TQL"},
+	{"Mid Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQMid,		"TQM"},
+	{"High Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQHigh,		"TQH"},
+	{"Gain",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQGain,		"TQG"},
+	{"Low-Mid Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQLowMidFreq,	"TQLM"},
+	{"Mid-High Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQMidHighFreq,	"TQMH"},
 	{0}
 };
 
@@ -229,12 +229,12 @@ const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 {
-	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterPlateReverbMix},
-	{"Size",	EditFXParameter2,	0,	FX::FXParameterPlateReverbSize},
-	{"High damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbHighDamp},
-	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp},
-	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowPass},
-	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterPlateReverbDiffusion},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterPlateReverbMix,	"RvMx"},
+	{"Size",	EditFXParameter2,	0,	FX::FXParameterPlateReverbSize,	"RvS"},
+	{"High damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbHighDamp,	"RvHD"},
+	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp,	"RvLD"},
+	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowPass,	"RvLP"},
+	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterPlateReverbDiffusion,	"RvDi"},
 	{0}
 };
 
@@ -339,24 +339,24 @@ const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowPassMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =
 {
-	{"Low Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLow},
-	{"Mid Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMid},
-	{"High Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQHigh},
-	{"Gain",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQGain},
-	{"Low-Mid Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLowMidFreq},
-	{"Mid-High Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMidHighFreq},
+	{"Low Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLow,		"MQL"},
+	{"Mid Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMid,		"MQM"},
+	{"High Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQHigh,		"MQH"},
+	{"Gain",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQGain,		"MQG"},
+	{"Low-Mid Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLowMidFreq,	"MQLM"},
+	{"Mid-High Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMidHighFreq,	"MQMH"},
 	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_MasterCompressorMenu[] =
 {
-	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorEnable},
-	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorPreGain},
-	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorThresh},
-	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRatio},
-	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorAttack},
-	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRelease},
-	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorHPFilterEnable},
+	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorEnable,		"CEn"},
+	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorPreGain,		"CPG"},
+	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorThresh,		"CTh"},
+	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRatio,		"CRa"},
+	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorAttack,		"CAt"},
+	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRelease,		"CRe"},
+	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorHPFilterEnable,	"CHP"},
 	{0}
 };
 
@@ -371,53 +371,53 @@ const CUIMenu::TMenuItem CUIMenu::s_EditVoiceMenu[] =
 	{"OP4",		MenuHandler,		s_OperatorMenu, 3},
 	{"OP5",		MenuHandler,		s_OperatorMenu, 4},
 	{"OP6",		MenuHandler,		s_OperatorMenu, 5},
-	{"Algorithm",	EditVoiceParameter,	0,		DEXED_ALGORITHM},
-	{"Feedback",	EditVoiceParameter,	0,		DEXED_FEEDBACK},
-	{"P EG Rate 1",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R1},
-	{"P EG Rate 2",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R2},
-	{"P EG Rate 3",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R3},
-	{"P EG Rate 4",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R4},
-	{"P EG Level 1",EditVoiceParameter,	0,		DEXED_PITCH_EG_L1},
-	{"P EG Level 2",EditVoiceParameter,	0,		DEXED_PITCH_EG_L2},
-	{"P EG Level 3",EditVoiceParameter,	0,		DEXED_PITCH_EG_L3},
-	{"P EG Level 4",EditVoiceParameter,	0,		DEXED_PITCH_EG_L4},
-	{"Osc Key Sync",EditVoiceParameter,	0,		DEXED_OSC_KEY_SYNC},
-	{"LFO Speed",	EditVoiceParameter,	0,		DEXED_LFO_SPEED},
-	{"LFO Delay",	EditVoiceParameter,	0,		DEXED_LFO_DELAY},
-	{"LFO PMD",	EditVoiceParameter,	0,		DEXED_LFO_PITCH_MOD_DEP},
-	{"LFO AMD",	EditVoiceParameter,	0,		DEXED_LFO_AMP_MOD_DEP},
-	{"LFO Sync",	EditVoiceParameter,	0,		DEXED_LFO_SYNC},
-	{"LFO Wave",	EditVoiceParameter,	0,		DEXED_LFO_WAVE},
-	{"P Mod Sens.",	EditVoiceParameter,	0,		DEXED_LFO_PITCH_MOD_SENS},
-	{"Transpose",	EditVoiceParameter,	0,		DEXED_TRANSPOSE},
+	{"Algorithm",	EditVoiceParameter,	0,		DEXED_ALGORITHM,	"Alg"},
+	{"Feedback",	EditVoiceParameter,	0,		DEXED_FEEDBACK,	"FB"},
+	{"P EG Rate 1",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R1,	"PR1"},
+	{"P EG Rate 2",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R2,	"PR2"},
+	{"P EG Rate 3",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R3,	"PR3"},
+	{"P EG Rate 4",	EditVoiceParameter,	0,		DEXED_PITCH_EG_R4,	"PR4"},
+	{"P EG Level 1",EditVoiceParameter,	0,		DEXED_PITCH_EG_L1,	"PL1"},
+	{"P EG Level 2",EditVoiceParameter,	0,		DEXED_PITCH_EG_L2,	"PL2"},
+	{"P EG Level 3",EditVoiceParameter,	0,		DEXED_PITCH_EG_L3,	"PL3"},
+	{"P EG Level 4",EditVoiceParameter,	0,		DEXED_PITCH_EG_L4,	"PL4"},
+	{"Osc Key Sync",EditVoiceParameter,	0,		DEXED_OSC_KEY_SYNC,	"OKS"},
+	{"LFO Speed",	EditVoiceParameter,	0,		DEXED_LFO_SPEED,	"LSP"},
+	{"LFO Delay",	EditVoiceParameter,	0,		DEXED_LFO_DELAY,	"LDE"},
+	{"LFO PMD",	EditVoiceParameter,	0,		DEXED_LFO_PITCH_MOD_DEP,	"LPMD"},
+	{"LFO AMD",	EditVoiceParameter,	0,		DEXED_LFO_AMP_MOD_DEP,	"LAMD"},
+	{"LFO Sync",	EditVoiceParameter,	0,		DEXED_LFO_SYNC,	"LSYN"},
+	{"LFO Wave",	EditVoiceParameter,	0,		DEXED_LFO_WAVE,	"LWAV"},
+	{"P Mod Sens.",	EditVoiceParameter,	0,		DEXED_LFO_PITCH_MOD_SENS,	"LPMS"},
+	{"Transpose",	EditVoiceParameter,	0,		DEXED_TRANSPOSE,	"TRP"},
 	{"Name",	InputTxt,0 , 3}, 
 	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_OperatorMenu[] =
 {
-	{"Output Level",EditOPParameter,	0,	DEXED_OP_OUTPUT_LEV},
-	{"Freq Coarse",	EditOPParameter,	0,	DEXED_OP_FREQ_COARSE},
-	{"Freq Fine",	EditOPParameter,	0,	DEXED_OP_FREQ_FINE},
-	{"Osc Detune",	EditOPParameter,	0,	DEXED_OP_OSC_DETUNE},
-	{"Osc Mode",	EditOPParameter,	0,	DEXED_OP_OSC_MODE},
-	{"EG Rate 1",	EditOPParameter,	0,	DEXED_OP_EG_R1},
-	{"EG Rate 2",	EditOPParameter,	0,	DEXED_OP_EG_R2},
-	{"EG Rate 3",	EditOPParameter,	0,	DEXED_OP_EG_R3},
-	{"EG Rate 4",	EditOPParameter,	0,	DEXED_OP_EG_R4},
-	{"EG Level 1",	EditOPParameter,	0,	DEXED_OP_EG_L1},
-	{"EG Level 2",	EditOPParameter,	0,	DEXED_OP_EG_L2},
-	{"EG Level 3",	EditOPParameter,	0,	DEXED_OP_EG_L3},
-	{"EG Level 4",	EditOPParameter,	0,	DEXED_OP_EG_L4},
-	{"Break Point",	EditOPParameter,	0,	DEXED_OP_LEV_SCL_BRK_PT},
-	{"L Key Depth",	EditOPParameter,	0,	DEXED_OP_SCL_LEFT_DEPTH},
-	{"R Key Depth",	EditOPParameter,	0,	DEXED_OP_SCL_RGHT_DEPTH},
-	{"L Key Scale",	EditOPParameter,	0,	DEXED_OP_SCL_LEFT_CURVE},
-	{"R Key Scale",	EditOPParameter,	0,	DEXED_OP_SCL_RGHT_CURVE},
-	{"Rate Scaling",EditOPParameter,	0,	DEXED_OP_OSC_RATE_SCALE},
-	{"A Mod Sens.",	EditOPParameter,	0,	DEXED_OP_AMP_MOD_SENS},
-	{"K Vel. Sens.",EditOPParameter,	0,	DEXED_OP_KEY_VEL_SENS},
-	{"Enable", EditOPParameter, 0, DEXED_OP_ENABLE},
+	{"Output Level",EditOPParameter,	0,	DEXED_OP_OUTPUT_LEV,	"OutL"},
+	{"Freq Coarse",	EditOPParameter,	0,	DEXED_OP_FREQ_COARSE,	"FrC"},
+	{"Freq Fine",	EditOPParameter,	0,	DEXED_OP_FREQ_FINE,		"FrF"},
+	{"Osc Detune",	EditOPParameter,	0,	DEXED_OP_OSC_DETUNE,	"OsDT"},
+	{"Osc Mode",	EditOPParameter,	0,	DEXED_OP_OSC_MODE,		"OsM"},
+	{"EG Rate 1",	EditOPParameter,	0,	DEXED_OP_EG_R1,			"R1"},
+	{"EG Rate 2",	EditOPParameter,	0,	DEXED_OP_EG_R2,			"R2"},
+	{"EG Rate 3",	EditOPParameter,	0,	DEXED_OP_EG_R3,			"R3"},
+	{"EG Rate 4",	EditOPParameter,	0,	DEXED_OP_EG_R4,			"R4"},
+	{"EG Level 1",	EditOPParameter,	0,	DEXED_OP_EG_L1,			"L1"},
+	{"EG Level 2",	EditOPParameter,	0,	DEXED_OP_EG_L2,			"L2"},
+	{"EG Level 3",	EditOPParameter,	0,	DEXED_OP_EG_L3,			"L3"},
+	{"EG Level 4",	EditOPParameter,	0,	DEXED_OP_EG_L4,			"L4"},
+	{"Break Point",	EditOPParameter,	0,	DEXED_OP_LEV_SCL_BRK_PT,	"BP"},
+	{"L Key Depth",	EditOPParameter,	0,	DEXED_OP_SCL_LEFT_DEPTH,	"LDep"},
+	{"R Key Depth",	EditOPParameter,	0,	DEXED_OP_SCL_RGHT_DEPTH,	"RDep"},
+	{"L Key Scale",	EditOPParameter,	0,	DEXED_OP_SCL_LEFT_CURVE,	"LSca"},
+	{"R Key Scale",	EditOPParameter,	0,	DEXED_OP_SCL_RGHT_CURVE,	"RSca"},
+	{"Rate Scaling",EditOPParameter,	0,	DEXED_OP_OSC_RATE_SCALE,	"RS"},
+	{"A Mod Sens.",	EditOPParameter,	0,	DEXED_OP_AMP_MOD_SENS,		"AMS"},
+	{"K Vel. Sens.",EditOPParameter,	0,	DEXED_OP_KEY_VEL_SENS,		"KVS"},
+	{"Enable", EditOPParameter, 0, DEXED_OP_ENABLE,						"OPEn"},
 	{0}
 };
 
@@ -624,7 +624,7 @@ void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
 	case MenuEventUpdate:
 	case MenuEventUpdateParameter:
 		break;
-
+	
 	default:
 		return;
 	}
@@ -638,7 +638,7 @@ void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
 			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
 
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+	pUIMenu->m_pMiniDexed->DisplayWrite (pMenuName,
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      info,
 				      false, false);
@@ -669,7 +669,7 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
 			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
 
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+	pUIMenu->m_pMiniDexed->DisplayWrite (pMenuName,
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      info,
 				      false, false);
@@ -677,6 +677,73 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 	static TKernelTimerHandle timer = 0;
 	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
 	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
+}
+
+const void CUIMenu::GetParameterInfo (CUIMenu::TCParameterInfo *pParam)
+{
+	static const CUIMenu::TMenuItem *globalSources[] = {
+#ifdef ARM_ALLOW_MULTI_CORE
+		s_MasterEQMenu,
+		s_MasterCompressorMenu,
+#endif
+		0};
+	static const CUIMenu::TMenuItem *tgSources[] = {s_TGMenu, s_EditPortamentoMenu, s_EditPitchBendMenu, s_ModulationMenu, s_EQMenu, s_EditCompressorMenu, 0};
+	static const CUIMenu::TMenuItem *voiceSources[] = {s_EditVoiceMenu + 6, 0}; // skip Operators
+	static const CUIMenu::TMenuItem *opSources[] = {s_OperatorMenu, 0};
+	const CUIMenu::TMenuItem **pSources = NULL;
+	const CUIMenu::TParameter *pInfo = NULL;
+
+	switch (pParam->Type)
+	{
+	case ParameterGlobal:
+		pSources = globalSources;
+		pInfo = s_GlobalParameter;
+		break;
+	case ParameterTG:
+		pSources = tgSources;
+		pInfo = s_TGParameter;
+		break;
+	case ParameterVoice:
+		pSources = voiceSources;
+		pInfo = s_VoiceParameter;
+		break;
+	case ParameterOP:
+		pSources = opSources;
+		pInfo = s_OPParameter;
+		break;
+	default:
+		return;
+	}
+
+	pParam->Min = pInfo[pParam->Parameter].Minimum;
+	pParam->Max = pInfo[pParam->Parameter].Maximum;
+	if (!pParam->ToString)
+		pParam->ToString = pInfo[pParam->Parameter].ToString;
+
+	// There are some parameters without entry eg TGParameterMWRange
+	// skip them
+	if (pParam->Name && pParam->Short)
+		return;
+
+	for (const CUIMenu::TMenuItem **source = pSources; *source; ++source)
+		for (const CUIMenu::TMenuItem *m = *source; m->Name; ++m)
+			if (m->Parameter == pParam->Parameter)
+			{
+				if (!pParam->Name)
+					pParam->Name = m->Name;
+				if (!pParam->Short)
+					pParam->Short = m->Short;
+				return;
+			}
+
+	pParam->Type = ParameterNone;
+	pParam->Parameter = 0;
+}
+
+const void CUIMenu::GetParameterInfos (CUIMenu::TCParameterInfo *pParamInfo, size_t n)
+{
+	for (size_t i = 0; i < n; ++i)
+		GetParameterInfo(&pParamInfo[i]);
 }
 
 CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
@@ -786,6 +853,28 @@ void CUIMenu::EventHandler (TMenuEvent Event)
 	default:
 		if (m_pParentMenu[m_nCurrentMenuItem].Handler)
 			(*m_pParentMenu[m_nCurrentMenuItem].Handler) (this, Event);
+		break;
+	}
+
+	switch (Event)
+	{
+	case MenuEventBack:
+	case MenuEventHome:
+	case MenuEventSelect:
+		if (m_pCurrentMenu == s_MainMenu)
+			m_pMiniDexed->UpdateDAWMenu (PageMain, 0, 0, 0);
+#ifdef ARM_ALLOW_MULTI_CORE
+		else if (m_pCurrentMenu == s_EffectsMenu)
+			m_pMiniDexed->UpdateDAWMenu (PageEffect, 0, 0, 0);
+#endif
+		else if (m_pCurrentMenu == s_TGMenu)
+			m_pMiniDexed->UpdateDAWMenu (PageTG, 0, 0, m_nCurrentParameter + 1);
+		else if (m_pCurrentMenu == s_EditVoiceMenu)
+			m_pMiniDexed->UpdateDAWMenu (PageVoice, 0, 0, m_nMenuStackParameter[m_nCurrentMenuDepth - 1] + 1);
+		else if (m_pCurrentMenu == s_OperatorMenu)
+			m_pMiniDexed->UpdateDAWMenu (PageOP, 0, m_nCurrentParameter, m_nMenuStackParameter[m_nCurrentMenuDepth - 2] + 1);
+		break;
+	default:
 		break;
 	}
 }
@@ -923,7 +1012,7 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 			if (nTGLink) selectionName += ToTGLinkName(nTGLink, 0);
 		}
 
-		pUIMenu->m_pUI->DisplayWrite (
+		pUIMenu->m_pMiniDexed->DisplayWrite (
 			menuName.c_str(),
 			"",
 			selectionName.c_str(),
@@ -984,7 +1073,7 @@ void CUIMenu::EditGlobalParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_pMiniDexed->GetParameter (Param),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+	pUIMenu->m_pMiniDexed->DisplayWrite (pMenuName,
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1031,7 +1120,7 @@ void CUIMenu::EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 	std::string Value =   std::to_string (nValue+1) + "="
 		       + pUIMenu->m_pMiniDexed->GetSysExFileLoader ()->GetBankName (nValue);
 
-	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > 0, nValue < (int) CSysExFileLoader::MaxVoiceBankID);
@@ -1114,7 +1203,7 @@ void CUIMenu::EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 
 		std::string Value = pUIMenu->m_pMiniDexed->GetVoiceName (nTG);
 
-		pUIMenu->m_pUI->DisplayWrite (TG.c_str(),
+		pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str(),
 					  voice.c_str(),
 					  Value.c_str(),
 					  nValue > 0, nValue < (int) CSysExFileLoader::VoicesPerBank);
@@ -1177,7 +1266,7 @@ void CUIMenu::EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1240,7 +1329,7 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1288,7 +1377,7 @@ void CUIMenu::EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (FX.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (FX.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1336,7 +1425,7 @@ void CUIMenu::EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (FX.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (FX.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1391,7 +1480,7 @@ void CUIMenu::EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	std::string Value = GetVoiceValueString (nParam, nValue, pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1495,7 +1584,7 @@ void CUIMenu::EditOPParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 		Value = GetOPValueString (nParam, nValue, pUIMenu->m_pConfig->GetLCDColumns() - 2);
 	}
 
-	pUIMenu->m_pUI->DisplayWrite (OP.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (OP.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1514,7 +1603,7 @@ void CUIMenu::SavePerformance (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
 			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
 
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+	pUIMenu->m_pMiniDexed->DisplayWrite (pMenuName,
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      bOK ? "Completed" : "Error",
 				      false, false);
@@ -2473,7 +2562,7 @@ void CUIMenu::PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event)
 			{
 				pUIMenu->m_nSelectedPerformanceID = 0;
 				pUIMenu->m_bConfirmDeletePerformance=false;
-				pUIMenu->m_pUI->DisplayWrite ("", "Delete", pUIMenu->m_pMiniDexed->DeletePerformance(nValue) ? "Completed" : "Error", false, false);
+				pUIMenu->m_pMiniDexed->DisplayWrite ("", "Delete", pUIMenu->m_pMiniDexed->DeletePerformance(nValue) ? "Completed" : "Error", false, false);
 				pUIMenu->m_bSplashShow=true;
 				CTimer::Get ()->StartKernelTimer (MSEC2HZ (1500), TimerHandlerNoBack, 0, pUIMenu);
 				return;
@@ -2506,13 +2595,13 @@ void CUIMenu::PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event)
 			nPSelected += " [L]";
 		}
 					
-		pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
+		pUIMenu->m_pMiniDexed->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
 						  Value.c_str (), true, true);
 //						 (int) nValue > 0, (int) nValue < (int) pUIMenu->m_pMiniDexed->GetLastPerformance());
 	}
 	else
 	{
-		pUIMenu->m_pUI->DisplayWrite ("", "Delete?", pUIMenu->m_bConfirmDeletePerformance ? "Yes" : "No", false, false);
+		pUIMenu->m_pMiniDexed->DisplayWrite ("", "Delete?", pUIMenu->m_bConfirmDeletePerformance ? "Yes" : "No", false, false);
 	}
 }
 
@@ -2594,7 +2683,7 @@ void CUIMenu::EditPerformanceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 		nPSelected += " [L]";
 	}
 
-	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
+	pUIMenu->m_pMiniDexed->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
 							Value.c_str (), true, true);
 }
 
@@ -2705,7 +2794,7 @@ void CUIMenu::InputTxt (CUIMenu *pUIMenu, TMenuEvent Event)
 			pUIMenu->m_pMiniDexed->SetNewPerformanceName(pUIMenu->m_InputText);
 			bOK = pUIMenu->m_pMiniDexed->SavePerformanceNewFile ();
 			MsgOk=bOK ? "Completed" : "Error";
-			pUIMenu->m_pUI->DisplayWrite (OkTitleR.c_str(), OkTitleL.c_str(), MsgOk.c_str(), false, false);
+			pUIMenu->m_pMiniDexed->DisplayWrite (OkTitleR.c_str(), OkTitleL.c_str(), MsgOk.c_str(), false, false);
 			CTimer::Get ()->StartKernelTimer (MSEC2HZ (1500), TimerHandler, 0, pUIMenu);
 			return;
 		}
@@ -2756,7 +2845,7 @@ void CUIMenu::InputTxt (CUIMenu *pUIMenu, TMenuEvent Event)
 		}	
 		
 	Value = Value + " " + escCursor ;
-	pUIMenu->m_pUI->DisplayWrite (MenuTitleR.c_str(),MenuTitleL.c_str(), Value.c_str(), false, false);
+	pUIMenu->m_pMiniDexed->DisplayWrite (MenuTitleR.c_str(),MenuTitleL.c_str(), Value.c_str(), false, false);
 	
 	
 }
@@ -2814,7 +2903,7 @@ void CUIMenu::EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event)
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
 		pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
-	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+	pUIMenu->m_pMiniDexed->DisplayWrite (TG.c_str (),
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
