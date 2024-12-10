@@ -155,6 +155,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nEQPreLowcut[i] = 0;
 		m_nEQPreHighcut[i] = 60;
 
+		m_bEnabled[i] = 1;
+
 		// Active the required number of active TGs
 		if (i<m_nToneGenerators)
 		{
@@ -1767,6 +1769,8 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 		case TGParameterMonoMode:		setMonoMode (nValue , i);	break; 
 		case TGParameterTGLink:			setTGLink(nValue, i);		break;
 
+		case TGParameterEnabled:		setEnabled (nValue, i);		break;
+
 		case TGParameterMWRange:					setModController(0, 0, nValue, i); break;
 		case TGParameterMWPitch:					setModController(0, 1, nValue, i); break;
 		case TGParameterMWAmplitude:				setModController(0, 2, nValue, i); break;
@@ -1861,8 +1865,8 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterNoteLimitHigh:		return m_nNoteLimitHigh[nTG];
 	case TGParameterNoteShift:		return m_nNoteShift[nTG];
 	case TGParameterMonoMode:		return m_bMonoMode[nTG] ? 1 : 0; 
-
 	case TGParameterTGLink:			return m_nTGLink[nTG];
+	case TGParameterEnabled:		return m_bEnabled[nTG] ? 1 : 0; 
 	
 	case TGParameterMWRange:					return getModController(0, 0, nTG);
 	case TGParameterMWPitch:					return getModController(0, 1, nTG);
@@ -2539,6 +2543,17 @@ void CMiniDexed::setTGLink(uint8_t nTGLink, uint8_t nTG)
 	m_UI.ParameterChanged ();
 }
 
+void CMiniDexed::setEnabled (uint8_t enabled, uint8_t nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert (m_pTG[nTG]);
+
+	m_bEnabled[nTG] = enabled != 0;
+	
+	m_UI.ParameterChanged ();
+}
+
 void CMiniDexed::setPitchbendRange(uint8_t range, uint8_t nTG)
 {
 	range = constrain (range, 0, 12);
@@ -3053,6 +3068,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 		setMonoMode(m_PerformanceConfig.GetMonoMode(nTG) ? 1 : 0, nTG); 
 		setTGLink(m_PerformanceConfig.GetTGLink(nTG), nTG);
+		setEnabled(1, nTG);
 
 		SetFX1Send (m_PerformanceConfig.GetFX1Send (nTG), nTG);
 		SetFX2Send (m_PerformanceConfig.GetFX2Send (nTG), nTG);

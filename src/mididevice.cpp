@@ -374,6 +374,9 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 				if (m_pSynthesizer->SDFilterOut (nTG))
 					continue;
 
+				if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterEnabled, nTG) == 0)
+					continue;
+
 				if (m_pSynthesizer->GetSysExEnable (nTG) && m_pSynthesizer->GetSysExChannel (nTG) == ucSysExChannel) {
 					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",ucSysExChannel,nLength,nTG);
 
@@ -492,6 +495,10 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 			}
 		} else {
 			for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators() && !bSystemCCHandled; nTG++) {
+
+				if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterEnabled, nTG) == 0)
+					continue;
+
 				if (   m_ChannelMap[nTG] == ucChannel
 				    || m_ChannelMap[nTG] == OmniMode) {
 					switch (ucType)
