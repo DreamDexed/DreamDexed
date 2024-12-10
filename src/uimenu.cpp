@@ -90,6 +90,7 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Note Limit",		MenuHandler,	s_EditNoteLimitMenu},
 	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode}, 
 	{"TG-Link",		EditTGParameter,	0,	CMiniDexed::TGParameterTGLink},
+	{"Enabled",			EditTGParameter,	0,	CMiniDexed::TGParameterEnabled},
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
 	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
 	{"EQ",		MenuHandler,		s_EQMenu},
@@ -481,6 +482,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{-24,	24,					1, ToMIDINoteShift},	// TGParameterNoteShift
 	{0,	1,					1, ToPolyMono}, 		// TGParameterMonoMode 
 	{0,	4,					1, ToTGLinkName}, 		// TGParameterTGLink
+	{0, 1, 1, ToOnOff}, // TGParameterEnabled
 	{0, 99, 1}, //MW Range
 	{0, 1, 1, ToOnOff}, //MW Pitch
 	{0, 1, 1, ToOnOff}, //MW Amp
