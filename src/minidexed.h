@@ -123,10 +123,9 @@ public:
 	void SetEQGain (int nValue, unsigned nTG);
 	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
-
 	void setMonoMode(uint8_t mono, uint8_t nTG);
-
 	void setTGLink(uint8_t nTGLink, uint8_t nTG);
+	void setEnabled(uint8_t enabled, uint8_t nTG);
 
 	void setPitchbendRange(uint8_t range, uint8_t nTG);
 	void setPitchbendStep(uint8_t step, uint8_t nTG);
@@ -231,7 +230,8 @@ public:
 		TGParameterNoteShift,
 		TGParameterMonoMode,  
 		TGParameterTGLink,
-				
+		TGParameterEnabled,
+		
 		TGParameterMWRange,
 		TGParameterMWPitch,
 		TGParameterMWAmplitude,
@@ -336,9 +336,9 @@ private:
 	unsigned m_nPortamentoGlissando[CConfig::AllToneGenerators];	
 	unsigned m_nPortamentoTime[CConfig::AllToneGenerators];	
 	bool m_bMonoMode[CConfig::AllToneGenerators]; 
-
 	unsigned m_nTGLink[CConfig::AllToneGenerators];
-				
+	bool m_bEnabled[CConfig::AllToneGenerators];
+
 	unsigned m_nModulationWheelRange[CConfig::AllToneGenerators];
 	unsigned m_nModulationWheelTarget[CConfig::AllToneGenerators];
 	unsigned m_nFootControlRange[CConfig::AllToneGenerators];
