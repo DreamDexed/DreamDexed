@@ -260,6 +260,8 @@ void CConfig::Load (void)
 	if (const u8 *pIP = m_Properties.GetIPAddress("UDPMIDIIPAddress")) m_IUDPMIDIIPAddress.Set (pIP);
 
 	m_nMasterVolume = m_Properties.GetNumber ("MasterVolume", 64);
+
+	m_nDefaultScreen = m_Properties.GetNumber ("DefaultScreen", 0);
 }
 
 unsigned CConfig::GetToneGenerators (void) const
