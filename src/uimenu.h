@@ -117,6 +117,10 @@ private:
 	static std::string ToPortaMode (int nValue, int nWidth);
 	static std::string ToPortaGlissando (int nValue, int nWidth);
 	static std::string ToPolyMono (int nValue, int nWidth);
+	static std::string TodB (int nValue, int nWidth);
+	static std::string TodBFS (int nValue, int nWidth);
+	static std::string ToMillisec (int nValue, int nWidth);
+	static std::string ToRatio (int nValue, int nWidth);
 
 	void TGShortcutHandler (TMenuEvent Event);
 	void OPShortcutHandler (TMenuEvent Event);
