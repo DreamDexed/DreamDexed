@@ -26,7 +26,7 @@ Listen to some examples made with MiniDexed by Banana71 [here](https://soundclou
 - [x] Uses [Synth_Dexed](https://codeberg.org/dcoredump/Synth_Dexed) with [circle-stdlib](https://github.com/smuehlst/circle-stdlib)
 - [x] SD card contents can be downloaded from [GitHub Releases](../../releases)
 - [x] Runs on all Raspberry Pi models (except Pico); see below for details
-- [x] Produces sound on the headphone jack, HDMI display or [audio extractor](https://github.com/probonopd/MiniDexed/wiki/Hardware#hdmi-to-audio) (better), or a [dedicated DAC](https://github.com/probonopd/MiniDexed/wiki/Hardware#i2s-dac) (best)
+- [x] Produces sound on the headphone jack, HDMI display or [audio extractor](https://github.com/DreamDexed/DreamDexed/wiki/Hardware#hdmi-to-audio) (better), or a [dedicated DAC](https://github.com/DreamDexed/DreamDexed/wiki/Hardware#i2s-dac) (best)
 - [x] Supports multiple voices through Program Change and Bank Change LSB/MSB MIDI messages
 - [x] Loads voices from `.syx` files from SD card (e.g., using `getsysex.sh` or from [Dexed_cart_1.0.zip](http://hsjp.eu/downloads/Dexed/Dexed_cart_1.0.zip))
 - [x] Menu structure on optional [HD44780 display](https://www.berrybase.de/sensoren-module/displays/alphanumerische-displays/alphanumerisches-lcd-16x2-gr-252-n/gelb) and rotary encoder
@@ -35,7 +35,7 @@ Listen to some examples made with MiniDexed by Banana71 [here](https://soundclou
 - [x] Allows to configure multiple Dexed instances through `performance.ini` files (e.g., [converted](https://github.com/BobanSpasic/MDX_Vault) from DX1, DX5, TX816, DX7II, TX802)
 - [x] Compressor effect
 - [x] Reverb effect
-- [x] Voices can be edited over MIDI, e.g., using the [synthmata](https://synthmata.github.io/volca-fm/) online editor (requires [additional hardware](https://github.com/probonopd/MiniDexed/wiki/Hardware#usb-midi-devices))
+- [x] Voices can be edited over MIDI, e.g., using the [synthmata](https://synthmata.github.io/volca-fm/) online editor (requires [additional hardware](https://github.com/DreamDexed/DreamDexed/wiki/Hardware#usb-midi-devices))
 
 ## Introduction
 
@@ -46,8 +46,8 @@ Video about this project by [Floyd Steinberg](https://www.youtube.com/watch?v=Z3
 ## System Requirements
 
 - Raspberry Pi 1, 2, 3, 4, or 400. Raspberry Pi Zero and Zero 2 can be used but need HDMI or a supported i2s DAC for audio out. On Raspberry Pi 1 and on Raspberry Pi Zero there will be severely limited functionality (only one tone generator instead of 8)
-- Raspberry Pi 5 can be used but currently support is experimental: HDMI sound and USB Gadget mode are not available yet, and it is not clear if there are implications for cooling from running MiniDexed. Also, MiniDexed is currently not taking advantage of the higher processing power of the Raspberry Pi 5 yet. *Hence, you may consider using one of the less expensive, older Raspberry Pi boards for your first build.*
-- A [PCM5102A or PCM5122 based DAC](https://github.com/probonopd/MiniDexed/wiki/Hardware#i2s-dac), HDMI display or [audio extractor](https://github.com/probonopd/MiniDexed/wiki/Hardware#hdmi-to-audio) for good sound quality. If you don't have this, you can use the headphone jack on the Raspberry Pi but on anything but the Raspberry 4 the sound quality will be seriously limited
+- Raspberry Pi 5 can be used but currently support is experimental: HDMI sound and USB Gadget mode are not available yet, and it is not clear if there are implications for cooling from running DreamDexed. Also, DreamDexed is currently not taking advantage of the higher processing power of the Raspberry Pi 5 yet. *Hence, you may consider using one of the less expensive, older Raspberry Pi boards for your first build.*
+- A [PCM5102A or PCM5122 based DAC](https://github.com/DreamDexed/DreamDexed/wiki/Hardware#i2s-dac), HDMI display or [audio extractor](https://github.com/DreamDexed/DreamDexed/wiki/Hardware#hdmi-to-audio) for good sound quality. If you don't have this, you can use the headphone jack on the Raspberry Pi but on anything but the Raspberry 4 the sound quality will be seriously limited
 - Optionally (but highly recommended), an [LCDC1602 Display](https://www.berrybase.de/en/sensors-modules/displays/alphanumeric-displays/alphanumerisches-lcd-16x2-gr-252-n/gelb) (with or without i2c "backpack" board) and a [KY-040 rotary encoder](https://www.berrybase.de/en/components/passive-components/potentiometer/rotary-encoder/drehregler/rotary-encoder-mit-breakoutboard-ohne-gewinde-und-mutter)
 
 ## Usage
@@ -66,10 +66,10 @@ Video about this project by [Floyd Steinberg](https://www.youtube.com/watch?v=Z3
 - Start playing
 - If the system seems to become unresponsive after a few seconds, remove `usbspeed=full` from `cmdline.txt` and repeat ([details](https://github.com/probonopd/MiniDexed/issues/39))
 - Optionally, put voices in `.syx` files onto the SD card (e.g., using `getsysex.sh`)
-- See the Wiki for [Menu](https://github.com/probonopd/MiniDexed/wiki/Menu) operation
+- See the Wiki for [Menu](https://github.com/DreamDexed/DreamDexed/wiki/Menu) operation
 - For voice programming, use any DX series editor (using MIDI sysex), including Dexed
 - For library management, use the dedicated [MiniDexedLibrarian](https://github.com/BobanSpasic/MiniDexedLibrarian) software
-- If something is unclear or does not work, don't hesitate to [ask](https://github.com/probonopd/MiniDexed/discussions/)!
+- If something is unclear or does not work, don't hesitate to [ask](https://github.com/DreamDexed/DreamDexed/discussions/)!
 
 ## Pinout
 
@@ -77,7 +77,7 @@ All devices on Raspberry Pi GPIOs are **optional**.
 
 ![Raspberry Pi Pinout/GPIO Diagram](https://user-images.githubusercontent.com/2480569/166105580-da11481c-8fc7-4375-8ab1-3031ab5c6ad0.png)
 
-Please see the [wiki](https://github.com/probonopd/MiniDexed/wiki) for more information.
+Please see the [wiki](https://github.com/DreamDexed/DreamDexed/wiki) for more information.
 
 ## Downloading
 
@@ -85,19 +85,19 @@ Compiled versions are available on [GitHub Releases](../../releases). Just downl
 
 ## Building
 
-Please see the [wiki](https://github.com/probonopd/MiniDexed/wiki/Development#building-locally) on how to compile the code yourself.
+Please see the [wiki](https://github.com/DreamDexed/DreamDexed/wiki/Development#building-locally) on how to compile the code yourself.
 
 ## Contributing
 
-This project lives from the contributions of skilled C++ developers, testers, writers, etc. Please see <https://github.com/probonopd/MiniDexed/issues>.
+This project lives from the contributions of skilled C++ developers, testers, writers, etc. Please see <https://github.com/DreamDexed/DreamDexed/issues>.
 
 ## Discussions
 
-We are happy to hear from you. Please join the discussions on <https://github.com/probonopd/MiniDexed/discussions>.
+We are happy to hear from you. Please join the discussions on <https://github.com/DreamDexed/DreamDexed/discussions>.
 
 ## Documentation
 
-Project documentation is at <https://github.com/probonopd/MiniDexed/wiki>.
+Project documentation is at <https://github.com/DreamDexed/DreamDexed/wiki>.
 
 ## Acknowledgements
 
@@ -110,7 +110,7 @@ This project stands on the shoulders of giants. Special thanks to:
 - [smuehlst](https://github.com/smuehlst) for [circle-stdlib](https://github.com/smuehlst/circle-stdlib), a version with Standard C and C++ library support
 - [Banana71](https://github.com/Banana71) for the sound design of the [Soundplantage](https://github.com/Banana71/Soundplantage) performances shipped with MiniDexed
 - [BobanSpasic](https://github.com/BobanSpasic) for the [MiniDexedLibrarian](https://github.com/BobanSpasic/MiniDexedLibrarian) software, [MiniDexed performance converter](https://github.com/BobanSpasic/MDX_PerfConv) and [collection of performances for MiniDexed](https://github.com/BobanSpasic/MDX_Vault)
-- [diyelectromusic](https://github.com/diyelectromusic/) for many [contributions](https://github.com/probonopd/MiniDexed/commits?author=diyelectromusic)
+- [diyelectromusic](https://github.com/diyelectromusic/) for many [contributions](https://github.com/DreamDexed/DreamDexed/commits?author=diyelectromusic)
 - [dwhinham/mt32-pi](https://github.com/dwhinham/mt32-pi) for creating networking support for Circle
 - [omersiar](https://github.com/omersiar) for porting networking support to MiniDexed
 - [soyersoyer](https://github.com/soyersoyer) for sound and other improvements, and for debugging
