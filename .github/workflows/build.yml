@@ -93,7 +93,7 @@ jobs:
         id: upload64
         uses: actions/upload-artifact@v4
         with:
-          name: MiniDexed_${{ github.run_number }}_${{ steps.gitinfo.outputs.git_info }}_64bit
+          name: DreamDexed_${{ github.run_number }}_${{ steps.gitinfo.outputs.git_info }}_64bit
           path: sdcard/*
 
   build32:
@@ -142,7 +142,7 @@ jobs:
         id: upload32
         uses: actions/upload-artifact@v4
         with:
-          name: MiniDexed_${{ github.run_number }}_${{ env.GIT_INFO }}_32bit
+          name: DreamDexed_${{ github.run_number }}_${{ env.GIT_INFO }}_32bit
           path: sdcard/*
 
   combine:
@@ -153,14 +153,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: MiniDexed_*
+          pattern: DreamDexed_*
           merge-multiple: true
           path: combined
 
       - name: Create combined ZIP file
         run: |
           cd combined
-          zip -r ../MiniDexed_${{ github.run_number }}_${{ needs.build64.outputs.git_info }}.zip .
+          zip -r ../DreamDexed_${{ github.run_number }}_${{ needs.build64.outputs.git_info }}.zip .
           cd ..
 
       - name: Upload to GitHub Releases (only when building from main branch)
@@ -171,4 +171,4 @@ jobs:
           export UPLOADTOOL_PR_BODY="This is a continuous build. Feedback is appreciated."
           export UPLOADTOOL_BODY="This is a continuous build. Feedback is appreciated."
           wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-          bash ./upload.sh ./MiniDexed*.zip
+          bash ./upload.sh ./DreamDexed*.zip
