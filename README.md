@@ -1,8 +1,21 @@
-# MiniDexed ![Github Build Status](https://github.com/probonopd/MiniDexed/actions/workflows/build.yml/badge.svg)
+# DreamDexed ![Github Build Status](https://github.com/DreamDexed/DreamDexed/actions/workflows/build.yml/badge.svg)
+
+DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with the following additional features:
+
+- [x] Configurable default screen
+- [x] Noiseless volume change
+- [x] Configurable TG compressors
+- [x] Limiter
+- [ ] 3-band EQ
+- [ ] Two Effect Send with Chrous, Delay, Reverb
+- [ ] 8 channel mixer (Rpi4+)
+- [ ] Multiple parts (RPi4+)
+- [ ] Overlay Menu for easier parameter changes
+- [ ] MIDI Controller DAW integration
 
 ![minidexed](https://user-images.githubusercontent.com/2480569/161813414-bb156a1c-efec-44c0-802a-8926412a08e0.jpg)
 
-MiniDexed is a FM synthesizer closely modeled on the famous DX7 by a well-known Japanese manufacturer running on a bare metal Raspberry Pi (without a Linux kernel or operating system). On Raspberry Pi 2 and larger, it can run 8 tone generators, not unlike the TX816/TX802 (8 DX7 instances without the keyboard in one box). [Featured by HACKADAY](https://hackaday.com/2022/04/19/bare-metal-gives-this-pi-some-classic-synths/), [Adafruit](https://blog.adafruit.com/2022/04/25/free-yamaha-dx7-synth-emulator-on-a-raspberry-pi/), [The MagPi magazine](https://magpi.raspberrypi.com/articles/mini-dexed) (Issue 142 June 2024, [PDF](https://magpi.raspberrypi.com/issues/142)) and [Synth Geekery](https://www.youtube.com/watch?v=TDSy5nnm0jA).
+DreamDexed is a FM synthesizer closely modeled on the famous DX7 by a well-known Japanese manufacturer running on a bare metal Raspberry Pi (without a Linux kernel or operating system). On Raspberry Pi 2 and larger, it can run 8 tone generators, not unlike the TX816/TX802 (8 DX7 instances without the keyboard in one box). [Featured by HACKADAY](https://hackaday.com/2022/04/19/bare-metal-gives-this-pi-some-classic-synths/), [Adafruit](https://blog.adafruit.com/2022/04/25/free-yamaha-dx7-synth-emulator-on-a-raspberry-pi/), [The MagPi magazine](https://magpi.raspberrypi.com/articles/mini-dexed) (Issue 142 June 2024, [PDF](https://magpi.raspberrypi.com/issues/142)) and [Synth Geekery](https://www.youtube.com/watch?v=TDSy5nnm0jA).
 
 ## Demo songs
 
@@ -101,6 +114,3 @@ This project stands on the shoulders of giants. Special thanks to:
 - [dwhinham/mt32-pi](https://github.com/dwhinham/mt32-pi) for creating networking support for Circle
 - [omersiar](https://github.com/omersiar) for porting networking support to MiniDexed
 - [soyersoyer](https://github.com/soyersoyer) for sound and other improvements, and for debugging
-
-## Stargazers over time
-[![Stargazers over time](https://starchart.cc/probonopd/MiniDexed.svg?variant=adaptive)](https://starchart.cc/probonopd/MiniDexed)
