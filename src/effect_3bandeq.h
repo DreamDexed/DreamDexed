@@ -13,8 +13,6 @@
 class AudioEffect3BandEQ
 {
 public:
-    static constexpr float kDC_ADD = 1e-30f; // Why do we need to add a small DC?
-
     AudioEffect3BandEQ(unsigned samplerate):
     samplerate{samplerate},
     fLow{}, fMid{}, fHigh{}, fGain{}, fLowMidFreq{}, fMidHighFreq{},
@@ -105,11 +103,11 @@ public:
         {
             float inValue = isnan(block[i]) ? 0.0f : block[i];
 
-            tmpLP = a0LP * inValue - b1LP * tmpLP + kDC_ADD;
-            outLP = tmpLP - kDC_ADD;
+            tmpLP = a0LP * inValue - b1LP * tmpLP;
+            outLP = tmpLP;
 
-            tmpHP = a0HP * inValue - b1HP * tmpHP + kDC_ADD;
-            outHP = inValue - tmpHP - kDC_ADD;
+            tmpHP = a0HP * inValue - b1HP * tmpHP;
+            outHP = inValue - tmpHP;
 
             block[i] = (outLP*lowVol + (inValue - outLP - outHP)*midVol + outHP*highVol) * outVol;
         }
