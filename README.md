@@ -106,9 +106,9 @@ This project stands on the shoulders of giants. Special thanks to:
 - [raphlinus](https://github.com/raphlinus) for the [MSFA](https://github.com/google/music-synthesizer-for-android) sound engine
 - [asb2m10](https://github.com/asb2m10/dexed) for the [Dexed](https://github.com/asb2m10/dexed) software
 - [dcoredump](https://github.com/dcoredump) for [Synth Dexed](https://codeberg.org/dcoredump/Synth_Dexed), a port of Dexed for embedded systems
-- [rsta2](https://github.com/rsta2) for [Circle](https://github.com/rsta2/circle), the library to run code on bare metal Raspberry Pi (without a Linux kernel or operating system) and for the bulk of the MiniDexed code
+- [rsta2](https://github.com/rsta2) for [Circle](https://github.com/rsta2/circle), the library to run code on bare metal Raspberry Pi (without a Linux kernel or operating system) and for the bulk of the DreamDexed code
 - [smuehlst](https://github.com/smuehlst) for [circle-stdlib](https://github.com/smuehlst/circle-stdlib), a version with Standard C and C++ library support
-- [Banana71](https://github.com/Banana71) for the sound design of the [Soundplantage](https://github.com/Banana71/Soundplantage) performances shipped with MiniDexed
+- [Banana71](https://github.com/Banana71) for the sound design of the [Soundplantage](https://github.com/Banana71/Soundplantage) performances shipped with DreamDexed
 - [BobanSpasic](https://github.com/BobanSpasic) for the [MiniDexedLibrarian](https://github.com/BobanSpasic/MiniDexedLibrarian) software, [MiniDexed performance converter](https://github.com/BobanSpasic/MDX_PerfConv) and [collection of performances for MiniDexed](https://github.com/BobanSpasic/MDX_Vault)
 - [diyelectromusic](https://github.com/diyelectromusic/) for many [contributions](https://github.com/DreamDexed/DreamDexed/commits?author=diyelectromusic)
 - [dwhinham/mt32-pi](https://github.com/dwhinham/mt32-pi) for creating networking support for Circle
