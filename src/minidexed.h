@@ -52,7 +52,8 @@
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
 #include "../Synth_Dexed/src/compressor.h"
- 
+#include "effect_3bandeq.h"
+
 class CMiniDexed
 #ifdef ARM_ALLOW_MULTI_CORE
 :	public CMultiCoreSupport
@@ -114,6 +115,13 @@ public:
 	void SetCompressorRelease (unsigned release, unsigned nTG);	// 0 .. 1000 ms (default 200)
 	void SetCompressorThresh (int thresh, unsigned nTG);		// -60 .. 0 dBFS (default -20)
 	void SetCompressorRatio (unsigned ratio, unsigned nTG);		// 1 .. 20 (default 5)
+
+	void SetEQLow (int nValue, unsigned nTG);
+	void SetEQMid (int nValue, unsigned nTG);
+	void SetEQHigh (int nValue, unsigned nTG);
+	void SetEQGain (int nValue, unsigned nTG);
+	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
+	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
 
 	void setMonoMode(uint8_t mono, uint8_t nTG);
 	void setPitchbendRange(uint8_t range, uint8_t nTG);
@@ -244,6 +252,13 @@ public:
 		TGParameterCompressorThresh,
 		TGParameterCompressorRatio,
 		
+		TGParameterEQLow,
+		TGParameterEQMid,
+		TGParameterEQHigh,
+		TGParameterEQGain,
+		TGParameterEQLowMidFreq,
+		TGParameterEQMidHighFreq,
+
 		TGParameterUnknown
 	};
 
@@ -334,6 +349,13 @@ private:
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRatio[CConfig::AllToneGenerators];
   
+	int m_nEQLow[CConfig::AllToneGenerators];
+	int m_nEQMid[CConfig::AllToneGenerators];
+	int m_nEQHigh[CConfig::AllToneGenerators];
+	int m_nEQGain[CConfig::AllToneGenerators];
+	unsigned m_nEQLowMidFreq[CConfig::AllToneGenerators];
+	unsigned m_nEQMidHighFreq[CConfig::AllToneGenerators];
+
 	uint8_t m_nRawVoiceData[156]; 
 	
 
@@ -368,6 +390,9 @@ private:
 	AudioStereoMixer<CConfig::AllToneGenerators>* reverb_send_mixer;
 
 	CSpinLock m_ReverbSpinLock;
+
+	AudioEffect3BandEQ *m_pEQ[CConfig::AllToneGenerators];
+	CSpinLock m_EQSpinLock;
 
 	Compressor m_Limiter[2];
 	CSpinLock m_LimiterSpinLock;

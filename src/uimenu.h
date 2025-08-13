@@ -121,6 +121,7 @@ private:
 	static std::string TodBFS (int nValue, int nWidth);
 	static std::string ToMillisec (int nValue, int nWidth);
 	static std::string ToRatio (int nValue, int nWidth);
+	static std::string ToHz (int nValue, int nWidth);
 
 	void TGShortcutHandler (TMenuEvent Event);
 	void OPShortcutHandler (TMenuEvent Event);
@@ -158,6 +159,7 @@ private:
 	static const TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_EffectsMenu[];
+	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ReverbMenu[];
 	static const TMenuItem s_LimiterMenu[];
 	static const TMenuItem s_EditCompressorMenu[];
