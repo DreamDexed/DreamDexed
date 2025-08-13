@@ -2033,6 +2033,7 @@ void CMiniDexed::getSysExVoiceDump(uint8_t* dest, uint8_t nTG)
 
 void CMiniDexed::setOPMask(uint8_t uchOPMask, uint8_t nTG)
 {
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 	m_uchOPMask[nTG] = uchOPMask;
 	m_pTG[nTG]->setOPAll (m_uchOPMask[nTG]);
 }
@@ -2206,7 +2207,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		m_nNoteLimitHigh[nTG] = m_PerformanceConfig.GetNoteLimitHigh (nTG);
 		m_nNoteShift[nTG] = m_PerformanceConfig.GetNoteShift (nTG);
 		
-		if(m_PerformanceConfig.VoiceDataFilled(nTG)) 
+		if(m_PerformanceConfig.VoiceDataFilled(nTG) && nTG < m_nToneGenerators) 
 		{
 			uint8_t* tVoiceData = m_PerformanceConfig.GetVoiceDataFromTxt(nTG);
 			m_pTG[nTG]->loadVoiceParameters(tVoiceData); 
