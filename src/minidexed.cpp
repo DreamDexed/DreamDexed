@@ -68,6 +68,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	reverb(nullptr),
 	tg_mixer(nullptr),
 	reverb_send_mixer(nullptr),
+	m_pEQ {},
 	m_Limiter {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_pNet(nullptr),
 	m_pNetDevice(nullptr),
@@ -133,6 +134,13 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nCompressorThresh[i] = -20;
 		m_nCompressorRatio[i] = 5;
 
+		m_nEQLow[i] = 0;
+		m_nEQMid[i] = 0;
+		m_nEQHigh[i] = 0;
+		m_nEQGain[i] = 0;
+		m_nEQLowMidFreq[i] = 24;
+		m_nEQMidHighFreq[i] = 44;
+
 		// Active the required number of active TGs
 		if (i<m_nToneGenerators)
 		{
@@ -143,6 +151,9 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 
 			m_pTG[i]->setEngineType(pConfig->GetEngineType ());
 			m_pTG[i]->activate ();
+
+			m_pEQ[i] = new AudioEffect3BandEQ (pConfig->GetSampleRate ());
+			assert (m_pEQ[i]);
 		}
 	}
 
@@ -1210,6 +1221,13 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 	case TGParameterCompressorThresh:	SetCompressorThresh (nValue, nTG); break;
 	case TGParameterCompressorRatio:	SetCompressorRatio (nValue, nTG); break;
 
+	case TGParameterEQLow:			SetEQLow (nValue, nTG); break;
+	case TGParameterEQMid:			SetEQMid (nValue, nTG); break;
+	case TGParameterEQHigh:			SetEQHigh (nValue, nTG); break;
+	case TGParameterEQGain:			SetEQGain (nValue, nTG); break;
+	case TGParameterEQLowMidFreq:		SetEQLowMidFreq (nValue, nTG); break;
+	case TGParameterEQMidHighFreq:		SetEQMidHighFreq (nValue, nTG); break;
+
 	default:
 		assert (0);
 		break;
@@ -1266,6 +1284,13 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterCompressorRelease:	return m_nCompressorRelease[nTG];
 	case TGParameterCompressorThresh:	return m_nCompressorThresh[nTG];
 	case TGParameterCompressorRatio:	return m_nCompressorRatio[nTG];
+
+	case TGParameterEQLow:			return m_nEQLow[nTG]; break;
+	case TGParameterEQMid:			return m_nEQMid[nTG]; break;
+	case TGParameterEQHigh:			return m_nEQHigh[nTG]; break;
+	case TGParameterEQGain:			return m_nEQGain[nTG]; break;
+	case TGParameterEQLowMidFreq:		return m_nEQLowMidFreq[nTG]; break;
+	case TGParameterEQMidHighFreq:		return m_nEQMidHighFreq[nTG]; break;
 
 	default:
 		assert (0);
@@ -1483,6 +1508,13 @@ void CMiniDexed::ProcessSound (void)
 
 			tg_mixer->zeroFill();
 
+			m_EQSpinLock.Acquire();
+			for (uint8_t i = 0; i < m_nToneGenerators; i++)
+			{
+				m_pEQ[i]->process(m_OutputLevel[i], nFrames);
+			}
+			m_EQSpinLock.Release();
+
 			for (uint8_t i = 0; i < m_nToneGenerators; i++)
 			{
 				tg_mixer->doAddMix(i,m_OutputLevel[i]);
@@ -1656,6 +1688,13 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetCompressorRelease (m_nCompressorRelease[nTG], nTG);	
 		m_PerformanceConfig.SetCompressorThresh (m_nCompressorThresh[nTG], nTG);
 		m_PerformanceConfig.SetCompressorRatio (m_nCompressorRatio[nTG], nTG);
+
+		m_PerformanceConfig.SetEQLow (m_nEQLow[nTG], nTG);
+		m_PerformanceConfig.SetEQMid (m_nEQMid[nTG], nTG);
+		m_PerformanceConfig.SetEQHigh (m_nEQHigh[nTG], nTG);
+		m_PerformanceConfig.SetEQGain (m_nEQGain[nTG], nTG);
+		m_PerformanceConfig.SetEQLowMidFreq (m_nEQLowMidFreq[nTG], nTG);
+		m_PerformanceConfig.SetEQMidHighFreq (m_nEQMidHighFreq[nTG], nTG);
 	}
 
 	m_PerformanceConfig.SetReverbEnable (!!m_nParameter[ParameterReverbEnable]);
@@ -1752,6 +1791,76 @@ void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
 	m_nCompressorRatio[nTG] = ratio;
 	m_pTG[nTG]->setCompressionRatio (ratio);
 	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetEQLow (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, -24, 24);
+	m_nEQLow[nTG] = nValue;
+	m_EQSpinLock.Acquire();
+	m_pEQ[nTG]->setLow_dB(nValue);
+	m_EQSpinLock.Release();
+}
+
+void CMiniDexed::SetEQMid (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, -24, 24);
+	m_nEQMid[nTG] = nValue;
+	m_EQSpinLock.Acquire();
+	m_pEQ[nTG]->setMid_dB(nValue);
+	m_EQSpinLock.Release();
+}
+
+void CMiniDexed::SetEQHigh (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, -24, 24);
+	m_nEQHigh[nTG] = nValue;
+	m_EQSpinLock.Acquire();
+	m_pEQ[nTG]->setHigh_dB(nValue);
+	m_EQSpinLock.Release();
+}
+
+void CMiniDexed::SetEQGain (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, -24, 24);
+	m_nEQGain[nTG] = nValue;
+	m_EQSpinLock.Acquire();
+	m_pEQ[nTG]->setGain_dB(nValue);
+	m_EQSpinLock.Release();
+}
+
+void CMiniDexed::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, 0u, 46u);
+	m_EQSpinLock.Acquire();
+	m_nEQLowMidFreq[nTG] = m_pEQ[nTG]->setLowMidFreq_n(nValue);
+	m_EQSpinLock.Release();
+}
+
+void CMiniDexed::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, 28u, 59u);
+	m_EQSpinLock.Acquire();
+	m_nEQMidHighFreq[nTG] = m_pEQ[nTG]->setMidHighFreq_n(nValue);
+	m_EQSpinLock.Release();
 }
 
 void CMiniDexed::setMonoMode(uint8_t mono, uint8_t nTG)
@@ -2232,6 +2341,13 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		SetCompressorRelease (m_PerformanceConfig.GetCompressorRelease (nTG), nTG);
 		SetCompressorThresh (m_PerformanceConfig.GetCompressorThresh (nTG), nTG);
 		SetCompressorRatio (m_PerformanceConfig.GetCompressorRatio (nTG), nTG);
+
+		SetEQLow (m_PerformanceConfig.GetEQLow (nTG), nTG);
+		SetEQMid (m_PerformanceConfig.GetEQMid (nTG), nTG);
+		SetEQHigh (m_PerformanceConfig.GetEQHigh (nTG), nTG);
+		SetEQGain (m_PerformanceConfig.GetEQGain (nTG), nTG);
+		SetEQLowMidFreq (m_PerformanceConfig.GetEQLowMidFreq (nTG), nTG);
+		SetEQMidHighFreq (m_PerformanceConfig.GetEQMidHighFreq (nTG), nTG);
 	}
 
 	// Effects
