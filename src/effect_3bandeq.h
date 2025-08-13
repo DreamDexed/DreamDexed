@@ -11,8 +11,6 @@
 class AudioEffect3BandEQ
 {
 public:
-    static constexpr float kDC_ADD = 1e-30f; // Why do we need to add a small DC?
-
     AudioEffect3BandEQ(unsigned samplerate):
     samplerate{samplerate},
     fLow{}, fMid{}, fHigh{}, fGain{}, fLowMidFreq{320}, fMidHighFreq{3100},
@@ -84,15 +82,15 @@ public:
             float inValue1 = isnan(blockL[i]) ? 0.0f : blockL[i];
             float inValue2 = isnan(blockR[i]) ? 0.0f : blockR[i];
 
-            tmp1LP = a0LP * inValue1 - b1LP * tmp1LP + kDC_ADD;
-            tmp2LP = a0LP * inValue2 - b1LP * tmp2LP + kDC_ADD;
-            out1LP = tmp1LP - kDC_ADD;
-            out2LP = tmp2LP - kDC_ADD;
+            tmp1LP = a0LP * inValue1 - b1LP * tmp1LP;
+            tmp2LP = a0LP * inValue2 - b1LP * tmp2LP;
+            out1LP = tmp1LP;
+            out2LP = tmp2LP;
 
-            tmp1HP = a0HP * inValue1 - b1HP * tmp1HP + kDC_ADD;
-            tmp2HP = a0HP * inValue2 - b1HP * tmp2HP + kDC_ADD;
-            out1HP = inValue1 - tmp1HP - kDC_ADD;
-            out2HP = inValue2 - tmp2HP - kDC_ADD;
+            tmp1HP = a0HP * inValue1 - b1HP * tmp1HP;
+            tmp2HP = a0HP * inValue2 - b1HP * tmp2HP;
+            out1HP = inValue1 - tmp1HP;
+            out2HP = inValue2 - tmp2HP;
 
             blockL[i] = (out1LP*lowVol + (inValue1 - out1LP - out1HP)*midVol + out1HP*highVol) * outVol;
             blockR[i] = (out2LP*lowVol + (inValue2 - out2LP - out2HP)*midVol + out2HP*highVol) * outVol;
