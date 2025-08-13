@@ -88,6 +88,9 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
 	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
 	{"Compressor",	MenuHandler,		s_EditCompressorMenu},
+#ifdef ARM_ALLOW_MULTI_CORE
+	{"EQ",		MenuHandler,		s_EQMenu},
+#endif
 	{"Edit Voice",	MenuHandler,		s_EditVoiceMenu},
 	{0}
 };
@@ -146,6 +149,17 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 };
 
 #ifdef ARM_ALLOW_MULTI_CORE
+
+const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
+{
+	{"Low Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQLow},
+	{"Mid Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQMid},
+	{"High Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQHigh},
+	{"Gain",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQGain},
+	{"Low-Mid Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQLowMidFreq},
+	{"Mid-High Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQMidHighFreq},
+	{0}
+};
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
@@ -304,6 +318,12 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
 	{-60,	0,	1,	TodBFS},	// TGParameterCompressorThresh
 	{1,	20,	1,	ToRatio},	// TGParameterCompressorRatio
+	{-24,	24,	1,	TodB},		// TGParameterEQLow
+	{-24,	24,	1,	TodB},		// TGParameterEQMid
+	{-24,	24,	1,	TodB},		// TGParameterEQHigh
+	{-24,	24,	1,	TodB},		// TGParameterEQGain
+	{0,	46,	1,	ToHz},		// TGParameterEQLowMidFreq
+	{28,	59,	1,	ToHz},		// TGParameterEQMidHighFreq
 };
 
 // must match DexedVoiceParameters in Synth_Dexed
@@ -1305,6 +1325,18 @@ std::string CUIMenu::ToMillisec (int nValue, int nWidth)
 std::string CUIMenu::ToRatio (int nValue, int nWidth)
 {
 	return std::to_string (nValue) + ":1";
+}
+
+std::string CUIMenu::ToHz (int nValue, int nWidth)
+{
+	uint16_t hz = MIDI_EQ_HZ[nValue];
+	char buf[20] = {};
+
+	if (hz < 1000)
+		return std::to_string (hz) + " Hz";
+
+	std::snprintf (buf, sizeof(buf), "%.1f kHz", hz/1000.0);
+	return buf;
 }
 
 void CUIMenu::TGShortcutHandler (TMenuEvent Event)

@@ -115,6 +115,20 @@ public:
 	void SetCompressorThresh (int nValue, unsigned nTG);
 	void SetCompressorRatio (unsigned nValue, unsigned nTG);
 
+	int GetEQLow (unsigned nTG) const;
+	int GetEQMid (unsigned nTG) const;
+	int GetEQHigh (unsigned nTG) const;
+	int GetEQGain (unsigned nTG) const;
+	unsigned GetEQLowMidFreq (unsigned nTG) const;
+	unsigned GetEQMidHighFreq (unsigned nTG) const;
+
+	void SetEQLow (int nValue, unsigned nTG);
+	void SetEQMid (int nValue, unsigned nTG);
+	void SetEQHigh (int nValue, unsigned nTG);
+	void SetEQGain (int nValue, unsigned nTG);
+	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
+	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
+
 	// Effects
 	bool GetReverbEnable (void) const;
 	unsigned GetReverbSize (void) const;			// 0 .. 99
@@ -218,6 +232,13 @@ private:
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRatio[CConfig::AllToneGenerators];
 
+	int m_nEQLow[CConfig::AllToneGenerators];
+	int m_nEQMid[CConfig::AllToneGenerators];
+	int m_nEQHigh[CConfig::AllToneGenerators];
+	int m_nEQGain[CConfig::AllToneGenerators];
+	unsigned m_nEQLowMidFreq[CConfig::AllToneGenerators];
+	unsigned m_nEQMidHighFreq[CConfig::AllToneGenerators];
+
 	unsigned m_nLastPerformance;  
 	unsigned m_nActualPerformance = 0;  
 	unsigned m_nActualPerformanceBank = 0;  
@@ -230,7 +251,7 @@ private:
 	FATFS *m_pFileSystem; 
 
 	std::string NewPerformanceName="";
-	
+
 	bool m_bReverbEnable;
 	unsigned m_nReverbSize;
 	unsigned m_nReverbHighDamp;

@@ -227,7 +227,24 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("CompressorRatio%u", nTG+1);
 		m_nCompressorRatio[nTG] = m_Properties.GetNumber (PropertyName, 5);
 
-		}
+		PropertyName.Format ("EQLow%u", nTG+1);
+		m_nEQLow[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+
+		PropertyName.Format ("EQMid%u", nTG+1);
+		m_nEQMid[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+
+		PropertyName.Format ("EQHigh%u", nTG+1);
+		m_nEQHigh[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+
+		PropertyName.Format ("EQGain%u", nTG+1);
+		m_nEQGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+
+		PropertyName.Format ("EQLowMidFreq%u", nTG+1);
+		m_nEQLowMidFreq[nTG] = m_Properties.GetNumber (PropertyName, 24);
+
+		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
+		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber (PropertyName, 44);
+	}
 
 	m_bReverbEnable = m_Properties.GetNumber ("ReverbEnable", 1) != 0;
 	m_nReverbSize = m_Properties.GetNumber ("ReverbSize", 70);
@@ -378,7 +395,25 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("CompressorRatio%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nCompressorRatio[nTG]);
 
-		}
+		PropertyName.Format ("EQLow%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nEQLow[nTG]);
+
+		PropertyName.Format ("EQMid%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nEQMid[nTG]);
+
+		PropertyName.Format ("EQHigh%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nEQHigh[nTG]);
+
+		PropertyName.Format ("EQGain%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nEQGain[nTG]);
+
+		PropertyName.Format ("EQLowMidFreq%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nEQLowMidFreq[nTG]);
+
+		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nEQMidHighFreq[nTG]);
+
+	}
 
 	m_Properties.SetNumber ("ReverbEnable", m_bReverbEnable ? 1 : 0);
 	m_Properties.SetNumber ("ReverbSize", m_nReverbSize);
@@ -542,6 +577,79 @@ void CPerformanceConfig::SetReverbSend (unsigned nValue, unsigned nTG)
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nReverbSend[nTG] = nValue;
 }
+
+int CPerformanceConfig::GetEQLow (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQLow[nTG];
+}
+
+int CPerformanceConfig::GetEQMid (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQMid[nTG];
+}
+
+int CPerformanceConfig::GetEQHigh (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQHigh[nTG];
+}
+
+int CPerformanceConfig::GetEQGain (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQGain[nTG];
+}
+
+unsigned CPerformanceConfig::GetEQLowMidFreq (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQLowMidFreq[nTG];
+}
+
+unsigned CPerformanceConfig::GetEQMidHighFreq (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQMidHighFreq[nTG];
+}
+
+void CPerformanceConfig::SetEQLow (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQLow[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQMid (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQMid[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQHigh (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQHigh[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQGain (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQGain[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQLowMidFreq[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQMidHighFreq[nTG] = nValue;
+}
+
 
 bool CPerformanceConfig::GetReverbEnable (void) const
 {
