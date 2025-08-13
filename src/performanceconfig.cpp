@@ -229,6 +229,13 @@ bool CPerformanceConfig::Load (void)
 
 		}
 
+	m_nEQLow = m_Properties.GetSignedNumber ("EQLow", 0);
+	m_nEQMid = m_Properties.GetSignedNumber ("EQMid", 0);
+	m_nEQHigh = m_Properties.GetSignedNumber ("EQHigh", 0);
+	m_nEQGain = m_Properties.GetSignedNumber ("EQGain", 0);
+	m_nEQLowMidFreq = m_Properties.GetNumber ("EQLowMidFreq", 320);
+	m_nEQMidHighFreq = m_Properties.GetNumber ("EQMidHighFreq", 3100);
+
 	m_bReverbEnable = m_Properties.GetNumber ("ReverbEnable", 1) != 0;
 	m_nReverbSize = m_Properties.GetNumber ("ReverbSize", 70);
 	m_nReverbHighDamp = m_Properties.GetNumber ("ReverbHighDamp", 50);
@@ -379,6 +386,13 @@ bool CPerformanceConfig::Save (void)
 		m_Properties.SetNumber (PropertyName, m_nCompressorRatio[nTG]);
 
 		}
+
+	m_Properties.SetSignedNumber ("EQLow", m_nEQLow);
+	m_Properties.SetSignedNumber ("EQMid", m_nEQMid);
+	m_Properties.SetSignedNumber ("EQHigh", m_nEQHigh);
+	m_Properties.SetSignedNumber ("EQGain", m_nEQGain);
+	m_Properties.SetNumber ("EQLowMidFreq", m_nEQLowMidFreq);
+	m_Properties.SetNumber ("EQMidHighFreq", m_nEQMidHighFreq);
 
 	m_Properties.SetNumber ("ReverbEnable", m_bReverbEnable ? 1 : 0);
 	m_Properties.SetNumber ("ReverbSize", m_nReverbSize);
@@ -542,6 +556,67 @@ void CPerformanceConfig::SetReverbSend (unsigned nValue, unsigned nTG)
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nReverbSend[nTG] = nValue;
 }
+
+int CPerformanceConfig::GetEQLow () const
+{
+	return m_nEQLow;
+}
+
+int CPerformanceConfig::GetEQMid () const
+{
+	return m_nEQMid;
+}
+
+int CPerformanceConfig::GetEQHigh () const
+{
+	return m_nEQHigh;
+}
+
+int CPerformanceConfig::GetEQGain () const
+{
+	return m_nEQGain;
+}
+
+unsigned CPerformanceConfig::GetEQLowMidFreq () const
+{
+	return m_nEQLowMidFreq;
+}
+
+unsigned CPerformanceConfig::GetEQMidHighFreq () const
+{
+	return m_nEQMidHighFreq;
+}
+
+void CPerformanceConfig::SetEQLow (int nValue)
+{
+	m_nEQLow = nValue;
+}
+
+void CPerformanceConfig::SetEQMid (int nValue)
+{
+	m_nEQMid = nValue;
+}
+
+void CPerformanceConfig::SetEQHigh (int nValue)
+{
+	m_nEQHigh = nValue;
+}
+
+void CPerformanceConfig::SetEQGain (int nValue)
+{
+	m_nEQGain = nValue;
+}
+
+void CPerformanceConfig::SetEQLowMidFreq (unsigned nValue)
+{
+	m_nEQLowMidFreq = nValue;
+}
+
+void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue)
+{
+	m_nEQMidHighFreq = nValue;
+}
+
 
 bool CPerformanceConfig::GetReverbEnable (void) const
 {

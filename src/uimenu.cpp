@@ -106,6 +106,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
 #ifdef ARM_ALLOW_MULTI_CORE
+	{"EQ",		MenuHandler,		s_EQMenu},
 	{"Reverb",	MenuHandler,		s_ReverbMenu},
 	{"Limiter",	MenuHandler,		s_LimiterMenu},
 #endif
@@ -146,6 +147,17 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 };
 
 #ifdef ARM_ALLOW_MULTI_CORE
+
+const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
+{
+	{"Low Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterEQLow},
+	{"Mid Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterEQMid},
+	{"High Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterEQHigh},
+	{"Gain",		EditGlobalParameter,	0,	CMiniDexed::ParameterEQGain},
+	{"Low-Mid Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterEQLowMidFreq},
+	{"Mid-High Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterEQMidHighFreq},
+	{0}
+};
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
@@ -260,6 +272,12 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{-60,	0,	1,	TodBFS},		// ParameterLimiterThresh
 	{1,	20,	1,	ToRatio},		// ParameterLimiterRatio
 	{0,	1,	1,	ToOnOff},		// ParameterLimiterHPFilterEnable
+	{-24,	24,	1,	TodB},			// ParameterEQLow
+	{-24,	24,	1,	TodB},			// ParameterEQMid
+	{-24,	24,	1,	TodB},			// ParameterEQHigh
+	{-24,	24,	1,	TodB},			// ParameterEQGain
+	{100,	1000,	10,	ToHz},			// ParameterEQLowMidFreq
+	{2000,	4000,	10,	ToHz},			// ParameterEQMidHighFreq
 };
 
 // must match CMiniDexed::TTGParameter
@@ -1305,6 +1323,11 @@ std::string CUIMenu::ToMillisec (int nValue, int nWidth)
 std::string CUIMenu::ToRatio (int nValue, int nWidth)
 {
 	return std::to_string (nValue) + ":1";
+}
+
+std::string CUIMenu::ToHz (int nValue, int nWidth)
+{
+	return std::to_string (nValue) + " Hz";
 }
 
 void CUIMenu::TGShortcutHandler (TMenuEvent Event)

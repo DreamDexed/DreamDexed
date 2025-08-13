@@ -115,6 +115,20 @@ public:
 	void SetCompressorThresh (int nValue, unsigned nTG);
 	void SetCompressorRatio (unsigned nValue, unsigned nTG);
 
+	int GetEQLow () const;
+	int GetEQMid () const;
+	int GetEQHigh () const;
+	int GetEQGain () const;
+	unsigned GetEQLowMidFreq () const;
+	unsigned GetEQMidHighFreq () const;
+
+	void SetEQLow (int nValue);
+	void SetEQMid (int nValue);
+	void SetEQHigh (int nValue);
+	void SetEQGain (int nValue);
+	void SetEQLowMidFreq (unsigned nValue);
+	void SetEQMidHighFreq (unsigned nValue);
+
 	// Effects
 	bool GetReverbEnable (void) const;
 	unsigned GetReverbSize (void) const;			// 0 .. 99
@@ -230,7 +244,14 @@ private:
 	FATFS *m_pFileSystem; 
 
 	std::string NewPerformanceName="";
-	
+
+	int m_nEQLow;
+	int m_nEQMid;
+	int m_nEQHigh;
+	int m_nEQGain;
+	unsigned m_nEQLowMidFreq;
+	unsigned m_nEQMidHighFreq;
+
 	bool m_bReverbEnable;
 	unsigned m_nReverbSize;
 	unsigned m_nReverbHighDamp;

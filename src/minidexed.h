@@ -52,7 +52,8 @@
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
 #include "../Synth_Dexed/src/compressor.h"
- 
+#include "effect_3bandeq.h"
+
 class CMiniDexed
 #ifdef ARM_ALLOW_MULTI_CORE
 :	public CMultiCoreSupport
@@ -184,6 +185,12 @@ public:
 		ParameterLimiterThresh,
 		ParameterLimiterRatio,
 		ParameterLimiterHPFilterEnable,
+		ParameterEQLow,
+		ParameterEQMid,
+		ParameterEQHigh,
+		ParameterEQGain,
+		ParameterEQLowMidFreq,
+		ParameterEQMidHighFreq,
 		ParameterUnknown
 	};
 
@@ -368,6 +375,9 @@ private:
 	AudioStereoMixer<CConfig::AllToneGenerators>* reverb_send_mixer;
 
 	CSpinLock m_ReverbSpinLock;
+
+	AudioEffect3BandEQ m_EQ;
+	CSpinLock m_EQSpinLock;
 
 	Compressor m_Limiter[2];
 	CSpinLock m_LimiterSpinLock;
