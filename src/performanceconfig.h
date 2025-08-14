@@ -146,6 +146,20 @@ public:
 	void SetReverbDiffusion (unsigned nValue);
 	void SetReverbLevel (unsigned nValue);
 
+	int GetMasterEQLow () const;
+	int GetMasterEQMid () const;
+	int GetMasterEQHigh () const;
+	int GetMasterEQGain () const;
+	unsigned GetMasterEQLowMidFreq () const;
+	unsigned GetMasterEQMidHighFreq () const;
+
+	void SetMasterEQLow (int nValue);
+	void SetMasterEQMid (int nValue);
+	void SetMasterEQHigh (int nValue);
+	void SetMasterEQGain (int nValue);
+	void SetMasterEQLowMidFreq (unsigned nValue);
+	void SetMasterEQMidHighFreq (unsigned nValue);
+
 	bool GetLimiterEnable () const;
 	int GetLimiterPreGain () const;
 	unsigned GetLimiterAttack () const;
@@ -259,6 +273,13 @@ private:
 	unsigned m_nReverbLowPass;
 	unsigned m_nReverbDiffusion;
 	unsigned m_nReverbLevel;
+
+	int m_nMasterEQLow;
+	int m_nMasterEQMid;
+	int m_nMasterEQHigh;
+	int m_nMasterEQGain;
+	unsigned m_nMasterEQLowMidFreq;
+	unsigned m_nMasterEQMidHighFreq;
 
 	bool m_bLimiterEnable;
 	int m_nLimiterPreGain;

@@ -254,6 +254,13 @@ bool CPerformanceConfig::Load (void)
 	m_nReverbDiffusion = m_Properties.GetNumber ("ReverbDiffusion", 65);
 	m_nReverbLevel = m_Properties.GetNumber ("ReverbLevel", 99);
 
+	m_nMasterEQLow = m_Properties.GetSignedNumber ("MasterEQLow", 0);
+	m_nMasterEQMid = m_Properties.GetSignedNumber ("MasterEQMid", 0);
+	m_nMasterEQHigh = m_Properties.GetSignedNumber ("MasterEQHigh", 0);
+	m_nMasterEQGain = m_Properties.GetSignedNumber ("MasterEQGain", 0);
+	m_nMasterEQLowMidFreq = m_Properties.GetNumber ("MasterEQLowMidFreq", 24);
+	m_nMasterEQMidHighFreq = m_Properties.GetNumber ("MasterEQMidHighFreq", 44);
+
 	m_bLimiterEnable = m_Properties.GetNumber ("LimiterEnable", 1);
 	m_nLimiterPreGain = m_Properties.GetSignedNumber ("LimiterPreGain", 0);
 	m_nLimiterAttack = m_Properties.GetNumber ("LimiterAttack", 5);
@@ -422,6 +429,13 @@ bool CPerformanceConfig::Save (void)
 	m_Properties.SetNumber ("ReverbLowPass", m_nReverbLowPass);
 	m_Properties.SetNumber ("ReverbDiffusion", m_nReverbDiffusion);
 	m_Properties.SetNumber ("ReverbLevel", m_nReverbLevel);
+
+	m_Properties.SetSignedNumber ("MasterEQLow", m_nMasterEQLow);
+	m_Properties.SetSignedNumber ("MasterEQMid", m_nMasterEQMid);
+	m_Properties.SetSignedNumber ("MasterEQHigh", m_nMasterEQHigh);
+	m_Properties.SetSignedNumber ("MasterEQGain", m_nMasterEQGain);
+	m_Properties.SetNumber ("MasterEQLowMidFreq", m_nMasterEQLowMidFreq);
+	m_Properties.SetNumber ("MasterEQMidHighFreq", m_nMasterEQMidHighFreq);
 
 	m_Properties.SetNumber ("LimiterEnable", m_bLimiterEnable);
 	m_Properties.SetSignedNumber ("LimiterPreGain", m_nLimiterPreGain);
@@ -719,6 +733,66 @@ void CPerformanceConfig::SetReverbDiffusion (unsigned nValue)
 void CPerformanceConfig::SetReverbLevel (unsigned nValue)
 {
 	m_nReverbLevel = nValue;
+}
+
+int CPerformanceConfig::GetMasterEQLow () const
+{
+	return m_nMasterEQLow;
+}
+
+int CPerformanceConfig::GetMasterEQMid () const
+{
+	return m_nMasterEQMid;
+}
+
+int CPerformanceConfig::GetMasterEQHigh () const
+{
+	return m_nMasterEQHigh;
+}
+
+int CPerformanceConfig::GetMasterEQGain () const
+{
+	return m_nMasterEQGain;
+}
+
+unsigned CPerformanceConfig::GetMasterEQLowMidFreq () const
+{
+	return m_nMasterEQLowMidFreq;
+}
+
+unsigned CPerformanceConfig::GetMasterEQMidHighFreq () const
+{
+	return m_nMasterEQMidHighFreq;
+}
+
+void CPerformanceConfig::SetMasterEQLow (int nValue)
+{
+	m_nMasterEQLow = nValue;
+}
+
+void CPerformanceConfig::SetMasterEQMid (int nValue)
+{
+	m_nMasterEQMid = nValue;
+}
+
+void CPerformanceConfig::SetMasterEQHigh (int nValue)
+{
+	m_nMasterEQHigh = nValue;
+}
+
+void CPerformanceConfig::SetMasterEQGain (int nValue)
+{
+	m_nMasterEQGain = nValue;
+}
+
+void CPerformanceConfig::SetMasterEQLowMidFreq (unsigned nValue)
+{
+	m_nMasterEQLowMidFreq = nValue;
+}
+
+void CPerformanceConfig::SetMasterEQMidHighFreq (unsigned nValue)
+{
+	m_nMasterEQMidHighFreq = nValue;
 }
 
 bool CPerformanceConfig::GetLimiterEnable () const
