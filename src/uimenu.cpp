@@ -87,10 +87,8 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode}, 
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
 	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
-	{"Compressor",	MenuHandler,		s_EditCompressorMenu},
-#ifdef ARM_ALLOW_MULTI_CORE
 	{"EQ",		MenuHandler,		s_EQMenu},
-#endif
+	{"Compressor",	MenuHandler,		s_EditCompressorMenu},
 	{"Edit Voice",	MenuHandler,		s_EditVoiceMenu},
 	{0}
 };
@@ -149,8 +147,6 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 	{0}
 };
 
-#ifdef ARM_ALLOW_MULTI_CORE
-
 const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 {
 	{"Low Level",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQLow},
@@ -161,6 +157,8 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 	{"Mid-High Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQMidHighFreq},
 	{0}
 };
+
+#ifdef ARM_ALLOW_MULTI_CORE
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
