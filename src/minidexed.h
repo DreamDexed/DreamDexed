@@ -397,7 +397,6 @@ private:
 
 	CSpinLock m_ReverbSpinLock;
 
-	AudioEffect3BandEQ *m_pEQ[CConfig::AllToneGenerators];
 	AudioEffect3BandEQ m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
 
