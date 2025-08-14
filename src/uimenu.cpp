@@ -110,6 +110,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Reverb",	MenuHandler,		s_ReverbMenu},
+	{"EQ",		MenuHandler,		s_MasterEQMenu},
 	{"Limiter",	MenuHandler,		s_LimiterMenu},
 #endif
 	{0}
@@ -170,6 +171,17 @@ const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 	{"Low pass",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbLowPass},
 	{"Diffusion",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbDiffusion},
 	{"Level",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbLevel},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =
+{
+	{"Low Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLow},
+	{"Mid Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMid},
+	{"High Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQHigh},
+	{"Gain",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQGain},
+	{"Low-Mid Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLowMidFreq},
+	{"Mid-High Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMidHighFreq},
 	{0}
 };
 
@@ -274,6 +286,12 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{-60,	0,	1,	TodBFS},		// ParameterLimiterThresh
 	{1,	20,	1,	ToRatio},		// ParameterLimiterRatio
 	{0,	1,	1,	ToOnOff},		// ParameterLimiterHPFilterEnable
+	{-24,	24,	1,	TodB},			// ParameterMasterEQLow
+	{-24,	24,	1,	TodB},			// ParameterMasterEQMid
+	{-24,	24,	1,	TodB},			// ParameterMasterEQHigh
+	{-24,	24,	1,	TodB},			// ParameterMasterEQGain
+	{0,	46,	1,	ToHz},			// ParameterMasterEQLowMidFreq
+	{28,	59,	1,	ToHz},			// ParameterMasterEQMidHighFreq
 };
 
 // must match CMiniDexed::TTGParameter
