@@ -192,6 +192,12 @@ public:
 		ParameterLimiterThresh,
 		ParameterLimiterRatio,
 		ParameterLimiterHPFilterEnable,
+		ParameterMasterEQLow,
+		ParameterMasterEQMid,
+		ParameterMasterEQHigh,
+		ParameterMasterEQGain,
+		ParameterMasterEQLowMidFreq,
+		ParameterMasterEQMidHighFreq,
 		ParameterUnknown
 	};
 
@@ -392,6 +398,7 @@ private:
 	CSpinLock m_ReverbSpinLock;
 
 	AudioEffect3BandEQ *m_pEQ[CConfig::AllToneGenerators];
+	AudioEffect3BandEQ m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
 
 	Compressor m_Limiter[2];

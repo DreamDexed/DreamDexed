@@ -70,6 +70,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	tg_mixer(nullptr),
 	reverb_send_mixer(nullptr),
 	m_pEQ {},
+	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_Limiter {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_pNet(nullptr),
 	m_pNetDevice(nullptr),
@@ -267,6 +268,13 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	// BEGIN setup reverb
 	reverb_send_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
 	reverb = new AudioEffectPlateReverb(pConfig->GetSampleRate());
+
+	SetParameter (ParameterMasterEQLow, 0);
+	SetParameter (ParameterMasterEQMid, 0);
+	SetParameter (ParameterMasterEQHigh, 0);
+	SetParameter (ParameterMasterEQGain, 0);
+	SetParameter (ParameterMasterEQLowMidFreq, 24);
+	SetParameter (ParameterMasterEQMidHighFreq, 44);
 
 	SetParameter (ParameterMasterVolume, pConfig->GetMasterVolume());
 
@@ -1152,6 +1160,54 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		m_LimiterSpinLock.Release ();
 		break;
 
+	case ParameterMasterEQLow:
+		nValue = constrain(nValue, -24, 24);
+		m_EQSpinLock.Acquire();
+		m_MasterEQ[0].setLow_dB(nValue);
+		m_MasterEQ[1].setLow_dB(nValue);
+		m_EQSpinLock.Release();
+		break;
+
+	case ParameterMasterEQMid:
+		nValue = constrain(nValue, -24, 24);
+		m_EQSpinLock.Acquire();
+		m_MasterEQ[0].setMid_dB(nValue);
+		m_MasterEQ[1].setMid_dB(nValue);
+		m_EQSpinLock.Release();
+		break;
+
+	case ParameterMasterEQHigh:
+		nValue = constrain(nValue, -24, 24);
+		m_EQSpinLock.Acquire();
+		m_MasterEQ[0].setHigh_dB(nValue);
+		m_MasterEQ[1].setHigh_dB(nValue);
+		m_EQSpinLock.Release();
+		break;
+
+	case ParameterMasterEQGain:
+		nValue = constrain(nValue, -24, 24);
+		m_EQSpinLock.Acquire();
+		m_MasterEQ[0].setGain_dB(nValue);
+		m_MasterEQ[1].setGain_dB(nValue);
+		m_EQSpinLock.Release();
+		break;
+
+	case ParameterMasterEQLowMidFreq:
+		nValue = constrain(nValue, 0, 46);
+		m_EQSpinLock.Acquire();
+		m_nParameter[ParameterMasterEQLowMidFreq] = m_MasterEQ[0].setLowMidFreq_n(nValue);
+		m_MasterEQ[1].setLowMidFreq_n(nValue);
+		m_EQSpinLock.Release();
+		break;
+
+	case ParameterMasterEQMidHighFreq:
+		nValue = constrain(nValue, 28, 59);
+		m_EQSpinLock.Acquire();
+		m_nParameter[ParameterMasterEQMidHighFreq] = m_MasterEQ[0].setMidHighFreq_n(nValue);
+		m_MasterEQ[1].setMidHighFreq_n(nValue);
+		m_EQSpinLock.Release();
+		break;
+
 	default:
 		assert (0);
 		break;
@@ -1552,6 +1608,11 @@ void CMiniDexed::ProcessSound (void)
 			}
 			// END adding reverb
 
+			m_EQSpinLock.Acquire();
+			m_MasterEQ[0].process(SampleBuffer[0], nFrames);
+			m_MasterEQ[1].process(SampleBuffer[1], nFrames);
+			m_EQSpinLock.Release();
+
 			if (m_nParameter[ParameterLimiterEnable])
 			{
 				m_LimiterSpinLock.Acquire ();
@@ -1705,6 +1766,13 @@ bool CMiniDexed::DoSavePerformance (void)
 	m_PerformanceConfig.SetReverbLowPass (m_nParameter[ParameterReverbLowPass]);
 	m_PerformanceConfig.SetReverbDiffusion (m_nParameter[ParameterReverbDiffusion]);
 	m_PerformanceConfig.SetReverbLevel (m_nParameter[ParameterReverbLevel]);
+
+	m_PerformanceConfig.SetMasterEQLow (m_nParameter[ParameterMasterEQLow]);
+	m_PerformanceConfig.SetMasterEQMid (m_nParameter[ParameterMasterEQMid]);
+	m_PerformanceConfig.SetMasterEQHigh (m_nParameter[ParameterMasterEQHigh]);
+	m_PerformanceConfig.SetMasterEQGain (m_nParameter[ParameterMasterEQGain]);
+	m_PerformanceConfig.SetMasterEQLowMidFreq (m_nParameter[ParameterMasterEQLowMidFreq]);
+	m_PerformanceConfig.SetMasterEQMidHighFreq (m_nParameter[ParameterMasterEQMidHighFreq]);
 
 	m_PerformanceConfig.SetLimiterEnable (m_nParameter[ParameterLimiterEnable]);
 	m_PerformanceConfig.SetLimiterPreGain (m_nParameter[ParameterLimiterPreGain]);
@@ -2359,6 +2427,13 @@ void CMiniDexed::LoadPerformanceParameters(void)
 	SetParameter (ParameterReverbLowPass, m_PerformanceConfig.GetReverbLowPass ());
 	SetParameter (ParameterReverbDiffusion, m_PerformanceConfig.GetReverbDiffusion ());
 	SetParameter (ParameterReverbLevel, m_PerformanceConfig.GetReverbLevel ());
+
+	SetParameter (ParameterMasterEQLow, m_PerformanceConfig.GetMasterEQLow ());
+	SetParameter (ParameterMasterEQMid, m_PerformanceConfig.GetMasterEQMid ());
+	SetParameter (ParameterMasterEQHigh, m_PerformanceConfig.GetMasterEQHigh ());
+	SetParameter (ParameterMasterEQGain, m_PerformanceConfig.GetMasterEQGain ());
+	SetParameter (ParameterMasterEQLowMidFreq, m_PerformanceConfig.GetMasterEQLowMidFreq ());
+	SetParameter (ParameterMasterEQMidHighFreq, m_PerformanceConfig.GetMasterEQMidHighFreq ());
 
 	SetParameter (ParameterLimiterEnable, m_PerformanceConfig.GetLimiterEnable ());
 	SetParameter (ParameterLimiterPreGain, m_PerformanceConfig.GetLimiterPreGain ());
