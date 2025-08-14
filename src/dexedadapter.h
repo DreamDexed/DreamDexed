@@ -25,6 +25,9 @@
 #include <circle/spinlock.h>
 #include <stdint.h>
 
+#include "effect_3bandeq.h"
+#include "compressor.h"
+
 #define DEXED_OP_ENABLE (DEXED_OP_OSC_DETUNE + 1)
 
 // Some Dexed methods require to be guarded from being interrupted
@@ -33,8 +36,11 @@
 class CDexedAdapter : public Dexed
 {
 public:
-	CDexedAdapter (uint8_t maxnotes, int rate)
-	: Dexed (maxnotes, rate)
+	CDexedAdapter (uint8_t maxnotes, unsigned samplerate):
+	Dexed (maxnotes, samplerate),
+	EQ {samplerate},
+	Compr {(float)samplerate},
+	m_bCompressorEnable {true}
 	{
 	}
 
@@ -63,6 +69,11 @@ public:
 	{
 		m_SpinLock.Acquire ();
 		Dexed::getSamples (buffer, n_samples);
+		EQ.process(buffer, n_samples);
+		if (m_bCompressorEnable)
+		{
+			Compr.doCompression (buffer, n_samples);
+		}
 		m_SpinLock.Release ();
 	}
 
@@ -80,8 +91,19 @@ public:
 		m_SpinLock.Release ();
 	}
 
+	void setCompressorEnable(bool enable)
+	{
+		m_SpinLock.Acquire ();
+		m_bCompressorEnable = enable;
+		m_SpinLock.Release ();
+	}
+
+	AudioEffect3BandEQ EQ;
+	Compressor Compr;
+
 private:
 	CSpinLock m_SpinLock;
+	bool m_bCompressorEnable;
 };
 
 #endif

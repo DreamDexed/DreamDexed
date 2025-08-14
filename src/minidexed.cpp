@@ -69,7 +69,6 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	reverb(nullptr),
 	tg_mixer(nullptr),
 	reverb_send_mixer(nullptr),
-	m_pEQ {},
 	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_Limiter {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_pNet(nullptr),
@@ -153,9 +152,6 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 
 			m_pTG[i]->setEngineType(pConfig->GetEngineType ());
 			m_pTG[i]->activate ();
-
-			m_pEQ[i] = new AudioEffect3BandEQ (pConfig->GetSampleRate ());
-			assert (m_pEQ[i]);
 		}
 	}
 
@@ -1565,13 +1561,6 @@ void CMiniDexed::ProcessSound (void)
 
 			tg_mixer->zeroFill();
 
-			m_EQSpinLock.Acquire();
-			for (uint8_t i = 0; i < m_nToneGenerators; i++)
-			{
-				m_pEQ[i]->process(m_OutputLevel[i], nFrames);
-			}
-			m_EQSpinLock.Release();
-
 			for (uint8_t i = 0; i < m_nToneGenerators; i++)
 			{
 				tg_mixer->doAddMix(i,m_OutputLevel[i]);
@@ -1798,7 +1787,7 @@ void CMiniDexed::SetCompressorEnable(bool compressor, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_bCompressorEnable[nTG] = compressor;
-	m_pTG[nTG]->setCompressor (compressor);
+	m_pTG[nTG]->setCompressorEnable (compressor);
 	m_UI.ParameterChanged ();
 }
 
@@ -1810,7 +1799,7 @@ void CMiniDexed::SetCompressorPreGain (int preGain, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorPreGain[nTG] = preGain;
-	m_pTG[nTG]->setCompressorPreGain_dB (preGain);
+	m_pTG[nTG]->Compr.setPreGain_dB (preGain);
 	m_UI.ParameterChanged ();
 }
 
@@ -1822,7 +1811,7 @@ void CMiniDexed::SetCompressorAttack (unsigned attack, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorAttack[nTG] = attack;
-	m_pTG[nTG]->setCompressorAttack_sec (attack / 1000.0);
+	m_pTG[nTG]->Compr.setAttack_sec (attack / 1000.0, m_pConfig->GetSampleRate ());
 	m_UI.ParameterChanged ();
 }
 
@@ -1834,7 +1823,7 @@ void CMiniDexed::SetCompressorRelease (unsigned release, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorRelease[nTG] = release;
-	m_pTG[nTG]->setCompressorRelease_sec (release / 1000.0);
+	m_pTG[nTG]->Compr.setRelease_sec (release / 1000.0, m_pConfig->GetSampleRate ());
 	m_UI.ParameterChanged ();
 }
 
@@ -1846,7 +1835,7 @@ void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorThresh[nTG] = thresh;
-	m_pTG[nTG]->setCompressorThresh_dBFS (thresh);
+	m_pTG[nTG]->Compr.setThresh_dBFS (thresh);
 	m_UI.ParameterChanged ();
 }
 
@@ -1858,7 +1847,7 @@ void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorRatio[nTG] = ratio;
-	m_pTG[nTG]->setCompressionRatio (ratio);
+	m_pTG[nTG]->Compr.setCompressionRatio (ratio);
 	m_UI.ParameterChanged ();
 }
 
@@ -1869,9 +1858,7 @@ void CMiniDexed::SetEQLow (int nValue, unsigned nTG)
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQLow[nTG] = nValue;
-	m_EQSpinLock.Acquire();
-	m_pEQ[nTG]->setLow_dB(nValue);
-	m_EQSpinLock.Release();
+	m_pTG[nTG]->EQ.setLow_dB(nValue);
 }
 
 void CMiniDexed::SetEQMid (int nValue, unsigned nTG)
@@ -1881,9 +1868,7 @@ void CMiniDexed::SetEQMid (int nValue, unsigned nTG)
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQMid[nTG] = nValue;
-	m_EQSpinLock.Acquire();
-	m_pEQ[nTG]->setMid_dB(nValue);
-	m_EQSpinLock.Release();
+	m_pTG[nTG]->EQ.setMid_dB(nValue);
 }
 
 void CMiniDexed::SetEQHigh (int nValue, unsigned nTG)
@@ -1893,9 +1878,7 @@ void CMiniDexed::SetEQHigh (int nValue, unsigned nTG)
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQHigh[nTG] = nValue;
-	m_EQSpinLock.Acquire();
-	m_pEQ[nTG]->setHigh_dB(nValue);
-	m_EQSpinLock.Release();
+	m_pTG[nTG]->EQ.setHigh_dB(nValue);
 }
 
 void CMiniDexed::SetEQGain (int nValue, unsigned nTG)
@@ -1905,9 +1888,7 @@ void CMiniDexed::SetEQGain (int nValue, unsigned nTG)
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQGain[nTG] = nValue;
-	m_EQSpinLock.Acquire();
-	m_pEQ[nTG]->setGain_dB(nValue);
-	m_EQSpinLock.Release();
+	m_pTG[nTG]->EQ.setGain_dB(nValue);
 }
 
 void CMiniDexed::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
@@ -1916,9 +1897,7 @@ void CMiniDexed::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	nValue = constrain(nValue, 0u, 46u);
-	m_EQSpinLock.Acquire();
-	m_nEQLowMidFreq[nTG] = m_pEQ[nTG]->setLowMidFreq_n(nValue);
-	m_EQSpinLock.Release();
+	m_nEQLowMidFreq[nTG] = m_pTG[nTG]->EQ.setLowMidFreq_n(nValue);
 }
 
 void CMiniDexed::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
@@ -1927,9 +1906,7 @@ void CMiniDexed::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	nValue = constrain(nValue, 28u, 59u);
-	m_EQSpinLock.Acquire();
-	m_nEQMidHighFreq[nTG] = m_pEQ[nTG]->setMidHighFreq_n(nValue);
-	m_EQSpinLock.Release();
+	m_nEQMidHighFreq[nTG] = m_pTG[nTG]->EQ.setMidHighFreq_n(nValue);
 }
 
 void CMiniDexed::setMonoMode(uint8_t mono, uint8_t nTG)
