@@ -107,7 +107,7 @@ public:
 	void setBreathController (uint8_t value, unsigned nTG);
 	void setAftertouch (uint8_t value, unsigned nTG);
 
-	void SetReverbSend (unsigned nReverbSend, unsigned nTG);			// 0 .. 127
+	void SetFXSend (unsigned nFXSend, unsigned nTG, unsigned nFX);		// 0 .. 127
 
 	void SetCompressorEnable (bool compressor, unsigned nTG);	// 0 .. 1 (default 1)
 	void SetCompressorPreGain (int preGain, unsigned nTG);		// -20 .. 20 dB (default 0)
@@ -184,13 +184,6 @@ public:
 	// Must match the order in CUIMenu::TParameter
 	enum TParameter
 	{
-		ParameterReverbEnable,
-		ParameterReverbSize,
-		ParameterReverbHighDamp,
-		ParameterReverbLowDamp,
-		ParameterReverbLowPass,
-		ParameterReverbDiffusion,
-		ParameterReverbLevel,
 		ParameterPerformanceSelectChannel,
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
@@ -219,6 +212,9 @@ public:
 	bool DeletePerformance(unsigned nID);
 	bool DoDeletePerformance(void);
 
+	void SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX);
+	int GetFXParameter (FX::TFXParameter Parameter, unsigned nFX);
+
 	// Must match the order in CUIMenu::TGParameter
 	enum TTGParameter
 	{
@@ -232,7 +228,7 @@ public:
 		TGParameterCutoff,
 		TGParameterResonance,
 		TGParameterMIDIChannel,
-		TGParameterReverbSend,
+		TGParameterFXSend,
 		TGParameterPitchBendRange, 
 		TGParameterPitchBendStep,
 		TGParameterPortamentoMode,
@@ -282,8 +278,8 @@ public:
 		TGParameterUnknown
 	};
 
-	void SetTGParameter (TTGParameter Parameter, int nValue, unsigned nTG);
-	int GetTGParameter (TTGParameter Parameter, unsigned nTG);
+	void SetTGParameter (TTGParameter Parameter, int nValue, unsigned nTG, unsigned nFX = 0);
+	int GetTGParameter (TTGParameter Parameter, unsigned nTG, unsigned nFX = 0);
 
 	// access (global or OP-related) parameter of the active voice of a TG
 	static const unsigned NoOP = 6;		// for global parameters
@@ -322,7 +318,8 @@ private:
 	CConfig *m_pConfig;
 
 	int m_nParameter[ParameterUnknown];			// global (non-TG) parameters
-	
+	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];	// FX parameters
+
 	unsigned m_nToneGenerators;
 	unsigned m_nPolyphony;
 
@@ -362,7 +359,7 @@ private:
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
 
-	unsigned m_nReverbSend[CConfig::AllToneGenerators];
+	unsigned m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
@@ -410,9 +407,9 @@ private:
 	CPerformanceTimer m_GetChunkTimer;
 	bool m_bProfileEnabled;
 
-	AudioEffectPlateReverb* reverb;
+	AudioEffectPlateReverb* reverb[CConfig::FXChains];
 	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
-	AudioStereoMixer<CConfig::AllToneGenerators>* reverb_send_mixer;
+	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXChains];
 
 	CSpinLock m_ReverbSpinLock;
 

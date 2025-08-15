@@ -89,10 +89,12 @@ private:
 	static void EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditOPParameter (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformance (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameter2P (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event); 	
 	static void PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformanceNewFile (CUIMenu *pUIMenu, TMenuEvent Event);
@@ -100,6 +102,7 @@ private:
 	
 	static std::string GetGlobalValueString (unsigned nParameter, int nValue, int nWidth);
 	static std::string GetTGValueString (unsigned nTGParameter, int nValue, int nWidth);
+	static std::string GetFXValueString (unsigned nFXParameter, int nValue, int nWidth);
 	static std::string GetVoiceValueString (unsigned nVoiceParameter, int nValue, int nWidth);
 	static std::string GetOPValueString (unsigned nOPParameter, int nValue, int nWidth);
 
@@ -165,11 +168,13 @@ private:
 	static const TMenuItem s_MenuRoot[];
 	static const TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
+	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ReverbMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_MasterCompressorMenu[];
+	static const TMenuItem s_FXSendMenu[];
 	static const TMenuItem s_EditCompressorMenu[];
 	static const TMenuItem s_EditVoiceMenu[];
 	static const TMenuItem s_OperatorMenu[];

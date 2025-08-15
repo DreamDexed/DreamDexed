@@ -77,7 +77,7 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Volume",	EditTGParameter,	0,	CMiniDexed::TGParameterVolume},
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Pan",		EditTGParameter,	0,	CMiniDexed::TGParameterPan},
-	{"Reverb-Send",	EditTGParameter,	0,	CMiniDexed::TGParameterReverbSend},
+	{"FX-Send",	MenuHandler,		s_FXSendMenu,	CMiniDexed::TGParameterFXSend},
 #endif
 	{"Detune",	EditTGParameter,	0,	CMiniDexed::TGParameterMasterTune},
 	{"Cutoff",	EditTGParameter,	0,	CMiniDexed::TGParameterCutoff},
@@ -95,6 +95,13 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{0}
 };
 
+const CUIMenu::TMenuItem CUIMenu::s_FXSendMenu[] =
+{
+	{"FX1-Send",	EditTGParameter2P,	0,	0},
+	{"FX2-Send",	EditTGParameter2P,	0,	1},
+	{0}
+};
+
 const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 {
 	{"Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorEnable},
@@ -107,10 +114,17 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 	{0}
 };
 
+const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
+{
+	{"Reverb",	MenuHandler,		s_ReverbMenu},
+	{0},
+};
+
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
 #ifdef ARM_ALLOW_MULTI_CORE
-	{"Reverb",	MenuHandler,		s_ReverbMenu},
+	{"SendFX1",	MenuHandler,		s_FXMenu, 	0},
+	{"SendFX2",	MenuHandler,		s_FXMenu, 	1},
 	{"EQ",		MenuHandler,		s_MasterEQMenu},
 	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
 #endif
@@ -173,13 +187,13 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
-	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbEnable},
-	{"Size",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbSize},
-	{"High damp",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbHighDamp},
-	{"Low damp",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbLowDamp},
-	{"Low pass",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbLowPass},
-	{"Diffusion",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbDiffusion},
-	{"Level",	EditGlobalParameter,	0,	CMiniDexed::ParameterReverbLevel},
+	{"Enable",	EditFXParameter2,	0,	FX::FXParameterReverbEnable},
+	{"Size",	EditFXParameter2,	0,	FX::FXParameterReverbSize},
+	{"High damp",	EditFXParameter2,	0,	FX::FXParameterReverbHighDamp},
+	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterReverbLowDamp},
+	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterReverbLowPass},
+	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterReverbDiffusion},
+	{"Level",	EditFXParameter2,	0,	FX::FXParameterReverbLevel},
 	{0}
 };
 
@@ -278,13 +292,6 @@ const CUIMenu::TMenuItem CUIMenu::s_SaveMenu[] =
 // must match CMiniDexed::TParameter
 CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 {
-	{0,	1,	1,	ToOnOff},		// ParameterReverbEnable
-	{0,	99,	1},				// ParameterReverbSize
-	{0,	99,	1},				// ParameterReverbHighDamp
-	{0,	99,	1},				// ParameterReverbLowDamp
-	{0,	99,	1},				// ParameterReverbLowPass
-	{0,	99,	1},				// ParameterReverbDiffusion
-	{0,	99,	1},				// ParameterReverbLevel
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// ParameterPerformanceSelectChannel
 	{0, NUM_PERFORMANCE_BANKS, 1},			// ParameterPerformanceBank
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
@@ -316,7 +323,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	99,					1},			// TGParameterCutoff
 	{0,	99,					1},			// TGParameterResonance
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// TGParameterMIDIChannel
-	{0, 99, 1},								// TGParameterReverbSend
+	{0, 99, 1},								// TGParameterFXSend
 	{0,	12,					1},			// TGParameterPitchBendRange
 	{0,	12,					1},			// TGParameterPitchBendStep
 	{0,	1,					1, ToPortaMode},	// TGParameterPortamentoMode
@@ -1015,6 +1022,112 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
 }
 
+void CUIMenu::EditTGParameter2P (CUIMenu *pUIMenu, TMenuEvent Event) // second menu level with parameter2. Redundant code but in order to not modified original code
+{
+
+	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2];
+	unsigned nFX = pUIMenu->m_nCurrentParameter;
+	CMiniDexed::TTGParameter Param = (CMiniDexed::TTGParameter) pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-1];
+
+	const TParameter &rParam = s_TGParameter[Param];
+
+	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG, nFX);
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	case MenuEventStepDown:
+		nValue -= rParam.Increment;
+		if (nValue < rParam.Minimum)
+		{
+			nValue = rParam.Minimum;
+		}
+		pUIMenu->m_pMiniDexed->SetTGParameter (Param, nValue, nTG, nFX);
+		break;
+
+	case MenuEventStepUp:
+		nValue += rParam.Increment;
+		if (nValue > rParam.Maximum)
+		{
+			nValue = rParam.Maximum;
+		}
+		pUIMenu->m_pMiniDexed->SetTGParameter (Param, nValue, nTG, nFX);
+		break;
+
+	case MenuEventPressAndStepDown:
+	case MenuEventPressAndStepUp:
+		pUIMenu->TGShortcutHandler (Event);
+		return;
+
+	default:
+		return;
+	}
+
+	std::string TG ("TG");
+	TG += std::to_string (nTG+1);
+
+	std::string Value = GetTGValueString (Param,
+		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG, nFX),
+		pUIMenu->m_pConfig->GetLCDColumns() - 2);
+
+	pUIMenu->m_pUI->DisplayWrite (TG.c_str (),
+				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      Value.c_str (),
+				      nValue > rParam.Minimum, nValue < rParam.Maximum);
+				   
+}
+
+void CUIMenu::EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+
+	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX);
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	case MenuEventStepDown:
+		nValue -= rParam.Increment;
+		if (nValue < rParam.Minimum)
+		{
+			nValue = rParam.Minimum;
+		}
+		pUIMenu->m_pMiniDexed->SetFXParameter (Param, nValue, nFX);
+		break;
+
+	case MenuEventStepUp:
+		nValue += rParam.Increment;
+		if (nValue > rParam.Maximum)
+		{
+			nValue = rParam.Maximum;
+		}
+		pUIMenu->m_pMiniDexed->SetFXParameter (Param, nValue, nFX);
+		break;
+
+	default:
+		return;
+	}
+
+	std::string FX = std::string("FX") + std::to_string (nFX+1);
+
+	std::string Value = GetFXValueString (Param,
+		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
+		pUIMenu->m_pConfig->GetLCDColumns() - 2);
+
+	pUIMenu->m_pUI->DisplayWrite (FX.c_str (),
+				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      Value.c_str (),
+				      nValue > rParam.Minimum, nValue < rParam.Maximum);
+}
+
 void CUIMenu::EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2];
@@ -1221,6 +1334,25 @@ std::string CUIMenu::GetTGValueString (unsigned nTGParameter, int nValue, int nW
 	assert (nTGParameter < sizeof CUIMenu::s_TGParameter / sizeof CUIMenu::s_TGParameter[0]);
 
 	CUIMenu::TToString *pToString = CUIMenu::s_TGParameter[nTGParameter].ToString;
+	if (pToString)
+	{
+		Result = (*pToString) (nValue, nWidth);
+	}
+	else
+	{
+		Result = std::to_string (nValue);
+	}
+
+	return Result;
+}
+
+std::string CUIMenu::GetFXValueString (unsigned nFXParameter, int nValue, int nWidth)
+{
+	std::string Result;
+
+	assert (nFXParameter < FX::FXParameterUnknown);
+
+	CUIMenu::TToString *pToString = FX::s_FXParameter[nFXParameter].ToString;
 	if (pToString)
 	{
 		Result = (*pToString) (nValue, nWidth);
