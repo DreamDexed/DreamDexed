@@ -161,9 +161,19 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_nNoteShift[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
+		// compatibility ReverbSend[n] => FX1Send[n]
 		PropertyName.Format ("ReverbSend%u", nTG+1);
-		m_nReverbSend[nTG] = m_Properties.GetNumber (PropertyName, 50);
+		if (m_Properties.IsSet (PropertyName) && CConfig::FXChains)
+		{
+			m_nFXSend[nTG][0] = m_Properties.GetNumber (PropertyName, 50);
+		}
 		
+		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		{
+			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
+			m_nFXSend[nTG][nFX] = m_Properties.GetNumber (PropertyName, 50);
+		}
+	
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
 		m_nPitchBendRange[nTG] = m_Properties.GetNumber (PropertyName, 2);
 
@@ -246,13 +256,31 @@ bool CPerformanceConfig::Load (void)
 		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber (PropertyName, 44);
 	}
 
-	m_bReverbEnable = m_Properties.GetNumber ("ReverbEnable", 1) != 0;
-	m_nReverbSize = m_Properties.GetNumber ("ReverbSize", 70);
-	m_nReverbHighDamp = m_Properties.GetNumber ("ReverbHighDamp", 50);
-	m_nReverbLowDamp = m_Properties.GetNumber ("ReverbLowDamp", 50);
-	m_nReverbLowPass = m_Properties.GetNumber ("ReverbLowPass", 30);
-	m_nReverbDiffusion = m_Properties.GetNumber ("ReverbDiffusion", 65);
-	m_nReverbLevel = m_Properties.GetNumber ("ReverbLevel", 99);
+	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	{
+		CString PropertyName;
+
+		PropertyName.Format ("FX%uReverbEnable", nFX+1);
+		m_bReverbEnable[nFX] = m_Properties.GetNumber (PropertyName, 1) != 0;
+
+		PropertyName.Format ("FX%uReverbSize", nFX+1);
+		m_nReverbSize[nFX] = m_Properties.GetNumber (PropertyName, 70);
+
+		PropertyName.Format ("FX%uReverbHighDamp", nFX+1);
+		m_nReverbHighDamp[nFX] = m_Properties.GetNumber (PropertyName, 50);
+
+		PropertyName.Format ("FX%uReverbLowDamp", nFX+1);
+		m_nReverbLowDamp[nFX] = m_Properties.GetNumber (PropertyName, 50);
+
+		PropertyName.Format ("FX%uReverbLowPass", nFX+1);
+		m_nReverbLowPass[nFX] = m_Properties.GetNumber (PropertyName, 30);
+
+		PropertyName.Format ("FX%uReverbDiffusion", nFX+1);
+		m_nReverbDiffusion[nFX] = m_Properties.GetNumber (PropertyName, 65);
+
+		PropertyName.Format ("FX%uReverbLevel", nFX+1);
+		m_nReverbLevel[nFX] = m_Properties.GetNumber (PropertyName, 99);
+	}
 
 	m_nMasterEQLow = m_Properties.GetSignedNumber ("MasterEQLow", 0);
 	m_nMasterEQMid = m_Properties.GetSignedNumber ("MasterEQMid", 0);
@@ -276,6 +304,17 @@ bool CPerformanceConfig::Load (void)
 		{
 			m_bCompressorEnable[nTG] = 0;
 		}
+	}
+
+	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
+	{
+		m_bReverbEnable[0] = m_Properties.GetNumber ("ReverbEnable", 1) != 0;
+		m_nReverbSize[0] = m_Properties.GetNumber ("ReverbSize", 70);
+		m_nReverbHighDamp[0] = m_Properties.GetNumber ("ReverbHighDamp", 50);
+		m_nReverbLowDamp[0] = m_Properties.GetNumber ("ReverbLowDamp", 50);
+		m_nReverbLowPass[0] = m_Properties.GetNumber ("ReverbLowPass", 30);
+		m_nReverbDiffusion[0] = m_Properties.GetNumber ("ReverbDiffusion", 65);
+		m_nReverbLevel[0] = m_Properties.GetNumber ("ReverbLevel", 99);
 	}
 
 	return bResult;
@@ -335,9 +374,12 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nNoteShift[nTG]);
 
-		PropertyName.Format ("ReverbSend%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nReverbSend[nTG]);
-		
+		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		{
+			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
+			m_Properties.SetNumber (PropertyName, m_nFXSend[nTG][nFX]);
+		}
+
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nPitchBendRange[nTG]);
 
@@ -422,13 +464,31 @@ bool CPerformanceConfig::Save (void)
 
 	}
 
-	m_Properties.SetNumber ("ReverbEnable", m_bReverbEnable ? 1 : 0);
-	m_Properties.SetNumber ("ReverbSize", m_nReverbSize);
-	m_Properties.SetNumber ("ReverbHighDamp", m_nReverbHighDamp);
-	m_Properties.SetNumber ("ReverbLowDamp", m_nReverbLowDamp);
-	m_Properties.SetNumber ("ReverbLowPass", m_nReverbLowPass);
-	m_Properties.SetNumber ("ReverbDiffusion", m_nReverbDiffusion);
-	m_Properties.SetNumber ("ReverbLevel", m_nReverbLevel);
+	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	{
+		CString PropertyName;
+
+		PropertyName.Format ("FX%uReverbEnable", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_bReverbEnable[nFX]);
+
+		PropertyName.Format ("FX%uReverbSize", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbSize[nFX]);
+
+		PropertyName.Format ("FX%uReverbHighDamp", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbHighDamp[nFX]);
+
+		PropertyName.Format ("FX%uReverbLowDamp", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbLowDamp[nFX]);
+
+		PropertyName.Format ("FX%uReverbLowPass", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbLowPass[nFX]);
+
+		PropertyName.Format ("FX%uReverbDiffusion", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbDiffusion[nFX]);
+
+		PropertyName.Format ("FX%uReverbLevel", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nReverbLevel[nFX]);
+	}
 
 	m_Properties.SetSignedNumber ("MasterEQLow", m_nMasterEQLow);
 	m_Properties.SetSignedNumber ("MasterEQMid", m_nMasterEQMid);
@@ -514,10 +574,11 @@ int CPerformanceConfig::GetNoteShift (unsigned nTG) const
 	return m_nNoteShift[nTG];
 }
 
-unsigned CPerformanceConfig::GetReverbSend (unsigned nTG) const
+unsigned CPerformanceConfig::GetFXSend (unsigned nTG, unsigned nFX) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	return m_nReverbSend[nTG];
+	assert (nFX < CConfig::FXChains);
+	return m_nFXSend[nTG][nFX];
 }
 
 void CPerformanceConfig::SetBankNumber (unsigned nValue, unsigned nTG)
@@ -586,10 +647,11 @@ void CPerformanceConfig::SetNoteShift (int nValue, unsigned nTG)
 	m_nNoteShift[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetReverbSend (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX)
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	m_nReverbSend[nTG] = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nFXSend[nTG][nFX] = nValue;
 }
 
 int CPerformanceConfig::GetEQLow (unsigned nTG) const
@@ -665,74 +727,88 @@ void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
 }
 
 
-bool CPerformanceConfig::GetReverbEnable (void) const
+bool CPerformanceConfig::GetReverbEnable (unsigned nFX) const
 {
-	return m_bReverbEnable;
+	assert (nFX < CConfig::FXChains);
+	return m_bReverbEnable[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbSize (void) const
+unsigned CPerformanceConfig::GetReverbSize (unsigned nFX) const
 {
-	return m_nReverbSize;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbSize[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbHighDamp (void) const
+unsigned CPerformanceConfig::GetReverbHighDamp (unsigned nFX) const
 {
-	return m_nReverbHighDamp;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbHighDamp[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbLowDamp (void) const
+unsigned CPerformanceConfig::GetReverbLowDamp (unsigned nFX) const
 {
-	return m_nReverbLowDamp;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbLowDamp[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbLowPass (void) const
+unsigned CPerformanceConfig::GetReverbLowPass (unsigned nFX) const
 {
-	return m_nReverbLowPass;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbLowPass[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbDiffusion (void) const
+unsigned CPerformanceConfig::GetReverbDiffusion (unsigned nFX) const
 {
-	return m_nReverbDiffusion;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbDiffusion[nFX];
 }
 
-unsigned CPerformanceConfig::GetReverbLevel (void) const
+unsigned CPerformanceConfig::GetReverbLevel (unsigned nFX) const
 {
-	return m_nReverbLevel;
+	assert (nFX < CConfig::FXChains);
+	return m_nReverbLevel[nFX];
 }
 
-void CPerformanceConfig::SetReverbEnable (bool bValue)
+void CPerformanceConfig::SetReverbEnable (bool bValue, unsigned nFX)
 {
-	m_bReverbEnable = bValue;
+	assert (nFX < CConfig::FXChains);
+	m_bReverbEnable[nFX] = bValue;
 }
 
-void CPerformanceConfig::SetReverbSize (unsigned nValue)
+void CPerformanceConfig::SetReverbSize (unsigned nValue, unsigned nFX)
 {
-	m_nReverbSize = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbSize[nFX] = nValue;
 }
 
-void CPerformanceConfig::SetReverbHighDamp (unsigned nValue)
+void CPerformanceConfig::SetReverbHighDamp (unsigned nValue, unsigned nFX)
 {
-	m_nReverbHighDamp = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbHighDamp[nFX] = nValue;
 }
 
-void CPerformanceConfig::SetReverbLowDamp (unsigned nValue)
+void CPerformanceConfig::SetReverbLowDamp (unsigned nValue, unsigned nFX)
 {
-	m_nReverbLowDamp = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbLowDamp[nFX] = nValue;
 }
 
-void CPerformanceConfig::SetReverbLowPass (unsigned nValue)
+void CPerformanceConfig::SetReverbLowPass (unsigned nValue, unsigned nFX)
 {
-	m_nReverbLowPass = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbLowPass[nFX] = nValue;
 }
 
-void CPerformanceConfig::SetReverbDiffusion (unsigned nValue)
+void CPerformanceConfig::SetReverbDiffusion (unsigned nValue, unsigned nFX)
 {
-	m_nReverbDiffusion = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbDiffusion[nFX] = nValue;
 }
 
-void CPerformanceConfig::SetReverbLevel (unsigned nValue)
+void CPerformanceConfig::SetReverbLevel (unsigned nValue, unsigned nFX)
 {
-	m_nReverbLevel = nValue;
+	assert (nFX < CConfig::FXChains);
+	m_nReverbLevel[nFX] = nValue;
 }
 
 int CPerformanceConfig::GetMasterEQLow () const
