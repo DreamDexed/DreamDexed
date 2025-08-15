@@ -26,6 +26,7 @@
 #include "config.h"
 #include <fatfs/ff.h>
 #include <Properties/propertiesfatfsfile.h>
+#include "effect.h"
 #define NUM_VOICE_PARAM 156
 #define NUM_PERFORMANCES 128
 #define NUM_PERFORMANCE_BANKS 128
@@ -54,7 +55,7 @@ public:
 	unsigned GetNoteLimitLow (unsigned nTG) const;		// 0 .. 127
 	unsigned GetNoteLimitHigh (unsigned nTG) const;		// 0 .. 127
 	int GetNoteShift (unsigned nTG) const;			// -24 .. 24
-	unsigned GetReverbSend (unsigned nTG) const;		// 0 .. 127
+	unsigned GetFXSend (unsigned nTG, unsigned nFX) const;	// 0 .. 127
 	unsigned GetPitchBendRange (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPitchBendStep (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPortamentoMode (unsigned nTG) const;		// 0 .. 1
@@ -91,7 +92,7 @@ public:
 	void SetNoteLimitLow (unsigned nValue, unsigned nTG);
 	void SetNoteLimitHigh (unsigned nValue, unsigned nTG);
 	void SetNoteShift (int nValue, unsigned nTG);
-	void SetReverbSend (unsigned nValue, unsigned nTG);
+	void SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX);
 	void SetPitchBendRange (unsigned nValue, unsigned nTG);
 	void SetPitchBendStep (unsigned nValue, unsigned nTG);
 	void SetPortamentoMode (unsigned nValue, unsigned nTG);
@@ -134,21 +135,8 @@ public:
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
 
 	// Effects
-	bool GetReverbEnable (void) const;
-	unsigned GetReverbSize (void) const;			// 0 .. 99
-	unsigned GetReverbHighDamp (void) const;		// 0 .. 99
-	unsigned GetReverbLowDamp (void) const;			// 0 .. 99
-	unsigned GetReverbLowPass (void) const;			// 0 .. 99
-	unsigned GetReverbDiffusion (void) const;		// 0 .. 99
-	unsigned GetReverbLevel (void) const;			// 0 .. 99
-
-	void SetReverbEnable (bool bValue);
-	void SetReverbSize (unsigned nValue);
-	void SetReverbHighDamp (unsigned nValue);
-	void SetReverbLowDamp (unsigned nValue);
-	void SetReverbLowPass (unsigned nValue);
-	void SetReverbDiffusion (unsigned nValue);
-	void SetReverbLevel (unsigned nValue);
+	int GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const;
+	void SetFXParameter (FX::TFXParameter nParameter, int nValue, unsigned nFX);
 
 	int GetMasterEQLow () const;
 	int GetMasterEQMid () const;
@@ -225,7 +213,7 @@ private:
 	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
-	int m_nReverbSend[CConfig::AllToneGenerators];
+	int m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
 	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
@@ -272,13 +260,7 @@ private:
 
 	std::string NewPerformanceName="";
 
-	bool m_bReverbEnable;
-	unsigned m_nReverbSize;
-	unsigned m_nReverbHighDamp;
-	unsigned m_nReverbLowDamp;
-	unsigned m_nReverbLowPass;
-	unsigned m_nReverbDiffusion;
-	unsigned m_nReverbLevel;
+	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
 
 	int m_nMasterEQLow;
 	int m_nMasterEQMid;
