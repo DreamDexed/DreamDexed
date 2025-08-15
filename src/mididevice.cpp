@@ -599,11 +599,15 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 						case MIDI_CC_FREQUENCY_CUTOFF:
 							m_pSynthesizer->SetCutoff (maplong (pMessage[2], 0, 127, 0, 99), nTG);
 							break;
-		
-						case MIDI_CC_REVERB_LEVEL:
-							m_pSynthesizer->SetReverbSend (maplong (pMessage[2], 0, 127, 0, 99), nTG);
+
+						case MIDI_CC_EFFECT1_SEND:
+							m_pSynthesizer->SetFXSend (maplong (pMessage[2], 0, 127, 0, 99), nTG, 0);
 							break;
-		
+
+						case MIDI_CC_EFFECT2_SEND:
+							m_pSynthesizer->SetFXSend (maplong (pMessage[2], 0, 127, 0, 99), nTG, 1);
+							break;
+
 						case MIDI_CC_DETUNE_LEVEL:
 							if (m_pSynthesizer->GetTGParameter(CMiniDexed::TGParameterTGLink, nTG))
 								break;
