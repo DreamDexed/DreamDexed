@@ -54,7 +54,7 @@ public:
 	unsigned GetNoteLimitLow (unsigned nTG) const;		// 0 .. 127
 	unsigned GetNoteLimitHigh (unsigned nTG) const;		// 0 .. 127
 	int GetNoteShift (unsigned nTG) const;			// -24 .. 24
-	unsigned GetReverbSend (unsigned nTG) const;		// 0 .. 127
+	unsigned GetFXSend (unsigned nTG, unsigned nFX) const;	// 0 .. 127
 	unsigned GetPitchBendRange (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPitchBendStep (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPortamentoMode (unsigned nTG) const;		// 0 .. 1
@@ -89,7 +89,7 @@ public:
 	void SetNoteLimitLow (unsigned nValue, unsigned nTG);
 	void SetNoteLimitHigh (unsigned nValue, unsigned nTG);
 	void SetNoteShift (int nValue, unsigned nTG);
-	void SetReverbSend (unsigned nValue, unsigned nTG);
+	void SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX);
 	void SetPitchBendRange (unsigned nValue, unsigned nTG);
 	void SetPitchBendStep (unsigned nValue, unsigned nTG);
 	void SetPortamentoMode (unsigned nValue, unsigned nTG);
@@ -130,21 +130,21 @@ public:
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
 
 	// Effects
-	bool GetReverbEnable (void) const;
-	unsigned GetReverbSize (void) const;			// 0 .. 99
-	unsigned GetReverbHighDamp (void) const;		// 0 .. 99
-	unsigned GetReverbLowDamp (void) const;			// 0 .. 99
-	unsigned GetReverbLowPass (void) const;			// 0 .. 99
-	unsigned GetReverbDiffusion (void) const;		// 0 .. 99
-	unsigned GetReverbLevel (void) const;			// 0 .. 99
+	bool GetReverbEnable (unsigned nFX) const;
+	unsigned GetReverbSize (unsigned nFX) const;			// 0 .. 99
+	unsigned GetReverbHighDamp (unsigned nFX) const;		// 0 .. 99
+	unsigned GetReverbLowDamp (unsigned nFX) const;			// 0 .. 99
+	unsigned GetReverbLowPass (unsigned nFX) const;			// 0 .. 99
+	unsigned GetReverbDiffusion (unsigned nFX) const;		// 0 .. 99
+	unsigned GetReverbLevel (unsigned nFX) const;			// 0 .. 99
 
-	void SetReverbEnable (bool bValue);
-	void SetReverbSize (unsigned nValue);
-	void SetReverbHighDamp (unsigned nValue);
-	void SetReverbLowDamp (unsigned nValue);
-	void SetReverbLowPass (unsigned nValue);
-	void SetReverbDiffusion (unsigned nValue);
-	void SetReverbLevel (unsigned nValue);
+	void SetReverbEnable (bool bValue, unsigned nFX);
+	void SetReverbSize (unsigned nValue, unsigned nFX);
+	void SetReverbHighDamp (unsigned nValue, unsigned nFX);
+	void SetReverbLowDamp (unsigned nValue, unsigned nFX);
+	void SetReverbLowPass (unsigned nValue, unsigned nFX);
+	void SetReverbDiffusion (unsigned nValue, unsigned nFX);
+	void SetReverbLevel (unsigned nValue, unsigned nFX);
 
 	int GetMasterEQLow () const;
 	int GetMasterEQMid () const;
@@ -221,7 +221,7 @@ private:
 	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
-	int m_nReverbSend[CConfig::AllToneGenerators];
+	int m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
 	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
@@ -266,13 +266,13 @@ private:
 
 	std::string NewPerformanceName="";
 
-	bool m_bReverbEnable;
-	unsigned m_nReverbSize;
-	unsigned m_nReverbHighDamp;
-	unsigned m_nReverbLowDamp;
-	unsigned m_nReverbLowPass;
-	unsigned m_nReverbDiffusion;
-	unsigned m_nReverbLevel;
+	bool m_bReverbEnable[CConfig::FXChains];
+	unsigned m_nReverbSize[CConfig::FXChains];
+	unsigned m_nReverbHighDamp[CConfig::FXChains];
+	unsigned m_nReverbLowDamp[CConfig::FXChains];
+	unsigned m_nReverbLowPass[CConfig::FXChains];
+	unsigned m_nReverbDiffusion[CConfig::FXChains];
+	unsigned m_nReverbLevel[CConfig::FXChains];
 
 	int m_nMasterEQLow;
 	int m_nMasterEQMid;
