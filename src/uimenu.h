@@ -129,6 +129,10 @@ private:
 	static std::string ToMillisec (int nValue, int nWidth);
 	static std::string ToRatio (int nValue, int nWidth);
 	static std::string ToHz (int nValue, int nWidth);
+	static std::string ToDelayMode (int nValue, int nWidth);
+	static std::string ToDelayTime (int nValue, int nWidth);
+	static std::string ToBPM (int nValue, int nWidth);
+
 
 	void GlobalShortcutHandler (TMenuEvent Event);
 	void TGShortcutHandler (TMenuEvent Event);
@@ -171,6 +175,8 @@ private:
 	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
+	static const TMenuItem s_ChorusMenu[];
+	static const TMenuItem s_DelayMenu[];
 	static const TMenuItem s_ReverbMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_MasterCompressorMenu[];

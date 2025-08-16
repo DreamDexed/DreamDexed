@@ -114,23 +114,6 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
-{
-	{"Reverb",	MenuHandler,		s_ReverbMenu},
-	{0},
-};
-
-const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
-{
-#ifdef ARM_ALLOW_MULTI_CORE
-	{"FX1",	MenuHandler,		s_FXMenu, 	0},
-	{"FX2",	MenuHandler,		s_FXMenu, 	1},
-	{"EQ",		MenuHandler,		s_MasterEQMenu},
-	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
-#endif
-	{0}
-};
-
 const CUIMenu::TMenuItem CUIMenu::s_EditPitchBendMenu[] =
 {
 	{"Bend Range",	EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendRange},
@@ -185,6 +168,47 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
+const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
+{
+	{"FX1",	MenuHandler,		s_FXMenu, 	0},
+	{"FX2",	MenuHandler,		s_FXMenu, 	1},
+	{"EQ",		MenuHandler,		s_MasterEQMenu},
+	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
+{
+	{"Level",	EditFXParameter2,	0,	CMiniDexed::FXParameterLevel},
+	{"Chorus",	MenuHandler,		s_ChorusMenu},
+	{"Delay",	MenuHandler,		s_DelayMenu},
+	{"Reverb",	MenuHandler,		s_ReverbMenu},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ChorusMenu[] =
+{
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	CMiniDexed::FXParameterChorusMix},
+	{"Enable I",	EditFXParameter2,	0,	CMiniDexed::FXParameterChorusEnable1},
+	{"Enable II",	EditFXParameter2,	0,	CMiniDexed::FXParameterChorusEnable2},
+	{"LFO Rate I",	EditFXParameter2,	0,	CMiniDexed::FXParameterChorusLFORate1},
+	{"LFO Rate II",	EditFXParameter2,	0,	CMiniDexed::FXParameterChorusLFORate2},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_DelayMenu[] =
+{
+	{"Mix",			EditFXParameter2,	0,	CMiniDexed::FXParameterDelayMix},
+	{"Mode",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayMode},
+	{"Time",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTime},
+	{"Time Left",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTimeL},
+	{"Time Right",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTimeR},
+	{"Tempo",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTempo},
+	{"Feedback",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayFeedback},
+	{"HighCut",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayHighCut},
+	{0}
+};
+
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
 	{"Enable",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbEnable},
@@ -193,7 +217,6 @@ const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 	{"Low damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowDamp},
 	{"Low pass",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowPass},
 	{"Diffusion",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbDiffusion},
-	{"Level",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLevel},
 	{0}
 };
 
@@ -368,13 +391,26 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 // must match CMiniDexed::TFXParameter
 CUIMenu::TParameter CUIMenu::s_FXParameter[CMiniDexed::FXParameterUnknown] =
 {
+	{0,	100,	1,	ToDryWet},		// FXParameterChorusMix,
+	{0,	1,	1,	ToOnOff},		// FXParameterChorusEnable1
+	{0,	1,	1,	ToOnOff},		// FXParameterChorusEnable2
+	{0,	100,	1},				// FXParameterChorusLFORate1
+	{0,	100,	1},				// FXParameterChorusLFORate2
+	{0,	100,	1},				// FXParameterDelayMix,
+	{0,	2,	1,	ToDelayMode},		// FXParameterDelayMode,
+	{0,	112,	1,	ToDelayTime},		// FXParameterDelayTime,
+	{0,	112,	1,	ToDelayTime},		// FXParameterDelayTimeL,
+	{0,	112,	1,	ToDelayTime},		// FXParameterDelayTimeR,
+	{30,	240,	1,	ToBPM},			// FXParameterDelayTempo,
+	{0,	100,	1},				// FXParameterDelayFeedback,
+	{0,	60,	1,	ToHz},			// FXParameterDelayHighCut,
 	{0,	1,	1,	ToOnOff},		// FXParameterReverbEnable
 	{0,	99,	1},				// FXParameterReverbSize
 	{0,	99,	1},				// FXParameterReverbHighDamp
 	{0,	99,	1},				// FXParameterReverbLowDamp
 	{0,	99,	1},				// FXParameterReverbLowPass
 	{0,	99,	1},				// FXParameterReverbDiffusion
-	{0,	99,	1},				// FXParameterReverbLevel
+	{0,	99,	1},				// FXParameterLevel
 };
 
 // must match DexedVoiceParameters in Synth_Dexed
@@ -1094,9 +1130,11 @@ void CUIMenu::EditTGParameter2P (CUIMenu *pUIMenu, TMenuEvent Event) // second m
 
 void CUIMenu::EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event)
 {
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2]; 
-
 	CMiniDexed::TFXParameter Param = (CMiniDexed::TFXParameter) pUIMenu->m_nCurrentParameter;
+
+	unsigned nMenuDepth = Param == CMiniDexed::FXParameterLevel ? 1 : 2;
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-nMenuDepth]; 
+
 	const TParameter &rParam = s_FXParameter[Param];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX);
@@ -1606,6 +1644,32 @@ std::string CUIMenu::ToHz (int nValue, int nWidth)
 
 	std::snprintf (buf, sizeof(buf), "%.1f kHz", hz/1000.0);
 	return buf;
+}
+
+std::string CUIMenu::ToDelayMode (int nValue, int nWidth)
+{
+	static const char *Mode[] = {"Dual", "Crossover", "PingPong"};
+
+	assert ((unsigned) nValue < sizeof Mode / sizeof Mode[0]);
+
+	return Mode[nValue];
+}
+
+std::string CUIMenu::ToDelayTime (int nValue, int nWidth)
+{
+	static const char *Sync[] = {"1/1", "1/1T", "1/2", "1/2T", "1/4", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32", "1/32T"};
+
+	assert (nValue >= 0 && nValue <= 112);
+
+	if (nValue <= 100)
+		return std::to_string(nValue * 10) + " ms";
+
+	return Sync[nValue - 100 - 1];
+}
+
+std::string CUIMenu::ToBPM(int nValue, int nWidth)
+{
+	return std::to_string(nValue) + " BPM";
 }
 
 void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
