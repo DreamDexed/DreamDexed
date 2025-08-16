@@ -108,23 +108,6 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
-{
-	{"Reverb",	MenuHandler,		s_ReverbMenu},
-	{0},
-};
-
-const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
-{
-#ifdef ARM_ALLOW_MULTI_CORE
-	{"SendFX1",	MenuHandler,		s_FXMenu, 	0},
-	{"SendFX2",	MenuHandler,		s_FXMenu, 	1},
-	{"EQ",		MenuHandler,		s_MasterEQMenu},
-	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
-#endif
-	{0}
-};
-
 const CUIMenu::TMenuItem CUIMenu::s_EditPitchBendMenu[] =
 {
 	{"Bend Range",	EditTGParameter2,	0,	CMiniDexed::TGParameterPitchBendRange},
@@ -179,15 +162,55 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
-const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
+const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
-	{"Enable",	EditFXParameter2,	0,	FX::FXParameterReverbEnable},
-	{"Size",	EditFXParameter2,	0,	FX::FXParameterReverbSize},
-	{"High damp",	EditFXParameter2,	0,	FX::FXParameterReverbHighDamp},
-	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterReverbLowDamp},
-	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterReverbLowPass},
-	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterReverbDiffusion},
-	{"Level",	EditFXParameter2,	0,	FX::FXParameterReverbLevel},
+	{"SendFX1",	MenuHandler,		s_FXMenu, 	0},
+	{"SendFX2",	MenuHandler,		s_FXMenu, 	1},
+	{"EQ",		MenuHandler,		s_MasterEQMenu},
+	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
+{
+	{"Return Level",	EditFXParameter2,	0,	FX::FXParameterReturnLevel},
+	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
+	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
+	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
+{
+	{"Mix",		EditFXParameter2,	0,	FX::FXParameterYKChorusMix},
+	{"Enable I",	EditFXParameter2,	0,	FX::FXParameterYKChorusEnable1},
+	{"Enable II",	EditFXParameter2,	0,	FX::FXParameterYKChorusEnable2},
+	{"LFO Rate I",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate1},
+	{"LFO Rate II",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate2},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
+{
+	{"Mix",			EditFXParameter2,	0,	FX::FXParameterDreamDelayMix},
+	{"Mode",		EditFXParameter2,	0,	FX::FXParameterDreamDelayMode},
+	{"Time",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTime},
+	{"Time Left",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTimeL},
+	{"Time Right",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTimeR},
+	{"Tempo",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTempo},
+	{"Feedback",		EditFXParameter2,	0,	FX::FXParameterDreamDelayFeedback},
+	{"HighCut",		EditFXParameter2,	0,	FX::FXParameterDreamDelayHighCut},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
+{
+	{"Enable",	EditFXParameter2,	0,	FX::FXParameterPlateReverbEnable},
+	{"Size",	EditFXParameter2,	0,	FX::FXParameterPlateReverbSize},
+	{"High damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbHighDamp},
+	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp},
+	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowPass},
+	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterPlateReverbDiffusion},
 	{0}
 };
 
@@ -1535,7 +1558,7 @@ std::string CUIMenu::ToHz (int nValue, int nWidth)
 void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
 {
 #ifdef ARM_ALLOW_MULTI_CORE
-	if (m_pParentMenu == s_ReverbMenu ||
+	if (m_pParentMenu == s_PlateReverbMenu ||
 		m_pParentMenu == s_MasterEQMenu ||
 		m_pParentMenu == s_MasterCompressorMenu ||
 		m_pCurrentMenu == s_TGMenu)
