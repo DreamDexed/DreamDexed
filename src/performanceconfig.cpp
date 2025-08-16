@@ -21,8 +21,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/logger.h>
+#include <arm_math.h>
 #include "performanceconfig.h"
 #include "mididevice.h"
+#include "common.h"
 #include <cstring> 
 #include <algorithm>
 
@@ -164,14 +166,17 @@ bool CPerformanceConfig::Load (void)
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
 			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
-			m_nFXSend[nTG][nFX] = m_Properties.GetNumber (PropertyName, 50);
+			m_nFXSend[nTG][nFX] = m_Properties.GetNumber (PropertyName, 25);
 		}
 
 		// compatibility ReverbSend[n] => FX1Send[n]
 		PropertyName.Format ("ReverbSend%u", nTG+1);
 		if (m_Properties.IsSet (PropertyName) && CConfig::FXChains)
 		{
-			m_nFXSend[nTG][0] = m_Properties.GetNumber (PropertyName, 50);
+			// the volume calculated by x^4, but FxSend uses x^2
+			float32_t reverbSend = m_Properties.GetNumber (PropertyName, 50);
+			reverbSend = pow(mapfloat(reverbSend, 0.0f, 99.0f, 0.0f, 1.0f), 2);
+			m_nFXSend[nTG][0] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
 		}
 	
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
