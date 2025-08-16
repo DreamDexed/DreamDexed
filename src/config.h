@@ -43,6 +43,7 @@ public:
 	static const unsigned MinToneGenerators = 1;
 	static const unsigned AllToneGenerators = 1;
 	static const unsigned DefToneGenerators = AllToneGenerators;
+	static const unsigned FXChains = 0;
 #else
 #if (RASPPI==4 || RASPPI==5)
 	// Pi 4 and 5 quad core
@@ -54,6 +55,7 @@ public:
 	static const unsigned MinToneGenerators = TGsCore1 + 2*TGsCore23;
 	static const unsigned AllToneGenerators = TGsCore1 + TGsCore1Opt + 2*TGsCore23 + 2*TGsCore23Opt;
 	static const unsigned DefToneGenerators = MinToneGenerators;
+	static const unsigned FXChains = 2;
 #else
 	// Pi 2 or 3 quad core
 	static const unsigned TGsCore1 = 2;		// process 2 TGs on core 1
@@ -63,6 +65,7 @@ public:
 	static const unsigned MinToneGenerators = TGsCore1 + 2*TGsCore23;
 	static const unsigned AllToneGenerators = MinToneGenerators;
 	static const unsigned DefToneGenerators = AllToneGenerators;
+	static const unsigned FXChains = 2;
 #endif
 #endif
 	
