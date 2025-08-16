@@ -171,7 +171,9 @@ private:
 	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
-	static const TMenuItem s_ReverbMenu[];
+	static const TMenuItem s_YKChorusMenu[];
+	static const TMenuItem s_DreamDelayMenu[];
+	static const TMenuItem s_PlateReverbMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_MasterCompressorMenu[];
 	static const TMenuItem s_FXSendMenu[];

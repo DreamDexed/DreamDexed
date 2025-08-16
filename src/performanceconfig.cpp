@@ -302,13 +302,13 @@ bool CPerformanceConfig::Load (void)
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
-		m_nFXParameter[0][FX::FXParameterReverbEnable] = m_Properties.GetNumber ("ReverbEnable", 1);
-		m_nFXParameter[0][FX::FXParameterReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
-		m_nFXParameter[0][FX::FXParameterReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
-		m_nFXParameter[0][FX::FXParameterReverbLowDamp] = m_Properties.GetNumber ("ReverbLowDamp", 50);
-		m_nFXParameter[0][FX::FXParameterReverbLowPass] = m_Properties.GetNumber ("ReverbLowPass", 30);
-		m_nFXParameter[0][FX::FXParameterReverbDiffusion] = m_Properties.GetNumber ("ReverbDiffusion", 65);
-		m_nFXParameter[0][FX::FXParameterReverbLevel] = m_Properties.GetNumber ("ReverbLevel", 99);
+		m_nFXParameter[0][FX::FXParameterPlateReverbEnable] = m_Properties.GetNumber ("ReverbEnable", 1);
+		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
+		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
+		m_nFXParameter[0][FX::FXParameterPlateReverbLowDamp] = m_Properties.GetNumber ("ReverbLowDamp", 50);
+		m_nFXParameter[0][FX::FXParameterPlateReverbLowPass] = m_Properties.GetNumber ("ReverbLowPass", 30);
+		m_nFXParameter[0][FX::FXParameterPlateReverbDiffusion] = m_Properties.GetNumber ("ReverbDiffusion", 65);
+		m_nFXParameter[0][FX::FXParameterOutputLevel] = m_Properties.GetNumber ("ReverbEnable", 1) ? m_Properties.GetNumber ("ReverbLevel", 99) : 0;
 	}
 
 	return bResult;

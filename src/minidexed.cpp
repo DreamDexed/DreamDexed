@@ -66,7 +66,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	m_GetChunkTimer ("GetChunk",
 			 1000000U * pConfig->GetChunkSize ()/2 / pConfig->GetSampleRate ()),
 	m_bProfileEnabled (m_pConfig->GetProfileEnabled ()),
-	reverb {},
+	fx_chain {},
 	tg_mixer {},
 	sendfx_mixer {},
 	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
@@ -132,7 +132,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
-			m_nFXSend[i][nFX] = 0;
+			m_nFXSend[i][nFX] = 50;
 		}
 
 		m_bCompressorEnable[i] = 1;
@@ -272,12 +272,13 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
 	{
 		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
-		reverb[nFX] = new AudioEffectPlateReverb(pConfig->GetSampleRate());
+		fx_chain[nFX] = new AudioFXChain(pConfig->GetSampleRate());
 
 		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
 		{
 			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-			SetFXParameter (FX::TFXParameter(nParam), p.Default, nFX);
+			bool bSaveOnly = p.flags & FX::FXComposite;
+			SetFXParameter (FX::TFXParameter(nParam), p.Default, nFX, bSaveOnly);
 		}
 	}
 	// END setup reverb
@@ -499,7 +500,7 @@ void CMiniDexed::Process (bool bPlugAndPlayUpdated)
 
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
-			reverb[nFX]->reset();
+			fx_chain[nFX]->resetState();
 		}
 
 		if (m_nSetNewPerformanceID == GetActualPerformanceID())
@@ -1196,7 +1197,7 @@ int CMiniDexed::GetParameter (TParameter Parameter)
 	return m_nParameter[Parameter];
 }
 
-void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX)
+void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX, bool bSaveOnly)
 {
 	assert (nFX < CConfig::FXChains);
 	assert (Parameter < FX::FXParameterUnknown);
@@ -1206,48 +1207,147 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 
 	m_nFXParameter[nFX][Parameter] = nValue;
 
+	if (bSaveOnly) return;
+
 	switch (Parameter)
 	{
-	case FX::FXParameterReverbEnable:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->set_bypass (!nValue);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterYKChorusMix:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->yk_chorus.setMix (nValue / 100.0f);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbSize:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->size (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterYKChorusEnable1:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->yk_chorus.setChorus1 (nValue);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbHighDamp:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->hidamp (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterYKChorusEnable2:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->yk_chorus.setChorus2 (nValue);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbLowDamp:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->lodamp (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterYKChorusLFORate1:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->yk_chorus.setChorus1LFORate (nValue / 100.0f);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbLowPass:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->lowpass (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterYKChorusLFORate2:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->yk_chorus.setChorus2LFORate (nValue / 100.0f);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbDiffusion:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->diffusion (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterDreamDelayMix:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->dream_delay.setMix (nValue / 100.0f);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterReverbLevel:
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->level (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+	case FX::FXParameterDreamDelayMode:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->dream_delay.setMode ((AudioEffectDreamDelay::Mode)nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterDreamDelayTime:
+		SetFXParameter (FX::FXParameterDreamDelayTimeL, nValue, nFX);
+		SetFXParameter (FX::FXParameterDreamDelayTimeR, nValue, nFX);
+		break;
+
+	case FX::FXParameterDreamDelayTimeL:
+		m_FXSpinLock.Acquire ();
+
+		if (nValue <= 100)
+		{
+			fx_chain[nFX]->dream_delay.setTimeL (nValue / 100.f);
+			fx_chain[nFX]->dream_delay.setTimeLSync (AudioEffectDreamDelay::SYNC_NONE);
+		}
+		else
+		{
+			fx_chain[nFX]->dream_delay.setTimeLSync ((AudioEffectDreamDelay::Sync)(nValue - 100));
+		}
+
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterDreamDelayTimeR:
+		m_FXSpinLock.Acquire ();
+
+		if (nValue <= 100)
+		{
+			fx_chain[nFX]->dream_delay.setTimeR (nValue / 100.f);
+			fx_chain[nFX]->dream_delay.setTimeRSync (AudioEffectDreamDelay::SYNC_NONE);
+		}
+		else
+		{
+			fx_chain[nFX]->dream_delay.setTimeRSync ((AudioEffectDreamDelay::Sync)(nValue - 100));
+		}
+
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterDreamDelayTempo:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->dream_delay.setTempo (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterDreamDelayFeedback:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->dream_delay.setFeedback (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterDreamDelayHighCut:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->dream_delay.setHighCut (MIDI_EQ_HZ[nValue]);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbEnable:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.set_bypass (!nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbSize:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.size (nValue / 99.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbHighDamp:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.hidamp (nValue / 99.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbLowDamp:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.lodamp (nValue / 99.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbLowPass:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.lowpass (nValue / 99.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterPlateReverbDiffusion:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->plate_reverb.diffusion (nValue / 99.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterOutputLevel:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->set_level (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	default:
@@ -1658,28 +1758,22 @@ void CMiniDexed::ProcessSound (void)
 
 			for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 			{
-				if (m_nFXParameter[nFX][FX::FXParameterReverbEnable])
+				if (fx_chain[nFX]->get_level() == 0.0f) continue;
+
+				sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
+				sendfx_mixer[nFX]->zeroFill();
+
+				for (uint8_t i = 0; i < m_nToneGenerators; i++)
 				{
-					sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
-					sendfx_mixer[nFX]->zeroFill();
-
-					for (uint8_t i = 0; i < m_nToneGenerators; i++)
-					{
-						sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
-					}
-
-					m_ReverbSpinLock.Acquire ();
-					reverb[nFX]->doReverb(FXSendBuffer[0], FXSendBuffer[1], FXSendBuffer[0], FXSendBuffer[1], nFrames);
-
-					// scale down and add left reverb buffer by reverb level 
-					arm_scale_f32(FXSendBuffer[indexL], reverb[nFX]->get_level(), FXSendBuffer[indexL], nFrames);
-					arm_add_f32(SampleBuffer[indexL], FXSendBuffer[indexL], SampleBuffer[indexL], nFrames);
-					// scale down and add right reverb buffer by reverb level 
-					arm_scale_f32(FXSendBuffer[indexR], reverb[nFX]->get_level(), FXSendBuffer[indexR], nFrames);
-					arm_add_f32(SampleBuffer[indexR], FXSendBuffer[indexR], SampleBuffer[indexR], nFrames);
-
-					m_ReverbSpinLock.Release ();
+					sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
 				}
+
+				m_FXSpinLock.Acquire ();
+				fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+
+				arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
+				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
+				m_FXSpinLock.Release ();
 			}
 			// END adding reverb
 
@@ -2586,7 +2680,9 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
 		{
 			FX::TFXParameter param = FX::TFXParameter(nParam);
-			SetFXParameter (param, m_PerformanceConfig.GetFXParameter (param, nFX), nFX);
+			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
+			bool bSaveOnly = p.flags & FX::FXComposite;
+			SetFXParameter (param, m_PerformanceConfig.GetFXParameter (param, nFX), nFX, bSaveOnly);
 		}
 	}
 
@@ -3100,11 +3196,24 @@ std::string ToHz (int nValue, int nWidth)
 
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
-	{0,	1,	1,	1,	"ReverbEnable",	ToOnOff},
-	{0,	99,	70,	1,	"ReverbSize"},
-	{0,	99,	50,	1,	"ReverbHighDamp"},
-	{0,	99,	50,	1,	"ReverbLowDamp"},
-	{0,	99,	30,	1,	"ReverbLowPass"},
-	{0,	99,	65,	1,	"ReverbDiffusion"},
-	{0,	99,	99,	1,	"ReverbLevel"},
+	{0,	100,	0,	1,	"YKChorusMix"},
+	{0,	1,	1,	1,	"YKChorusEnable1",	ToOnOff},
+	{0,	1,	1,	1,	"YKChorusEnable2",	ToOnOff},
+	{0,	100,	50,	1,	"YKChorusLFORate1"},
+	{0,	100,	83,	1,	"YKChorusLFORate2"},
+	{0,	100,	0,	1,	"DreamDelayMix"},
+	{0,	2,	0,	1,	"DreamDelayMode",	ToDelayMode},
+	{0,	112,	36,	1,	"DreamDelayTime",	ToDelayTime, FX::FXComposite},
+	{0,	112,	36,	1,	"DreamDelayTimeL",	ToDelayTime},
+	{0,	112,	36,	1,	"DreamDelayTimeR",	ToDelayTime},
+	{30,	240,	120,	1,	"DreamDelayTempo",	ToBPM},
+	{0,	100,	60,	1,	"DreamDelayFeedback"},
+	{0,	60,	50,	1,	"DreamDelayHighCut",	ToHz},
+	{0,	1,	1,	1,	"PlateReverbEnable",	ToOnOff},
+	{0,	99,	70,	1,	"PlateReverbSize"},
+	{0,	99,	50,	1,	"PlateReverbHighDamp"},
+	{0,	99,	50,	1,	"PlateReverbLowDamp"},
+	{0,	99,	30,	1,	"PlateReverbLowPass"},
+	{0,	99,	65,	1,	"PlateReverbDiffusion"},
+	{0,	99,	0,	1,	"OutputLevel"},
 };
