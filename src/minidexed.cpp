@@ -132,7 +132,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
-			m_nFXSend[i][nFX] = 50;
+			m_nFXSend[i][nFX] = 25;
 		}
 
 		m_bCompressorEnable[i] = 1;
