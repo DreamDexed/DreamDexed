@@ -152,8 +152,6 @@ AudioEffectPlateReverb::AudioEffectPlateReverb(float32_t samplerate)
     lfo1_adder = (UINT32_MAX + 1)/(samplerate * LFO1_FREQ_HZ);
     lfo2_phase_acc = 0;
     lfo2_adder = (UINT32_MAX + 1)/(samplerate * LFO2_FREQ_HZ);  
-
-    reverb_level = 0.0f;
 }
 
 // #define sat16(n, rshift) signed_saturate_rshift((n), 16, (rshift))

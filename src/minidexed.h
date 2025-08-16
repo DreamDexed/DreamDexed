@@ -48,11 +48,11 @@
 #include <circle/spinlock.h>
 #include "common.h"
 #include "effect_mixer.hpp"
-#include "effect_platervbstereo.h"
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
-#include "../Synth_Dexed/src/compressor.h"
+#include "compressor.h"
 #include "effect_3bandeq.h"
+#include "effect_chain.h"
 
 class CMiniDexed
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -212,7 +212,7 @@ public:
 	bool DeletePerformance(unsigned nID);
 	bool DoDeletePerformance(void);
 
-	void SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX);
+	void SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
 	int GetFXParameter (FX::TFXParameter Parameter, unsigned nFX);
 
 	// Must match the order in CUIMenu::TGParameter
@@ -408,11 +408,11 @@ private:
 	CPerformanceTimer m_GetChunkTimer;
 	bool m_bProfileEnabled;
 
-	AudioEffectPlateReverb* reverb[CConfig::FXChains];
+	AudioFXChain* fx_chain[CConfig::FXChains];
 	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
 	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXChains];
 
-	CSpinLock m_ReverbSpinLock;
+	CSpinLock m_FXSpinLock;
 
 	AudioEffect3BandEQ m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
