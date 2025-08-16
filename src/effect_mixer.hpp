@@ -53,12 +53,12 @@ public:
 			gain = MAX_GAIN;
 		else if (gain < MIN_GAIN)
 			gain = MIN_GAIN;
-		multiplier[channel] = powf(gain, 4); // see: https://www.dr-lex.be/info-stuff/volumecontrols.html#ideal2
+		multiplier[channel] = powf(gain, 2);
 	}
 
 	void gain(float32_t gain)
 	{
-		float32_t gain4 = powf(gain, 4); // see: https://www.dr-lex.be/info-stuff/volumecontrols.html#ideal2
+		float32_t gain4 = powf(gain, 2);
 
 		for (uint8_t i = 0; i < NN; i++)
 		{
@@ -116,7 +116,7 @@ public:
 			gain = MAX_GAIN;
 		else if (gain < MIN_GAIN)
 			gain = MIN_GAIN;
-		multiplier[channel] = powf(gain, 4); // see: https://www.dr-lex.be/info-stuff/volumecontrols.html#ideal2
+		multiplier[channel] = powf(gain, 2);
 
 		mp_w[channel][0] = multiplier[channel] * panorama[channel][0];
 		mp_w[channel][1] = multiplier[channel] * panorama[channel][1];
@@ -124,7 +124,7 @@ public:
 
 	void gain(float32_t gain)
 	{
-		float32_t gain4 = powf(gain, 4); // see: https://www.dr-lex.be/info-stuff/volumecontrols.html#ideal2
+		float32_t gain4 = powf(gain, 2);
 
 		for (uint8_t i = 0; i < NN; i++)
 		{
