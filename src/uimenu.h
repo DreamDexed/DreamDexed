@@ -164,6 +164,8 @@ private:
 	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
+	static const TMenuItem s_ChorusMenu[];
+	static const TMenuItem s_DelayMenu[];
 	static const TMenuItem s_ReverbMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_LimiterMenu[];

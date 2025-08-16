@@ -66,7 +66,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	m_GetChunkTimer ("GetChunk",
 			 1000000U * pConfig->GetChunkSize ()/2 / pConfig->GetSampleRate ()),
 	m_bProfileEnabled (m_pConfig->GetProfileEnabled ()),
-	reverb {},
+	fx_chain {},
 	tg_mixer {},
 	sendfx_mixer {},
 	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
@@ -128,7 +128,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
-			m_nFXSend[i][nFX] = 0;
+			m_nFXSend[i][nFX] = 50;
 		}
 
 		m_bCompressorEnable[i] = 1;
@@ -267,15 +267,28 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
 	{
 		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
-		reverb[nFX] = new AudioEffectPlateReverb(pConfig->GetSampleRate());
+		fx_chain[nFX] = new AudioFXChain(pConfig->GetSampleRate());
 
-		SetFXParameter (FXParameterReverbEnable, 1, nFX);
+		SetFXParameter (FXParameterChorusEnable1, 0, nFX);
+		SetFXParameter (FXParameterChorusEnable2, 0, nFX);
+		SetFXParameter (FXParameterChorusLFORate1, 50, nFX);
+		SetFXParameter (FXParameterChorusLFORate2, 83, nFX);
+
+		SetFXParameter (FXParameterDelayTimeL, 36, nFX);
+		SetFXParameter (FXParameterDelayTimeR, 36, nFX);
+		SetFXParameter (FXParameterDelayFeedback, 60, nFX);
+		SetFXParameter (FXParameterDelayTone, 80, nFX);
+		SetFXParameter (FXParameterDelayPingPong, 0, nFX);
+		SetFXParameter (FXParameterDelayMix, 0, nFX);
+
+		SetFXParameter (FXParameterReverbEnable, 0, nFX);
 		SetFXParameter (FXParameterReverbSize, 70, nFX);
 		SetFXParameter (FXParameterReverbHighDamp, 50, nFX);
 		SetFXParameter (FXParameterReverbLowDamp, 50, nFX);
 		SetFXParameter (FXParameterReverbLowPass, 30, nFX);
 		SetFXParameter (FXParameterReverbDiffusion, 65, nFX);
-		SetFXParameter (FXParameterReverbLevel, 99, nFX);
+
+		SetFXParameter (FXParameterLevel, 0, nFX);
 	}
 	// END setup reverb
 
@@ -1187,53 +1200,123 @@ void CMiniDexed::SetFXParameter (TFXParameter Parameter, int nValue, unsigned nF
 
 	switch (Parameter)
 	{
+	case FXParameterChorusEnable1:
+		nValue=constrain(nValue,0,1);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->chorus.setChorus1 (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterChorusEnable2:
+		nValue=constrain(nValue,0,1);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->chorus.setChorus2 (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterChorusLFORate1:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->chorus.setChorus1LFORate (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterChorusLFORate2:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->chorus.setChorus2LFORate (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayTimeL:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setTimeL (nValue / 100.f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayTimeR:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setTimeR (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayFeedback:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setFeedback (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayTone:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setTone (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayPingPong:
+		nValue=constrain(nValue,0,1);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setPingPongMode (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FXParameterDelayMix:
+		nValue=constrain(nValue,0,100);
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->delay.setMix (nValue / 100.0f);
+		m_FXSpinLock.Release ();
+		break;
+
 	case FXParameterReverbEnable:
 		nValue=constrain((int)nValue,0,1);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->set_bypass (!nValue);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.set_bypass (!nValue);
+		m_FXSpinLock.Release ();
 		break;
 
 	case FXParameterReverbSize:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->size (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.size (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	case FXParameterReverbHighDamp:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->hidamp (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.hidamp (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	case FXParameterReverbLowDamp:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->lodamp (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.lodamp (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	case FXParameterReverbLowPass:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->lowpass (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.lowpass (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	case FXParameterReverbDiffusion:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->diffusion (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->reverb.diffusion (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
-	case FXParameterReverbLevel:
+	case FXParameterLevel:
 		nValue=constrain((int)nValue,0,99);
-		m_ReverbSpinLock.Acquire ();
-		reverb[nFX]->level (nValue / 99.0f);
-		m_ReverbSpinLock.Release ();
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->set_level (nValue / 99.0f);
+		m_FXSpinLock.Release ();
 		break;
 
 	default:
@@ -1608,28 +1691,22 @@ void CMiniDexed::ProcessSound (void)
 
 			for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 			{
-				if (m_nFXParameter[nFX][FXParameterReverbEnable])
+				if (fx_chain[nFX]->get_level() == 0.0f) continue;
+
+				sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
+				sendfx_mixer[nFX]->zeroFill();
+
+				for (uint8_t i = 0; i < m_nToneGenerators; i++)
 				{
-					sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
-					sendfx_mixer[nFX]->zeroFill();
-
-					for (uint8_t i = 0; i < m_nToneGenerators; i++)
-					{
-						sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
-					}
-
-					m_ReverbSpinLock.Acquire ();
-					reverb[nFX]->doReverb(FXSendBuffer[0], FXSendBuffer[1], FXSendBuffer[0], FXSendBuffer[1], nFrames);
-
-					// scale down and add left reverb buffer by reverb level 
-					arm_scale_f32(FXSendBuffer[indexL], reverb->get_level(), FXSendBuffer[indexL], nFrames);
-					arm_add_f32(SampleBuffer[indexL], FXSendBuffer[indexL], SampleBuffer[indexL], nFrames);
-					// scale down and add right reverb buffer by reverb level 
-					arm_scale_f32(ReverbBuffer[indexR], reverb->get_level(), ReverbBuffer[indexR], nFrames);
-					arm_add_f32(SampleBuffer[indexR], FXSendBuffer[indexR], SampleBuffer[indexR], nFrames);
-
-					m_ReverbSpinLock.Release ();
+					sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
 				}
+
+				m_FXSpinLock.Acquire ();
+				fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+
+				arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
+				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
+				m_FXSpinLock.Release ();
 			}
 			// END adding reverb
 
@@ -1789,13 +1866,23 @@ bool CMiniDexed::DoSavePerformance (void)
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
-		m_PerformanceConfig.SetReverbEnable (GetFXParameter (FXParameterReverbEnable, nFX), nFX);
-		m_PerformanceConfig.SetReverbSize (GetFXParameter (FXParameterReverbSize, nFX), nFX);
-		m_PerformanceConfig.SetReverbHighDamp (GetFXParameter (FXParameterReverbHighDamp, nFX), nFX);
-		m_PerformanceConfig.SetReverbLowDamp (GetFXParameter (FXParameterReverbLowDamp, nFX), nFX);
-		m_PerformanceConfig.SetReverbLowPass (GetFXParameter (FXParameterReverbLowPass, nFX), nFX);
-		m_PerformanceConfig.SetReverbDiffusion (GetFXParameter (FXParameterReverbDiffusion, nFX), nFX);
-		m_PerformanceConfig.SetReverbLevel (GetFXParameter (FXParameterReverbLevel, nFX), nFX);
+		m_PerformanceConfig.SetFXChorusEnable1 (GetFXParameter (FXParameterChorusEnable1, nFX), nFX);
+		m_PerformanceConfig.SetFXChorusEnable2 (GetFXParameter (FXParameterChorusEnable2, nFX), nFX);
+		m_PerformanceConfig.SetFXChorusLFORate1 (GetFXParameter (FXParameterChorusLFORate1, nFX), nFX);
+		m_PerformanceConfig.SetFXChorusLFORate2 (GetFXParameter (FXParameterChorusLFORate2, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayTimeL (GetFXParameter (FXParameterDelayTimeL, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayTimeR (GetFXParameter (FXParameterDelayTimeR, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayFeedback (GetFXParameter (FXParameterDelayFeedback, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayTone (GetFXParameter (FXParameterDelayTone, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayPingPong (GetFXParameter (FXParameterDelayPingPong, nFX), nFX);
+		m_PerformanceConfig.SetFXDelayMix (GetFXParameter (FXParameterDelayMix, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbEnable (GetFXParameter (FXParameterReverbEnable, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbSize (GetFXParameter (FXParameterReverbSize, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbHighDamp (GetFXParameter (FXParameterReverbHighDamp, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbLowDamp (GetFXParameter (FXParameterReverbLowDamp, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbLowPass (GetFXParameter (FXParameterReverbLowPass, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbDiffusion (GetFXParameter (FXParameterReverbDiffusion, nFX), nFX);
+		m_PerformanceConfig.SetFXLevel (GetFXParameter (FXParameterLevel, nFX), nFX);
 	}
 
 	m_PerformanceConfig.SetMasterEQLow (m_nParameter[ParameterMasterEQLow]);
@@ -2444,13 +2531,23 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 	for (unsigned nFX=0; nFX < CConfig::FXChains; ++nFX)
 	{
-		SetFXParameter (FXParameterReverbEnable, m_PerformanceConfig.GetReverbEnable (nFX), nFX);
-		SetFXParameter (FXParameterReverbSize, m_PerformanceConfig.GetReverbSize (nFX), nFX);
-		SetFXParameter (FXParameterReverbHighDamp, m_PerformanceConfig.GetReverbHighDamp (nFX), nFX);
-		SetFXParameter (FXParameterReverbLowDamp, m_PerformanceConfig.GetReverbLowDamp (nFX), nFX);
-		SetFXParameter (FXParameterReverbLowPass, m_PerformanceConfig.GetReverbLowPass (nFX), nFX);
-		SetFXParameter (FXParameterReverbDiffusion, m_PerformanceConfig.GetReverbDiffusion (nFX), nFX);
-		SetFXParameter (FXParameterReverbLevel, m_PerformanceConfig.GetReverbLevel (nFX), nFX);
+		SetFXParameter (FXParameterChorusEnable1, m_PerformanceConfig.GetFXChorusEnable1(nFX), nFX);
+		SetFXParameter (FXParameterChorusEnable2, m_PerformanceConfig.GetFXChorusEnable2(nFX), nFX);
+		SetFXParameter (FXParameterChorusLFORate1, m_PerformanceConfig.GetFXChorusLFORate1(nFX), nFX);
+		SetFXParameter (FXParameterChorusLFORate2, m_PerformanceConfig.GetFXChorusLFORate1(nFX), nFX);
+		SetFXParameter (FXParameterDelayTimeL, m_PerformanceConfig.GetFXDelayTimeL(nFX), nFX);
+		SetFXParameter (FXParameterDelayTimeR, m_PerformanceConfig.GetFXDelayTimeR(nFX), nFX);
+		SetFXParameter (FXParameterDelayFeedback, m_PerformanceConfig.GetFXDelayFeedback(nFX), nFX);
+		SetFXParameter (FXParameterDelayTone, m_PerformanceConfig.GetFXDelayTone(nFX), nFX);
+		SetFXParameter (FXParameterDelayPingPong, m_PerformanceConfig.GetFXDelayPingPong(nFX), nFX);
+		SetFXParameter (FXParameterDelayMix, m_PerformanceConfig.GetFXDelayMix(nFX), nFX);
+		SetFXParameter (FXParameterReverbEnable, m_PerformanceConfig.GetFXReverbEnable (nFX), nFX);
+		SetFXParameter (FXParameterReverbSize, m_PerformanceConfig.GetFXReverbSize (nFX), nFX);
+		SetFXParameter (FXParameterReverbHighDamp, m_PerformanceConfig.GetFXReverbHighDamp (nFX), nFX);
+		SetFXParameter (FXParameterReverbLowDamp, m_PerformanceConfig.GetFXReverbLowDamp (nFX), nFX);
+		SetFXParameter (FXParameterReverbLowPass, m_PerformanceConfig.GetFXReverbLowPass (nFX), nFX);
+		SetFXParameter (FXParameterReverbDiffusion, m_PerformanceConfig.GetFXReverbDiffusion (nFX), nFX);
+		SetFXParameter (FXParameterLevel, m_PerformanceConfig.GetFXLevel (nFX), nFX);
 	}
 
 	SetParameter (ParameterMasterEQLow, m_PerformanceConfig.GetMasterEQLow ());
