@@ -48,11 +48,11 @@
 #include <circle/spinlock.h>
 #include "common.h"
 #include "effect_mixer.hpp"
-#include "effect_platervbstereo.h"
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
-#include "../Synth_Dexed/src/compressor.h"
+#include "compressor.h"
 #include "effect_3bandeq.h"
+#include "effect_chain.h"
 
 class CMiniDexed
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -206,13 +206,25 @@ public:
 	// Must match the order in CUIMenu::TFXParameter
 	enum TFXParameter
 	{
+		FXParameterChorusEnable1,
+		FXParameterChorusEnable2,
+		FXParameterChorusLFORate1,
+		FXParameterChorusLFORate2,
+		FXParameterDelayMix,
+		FXParameterDelayMode,
+		FXParameterDelayTime,
+		FXParameterDelayTimeL,
+		FXParameterDelayTimeR,
+		FXParameterDelayTempo,
+		FXParameterDelayFeedback,
+		FXParameterDelayHighCut,
 		FXParameterReverbEnable,
 		FXParameterReverbSize,
 		FXParameterReverbHighDamp,
 		FXParameterReverbLowDamp,
 		FXParameterReverbLowPass,
 		FXParameterReverbDiffusion,
-		FXParameterReverbLevel,
+		FXParameterLevel,
 		FXParameterUnknown,
 	};
 
@@ -401,11 +413,11 @@ private:
 	CPerformanceTimer m_GetChunkTimer;
 	bool m_bProfileEnabled;
 
-	AudioEffectPlateReverb* reverb[CConfig::FXChains];
+	AudioFXChain* fx_chain[CConfig::FXChains];
 	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
 	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXChains];
 
-	CSpinLock m_ReverbSpinLock;
+	CSpinLock m_FXSpinLock;
 
 	AudioEffect3BandEQ m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
