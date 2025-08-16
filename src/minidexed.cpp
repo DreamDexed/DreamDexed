@@ -283,10 +283,10 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		SetFXParameter (FXParameterDelayHighCut, 50, nFX);
 
 		SetFXParameter (FXParameterReverbEnable, 0, nFX);
-		SetFXParameter (FXParameterReverbSize, 70, nFX);
-		SetFXParameter (FXParameterReverbHighDamp, 50, nFX);
-		SetFXParameter (FXParameterReverbLowDamp, 50, nFX);
-		SetFXParameter (FXParameterReverbLowPass, 30, nFX);
+		SetFXParameter (FXParameterReverbSize, 50, nFX);
+		SetFXParameter (FXParameterReverbHighDamp, 25, nFX);
+		SetFXParameter (FXParameterReverbLowDamp, 25, nFX);
+		SetFXParameter (FXParameterReverbLowPass, 85, nFX);
 		SetFXParameter (FXParameterReverbDiffusion, 65, nFX);
 
 		SetFXParameter (FXParameterLevel, 0, nFX);

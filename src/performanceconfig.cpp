@@ -297,16 +297,16 @@ bool CPerformanceConfig::Load (void)
 		m_bFXReverbEnable[nFX] = m_Properties.GetNumber (PropertyName, 0) != 0;
 
 		PropertyName.Format ("FX%uReverbSize", nFX+1);
-		m_nFXReverbSize[nFX] = m_Properties.GetNumber (PropertyName, 70);
+		m_nFXReverbSize[nFX] = m_Properties.GetNumber (PropertyName, 50);
 
 		PropertyName.Format ("FX%uReverbHighDamp", nFX+1);
-		m_nFXReverbHighDamp[nFX] = m_Properties.GetNumber (PropertyName, 50);
+		m_nFXReverbHighDamp[nFX] = m_Properties.GetNumber (PropertyName, 25);
 
 		PropertyName.Format ("FX%uReverbLowDamp", nFX+1);
-		m_nFXReverbLowDamp[nFX] = m_Properties.GetNumber (PropertyName, 50);
+		m_nFXReverbLowDamp[nFX] = m_Properties.GetNumber (PropertyName, 25);
 
 		PropertyName.Format ("FX%uReverbLowPass", nFX+1);
-		m_nFXReverbLowPass[nFX] = m_Properties.GetNumber (PropertyName, 30);
+		m_nFXReverbLowPass[nFX] = m_Properties.GetNumber (PropertyName, 85);
 
 		PropertyName.Format ("FX%uReverbDiffusion", nFX+1);
 		m_nFXReverbDiffusion[nFX] = m_Properties.GetNumber (PropertyName, 65);
