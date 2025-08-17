@@ -223,7 +223,7 @@ public:
 		FXParameterDelayTempo,
 		FXParameterDelayFeedback,
 		FXParameterDelayHighCut,
-		FXParameterReverbEnable,
+		FXParameterReverbMix,
 		FXParameterReverbSize,
 		FXParameterReverbHighDamp,
 		FXParameterReverbLowDamp,

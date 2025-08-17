@@ -22,7 +22,7 @@ public:
         {
                 chorus.process(inputL, inputR, len);
                 delay.process(inputL, inputR, len);
-                reverb.doReverb(inputL, inputR, inputL, inputR, len);
+                reverb.process(inputL, inputR, inputL, inputR, len);
                 arm_scale_f32(inputL, level, inputL, len);
                 arm_scale_f32(inputR, level, inputR, len);
         }
