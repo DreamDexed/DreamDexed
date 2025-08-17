@@ -22,7 +22,7 @@ public:
         {
                 yk_chorus.process(inputL, inputR, len);
                 dream_delay.process(inputL, inputR, len);
-                plate_reverb.doReverb(inputL, inputR, inputL, inputR, len);
+                plate_reverb.process(inputL, inputR, inputL, inputR, len);
                 arm_scale_f32(inputL, level, inputL, len);
                 arm_scale_f32(inputR, level, inputR, len);
         }

@@ -18,7 +18,7 @@ public:
 		FXParameterDreamDelayTempo,
 		FXParameterDreamDelayFeedback,
 		FXParameterDreamDelayHighCut,
-		FXParameterPlateReverbEnable,
+		FXParameterPlateReverbMix,
 		FXParameterPlateReverbSize,
 		FXParameterPlateReverbHighDamp,
 		FXParameterPlateReverbLowDamp,

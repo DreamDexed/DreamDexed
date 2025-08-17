@@ -307,7 +307,7 @@ bool CPerformanceConfig::Load (void)
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
-		m_nFXParameter[0][FX::FXParameterPlateReverbEnable] = m_Properties.GetNumber ("ReverbEnable", 1);
+		m_nFXParameter[0][FX::FXParameterPlateReverbMix] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
 		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
 		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
 		m_nFXParameter[0][FX::FXParameterPlateReverbLowDamp] = m_Properties.GetNumber ("ReverbLowDamp", 50);
