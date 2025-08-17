@@ -1308,9 +1308,9 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_FXSpinLock.Release ();
 		break;
 
-	case FX::FXParameterPlateReverbEnable:
+	case FX::FXParameterPlateReverbMix:
 		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.set_bypass (!nValue);
+		fx_chain[nFX]->plate_reverb.set_mix (nValue / 100.0f);
 		m_FXSpinLock.Release ();
 		break;
 
@@ -3210,7 +3210,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{30,	240,	120,	1,	"DreamDelayTempo",	ToBPM},
 	{0,	100,	60,	1,	"DreamDelayFeedback"},
 	{0,	60,	50,	1,	"DreamDelayHighCut",	ToHz},
-	{0,	1,	0,	1,	"PlateReverbEnable",	ToOnOff},
+	{0,	100,	0,	1,	"PlateReverbMix"},
 	{0,	99,	50,	1,	"PlateReverbSize"},
 	{0,	99,	25,	1,	"PlateReverbHighDamp"},
 	{0,	99,	25,	1,	"PlateReverbLowDamp"},
