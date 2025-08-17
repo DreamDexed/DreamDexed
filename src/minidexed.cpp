@@ -1039,7 +1039,6 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 	assert (reverb);
 
 	assert (Parameter < ParameterUnknown);
-	m_nParameter[Parameter] = nValue;
 
 	switch (Parameter)
 	{
@@ -1208,6 +1207,8 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		assert (0);
 		break;
 	}
+
+	m_nParameter[Parameter] = nValue;
 }
 
 int CMiniDexed::GetParameter (TParameter Parameter)
