@@ -60,7 +60,7 @@ class AudioEffectPlateReverb
 {
 public:
     AudioEffectPlateReverb(float32_t samplerate);
-    void doReverb(const float32_t* inblockL, const float32_t* inblockR, float32_t* rvbblockL, float32_t* rvbblockR,uint16_t len);
+    void process(const float32_t *inblockL, const float32_t *inblockR, float32_t *outblockL, float32_t *outblockR, uint16_t len);
 
     void size(float n)
     {
@@ -100,13 +100,26 @@ public:
     }
 
     float32_t get_size(void) {return rv_time_k;}
-    bool get_bypass(void) {return bypass;}
-    void set_bypass(bool state) {bypass = state;};
-    void tgl_bypass(void) {bypass ^=1;}
+
+    void set_mix(float32_t value)
+    {
+        mix = constrain(value, 0.0f, 1.0f);
+
+        if (mix <= 0.5f)
+        {
+            dry = 1.0f;
+            wet = mix * 2.0f;
+        }
+        else
+        {
+            dry = 1.0f - ((mix - 0.5f) * 2.0f);
+            wet = 1.0f;
+        }
+    }
 
     void reset();
 private:
-    bool bypass = false;
+    float32_t mix, dry, wet;
     float32_t input_attn;
 
     float32_t in_allp_k;            // input allpass coeff 

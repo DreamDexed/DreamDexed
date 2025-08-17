@@ -205,7 +205,7 @@ const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 {
-	{"Enable",	EditFXParameter2,	0,	FX::FXParameterPlateReverbEnable},
+	{"Mix",		EditFXParameter2,	0,	FX::FXParameterPlateReverbMix},
 	{"Size",	EditFXParameter2,	0,	FX::FXParameterPlateReverbSize},
 	{"High damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbHighDamp},
 	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp},
