@@ -210,7 +210,7 @@ const CUIMenu::TMenuItem CUIMenu::s_DelayMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
-	{"Enable",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbEnable},
+	{"Mix",		EditFXParameter2,	0,	CMiniDexed::FXParameterReverbMix},
 	{"Size",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbSize},
 	{"High damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbHighDamp},
 	{"Low damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowDamp},
@@ -402,7 +402,7 @@ CUIMenu::TParameter CUIMenu::s_FXParameter[CMiniDexed::FXParameterUnknown] =
 	{30,	240,	1,	ToBPM},			// FXParameterDelayTempo,
 	{0,	100,	1},				// FXParameterDelayFeedback,
 	{0,	60,	1,	ToHz},			// FXParameterDelayHighCut,
-	{0,	1,	1,	ToOnOff},		// FXParameterReverbEnable
+	{0,	100,	1},				// FXParameterReverbMix
 	{0,	99,	1},				// FXParameterReverbSize
 	{0,	99,	1},				// FXParameterReverbHighDamp
 	{0,	99,	1},				// FXParameterReverbLowDamp
