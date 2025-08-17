@@ -148,7 +148,7 @@ public:
 	unsigned GetFXDelayFeedback (unsigned nFX) const;
 	unsigned GetFXDelayHighCut (unsigned nFX) const;
 
-	bool GetFXReverbEnable (unsigned nFX) const;
+	unsigned GetFXReverbMix (unsigned nFX) const;			// 0 .. 100
 	unsigned GetFXReverbSize (unsigned nFX) const;			// 0 .. 99
 	unsigned GetFXReverbHighDamp (unsigned nFX) const;		// 0 .. 99
 	unsigned GetFXReverbLowDamp (unsigned nFX) const;			// 0 .. 99
@@ -170,7 +170,7 @@ public:
 	void SetFXDelayFeedback (unsigned nValue, unsigned nFX);
 	void SetFXDelayHighCut (unsigned nValue, unsigned nFX);
 
-	void SetFXReverbEnable (bool bValue, unsigned nFX);
+	void SetFXReverbMix (unsigned nValue, unsigned nFX);
 	void SetFXReverbSize (unsigned nValue, unsigned nFX);
 	void SetFXReverbHighDamp (unsigned nValue, unsigned nFX);
 	void SetFXReverbLowDamp (unsigned nValue, unsigned nFX);
@@ -314,7 +314,7 @@ private:
 	unsigned m_nFXDelayFeedback[CConfig::FXChains];
 	unsigned m_nFXDelayHighCut[CConfig::FXChains];
 
-	bool m_bFXReverbEnable[CConfig::FXChains];
+	unsigned m_nFXReverbMix[CConfig::FXChains];
 	unsigned m_nFXReverbSize[CConfig::FXChains];
 	unsigned m_nFXReverbHighDamp[CConfig::FXChains];
 	unsigned m_nFXReverbLowDamp[CConfig::FXChains];

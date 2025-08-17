@@ -288,7 +288,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		SetFXParameter (FXParameterDelayFeedback, 60, nFX);
 		SetFXParameter (FXParameterDelayHighCut, 50, nFX);
 
-		SetFXParameter (FXParameterReverbEnable, 0, nFX);
+		SetFXParameter (FXParameterReverbMix, 0, nFX);
 		SetFXParameter (FXParameterReverbSize, 50, nFX);
 		SetFXParameter (FXParameterReverbHighDamp, 25, nFX);
 		SetFXParameter (FXParameterReverbLowDamp, 25, nFX);
@@ -1330,10 +1330,10 @@ void CMiniDexed::SetFXParameter (TFXParameter Parameter, int nValue, unsigned nF
 		m_FXSpinLock.Release ();
 		break;
 
-	case FXParameterReverbEnable:
-		nValue=constrain((int)nValue,0,1);
+	case FXParameterReverbMix:
+		nValue=constrain(nValue,0,100);
 		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->reverb.set_bypass (!nValue);
+		fx_chain[nFX]->reverb.set_mix (nValue / 100.0f);
 		m_FXSpinLock.Release ();
 		break;
 
@@ -1998,7 +1998,7 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetFXDelayTempo (GetFXParameter (FXParameterDelayTempo, nFX), nFX);
 		m_PerformanceConfig.SetFXDelayFeedback (GetFXParameter (FXParameterDelayFeedback, nFX), nFX);
 		m_PerformanceConfig.SetFXDelayHighCut (GetFXParameter (FXParameterDelayHighCut, nFX), nFX);
-		m_PerformanceConfig.SetFXReverbEnable (GetFXParameter (FXParameterReverbEnable, nFX), nFX);
+		m_PerformanceConfig.SetFXReverbMix (GetFXParameter (FXParameterReverbMix, nFX), nFX);
 		m_PerformanceConfig.SetFXReverbSize (GetFXParameter (FXParameterReverbSize, nFX), nFX);
 		m_PerformanceConfig.SetFXReverbHighDamp (GetFXParameter (FXParameterReverbHighDamp, nFX), nFX);
 		m_PerformanceConfig.SetFXReverbLowDamp (GetFXParameter (FXParameterReverbLowDamp, nFX), nFX);
@@ -2736,7 +2736,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		SetFXParameter (FXParameterDelayTempo, m_PerformanceConfig.GetFXDelayTempo(nFX), nFX);
 		SetFXParameter (FXParameterDelayFeedback, m_PerformanceConfig.GetFXDelayFeedback(nFX), nFX);
 		SetFXParameter (FXParameterDelayHighCut, m_PerformanceConfig.GetFXDelayHighCut(nFX), nFX);
-		SetFXParameter (FXParameterReverbEnable, m_PerformanceConfig.GetFXReverbEnable (nFX), nFX);
+		SetFXParameter (FXParameterReverbMix, m_PerformanceConfig.GetFXReverbMix (nFX), nFX);
 		SetFXParameter (FXParameterReverbSize, m_PerformanceConfig.GetFXReverbSize (nFX), nFX);
 		SetFXParameter (FXParameterReverbHighDamp, m_PerformanceConfig.GetFXReverbHighDamp (nFX), nFX);
 		SetFXParameter (FXParameterReverbLowDamp, m_PerformanceConfig.GetFXReverbLowDamp (nFX), nFX);
