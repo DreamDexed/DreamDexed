@@ -68,7 +68,6 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 			 1000000U * pConfig->GetChunkSize ()/2 / pConfig->GetSampleRate ()),
 	m_bProfileEnabled (m_pConfig->GetProfileEnabled ()),
 	fx_chain {},
-	tg_mixer {},
 	sendfx_mixer {},
 	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_Limiter {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
@@ -261,10 +260,6 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	}
 #endif
 
-	// BEGIN setup tg_mixer
-	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
-	// END setup tgmixer
-
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
 	{
 		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
@@ -375,9 +370,6 @@ bool CMiniDexed::Initialize (void)
 		m_pTG[i]->setFCController (99, 1, 0); 
 		m_pTG[i]->setBCController (99, 1, 0);
 		m_pTG[i]->setATController (99, 1, 0);
-		
-		tg_mixer->pan(i,mapfloat(m_nPan[i],0,127,0.0f,1.0f));
-		tg_mixer->gain(i,1.0f);
 
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
@@ -790,8 +782,6 @@ void CMiniDexed::SetPan (unsigned nPan, unsigned nTG)
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	m_nPan[nTG] = nPan;
-	
-	tg_mixer->pan(nTG,mapfloat(nPan,0,127,0.0f,1.0f));
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
@@ -1633,7 +1623,7 @@ void CMiniDexed::ProcessSound (void)
 	if (nFrames >= m_nQueueSizeFrames/2)
 	{
 		// only process the minimum number of frames (== chunksize / 2)
-		// as the tg_mixer cannot process more
+		// as the AudioMixer cannot process more
 		nFrames = m_nQueueSizeFrames / 2;
 
 		if (m_bProfileEnabled)
@@ -1719,17 +1709,7 @@ void CMiniDexed::ProcessSound (void)
 			float32_t tmp_float[nFrames*2];
 			int32_t tmp_int[nFrames*2];
 
-			// get the mix buffer of all TGs
-			float32_t *SampleBuffer[2];
-			tg_mixer->getBuffers(SampleBuffer);
-
-			tg_mixer->zeroFill();
-
-			for (uint8_t i = 0; i < m_nToneGenerators; i++)
-			{
-				tg_mixer->doAddMix(i,m_OutputLevel[i]);
-			}
-			// END TG mixing
+			float32_t SampleBuffer[2][nFrames]{};
 
 			// BEGIN adding sendFX
 			float32_t *FXSendBuffer[2];

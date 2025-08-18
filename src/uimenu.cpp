@@ -98,6 +98,8 @@ const CUIMenu::TMenuItem CUIMenu::s_FXSendMenu[] =
 {
 	{"FX1-Send",	EditTGParameter2P,	0,	0},
 	{"FX2-Send",	EditTGParameter2P,	0,	1},
+	{"FX3-Send",	EditTGParameter2P,	0,	2},
+	{"FX4-Send",	EditTGParameter2P,	0,	3},
 	{0}
 };
 
@@ -170,6 +172,8 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
 	{"FX1",	MenuHandler,		s_FXMenu, 	0},
 	{"FX2",	MenuHandler,		s_FXMenu, 	1},
+	{"FX3",	MenuHandler,		s_FXMenu, 	2},
+	{"FX4",	MenuHandler,		s_FXMenu, 	3},
 	{"EQ",		MenuHandler,		s_MasterEQMenu},
 	{"Limiter",	MenuHandler,		s_LimiterMenu},
 	{0}
