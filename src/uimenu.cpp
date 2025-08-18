@@ -170,11 +170,18 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
+	{"TG Mixer",	MenuHandler,		s_TGMixerMenu},
 	{"SendFX1",	MenuHandler,		s_FXMenu, 	0},
 	{"SendFX2",	MenuHandler,		s_FXMenu, 	1},
 	{"EQ",		MenuHandler,		s_MasterEQMenu},
 	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
 	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_TGMixerMenu[] =
+{
+	{"Output Level",	EditGlobalParameter,	0,	CMiniDexed::ParameterTGMixerOutputLevel},
+	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
@@ -331,6 +338,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{-24,	24,	1,	TodB},			// ParameterMasterEQGain
 	{0,	46,	1,	ToHz},			// ParameterMasterEQLowMidFreq
 	{28,	59,	1,	ToHz},			// ParameterMasterEQMidHighFreq
+	{0,	99,	1},				// ParameterTGMixerOutputLevel
 };
 
 // must match CMiniDexed::TTGParameter

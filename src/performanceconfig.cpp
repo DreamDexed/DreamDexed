@@ -295,6 +295,8 @@ bool CPerformanceConfig::Load (void)
 	m_nMasterCompressorRelease = m_Properties.GetNumber ("MasterCompressorRelease", 5);
 	m_bMasterCompressorHPFilterEnable = m_Properties.GetNumber ("MasterCompressorHPFilterEnable", 0);
 
+	m_nTGMixerOutputLevel = m_Properties.GetNumber ("TGMixerOutputLevel", 99);
+
 	// Compatibility
 	if (m_Properties.IsSet ("CompressorEnable") && m_Properties.GetNumber ("CompressorEnable", 1) == 0)
 	{
@@ -496,6 +498,8 @@ bool CPerformanceConfig::Save (void)
 	m_Properties.SetNumber ("MasterCompressorAttack", m_nMasterCompressorAttack);
 	m_Properties.SetNumber ("MasterCompressorRelease", m_nMasterCompressorRelease);
 	m_Properties.SetNumber ("MasterCompressorHPFilterEnable", m_bMasterCompressorHPFilterEnable);
+
+	m_Properties.SetNumber ("TGMixerOutputLevel", m_nTGMixerOutputLevel);
 
 	return m_Properties.Save ();
 }
@@ -860,6 +864,16 @@ void CPerformanceConfig::SetMasterCompressorRelease (unsigned nValue)
 void CPerformanceConfig::SetMasterCompressorHPFilterEnable (bool nValue)
 {
 	m_bMasterCompressorHPFilterEnable = nValue;
+}
+
+unsigned CPerformanceConfig::GetTGMixerOutputLevel () const
+{
+	return m_nTGMixerOutputLevel;
+}
+
+void CPerformanceConfig::SetTGMixerOutputLevel (unsigned nValue)
+{
+	m_nTGMixerOutputLevel = nValue;
 }
 
 // Pitch bender and portamento:

@@ -200,6 +200,7 @@ public:
 		ParameterMasterEQGain,
 		ParameterMasterEQLowMidFreq,
 		ParameterMasterEQMidHighFreq,
+		ParameterTGMixerOutputLevel,
 		ParameterUnknown
 	};
 

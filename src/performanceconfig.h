@@ -168,6 +168,9 @@ public:
 	void SetMasterCompressorRelease (unsigned nValue);	
 	void SetMasterCompressorHPFilterEnable (bool nValue);
 
+	unsigned GetTGMixerOutputLevel () const;
+	void SetTGMixerOutputLevel (unsigned nValue);
+
 	bool VoiceDataFilled(unsigned nTG);
 	bool ListPerformances(); 
 	//std::string m_DirName;
@@ -276,6 +279,8 @@ private:
 	unsigned m_nMasterCompressorAttack;
 	unsigned m_nMasterCompressorRelease;
 	bool m_bMasterCompressorHPFilterEnable;
+
+	unsigned m_nTGMixerOutputLevel;
 };
 
 #endif

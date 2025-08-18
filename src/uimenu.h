@@ -170,6 +170,7 @@ private:
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_EffectsMenu[];
+	static const TMenuItem s_TGMixerMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_YKChorusMenu[];
 	static const TMenuItem s_DreamDelayMenu[];
