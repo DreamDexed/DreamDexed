@@ -195,7 +195,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 {
-	{"Mix",		EditFXParameter2,	0,	FX::FXParameterYKChorusMix},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterYKChorusMix},
 	{"Enable I",	EditFXParameter2,	0,	FX::FXParameterYKChorusEnable1},
 	{"Enable II",	EditFXParameter2,	0,	FX::FXParameterYKChorusEnable2},
 	{"LFO Rate I",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate1},
@@ -205,7 +205,7 @@ const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 {
-	{"Mix",			EditFXParameter2,	0,	FX::FXParameterDreamDelayMix},
+	{"Mix Dry:Wet",		EditFXParameter2,	0,	FX::FXParameterDreamDelayMix},
 	{"Mode",		EditFXParameter2,	0,	FX::FXParameterDreamDelayMode},
 	{"Time",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTime},
 	{"Time Left",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTimeL},
@@ -218,7 +218,7 @@ const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 {
-	{"Mix",		EditFXParameter2,	0,	FX::FXParameterPlateReverbMix},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterPlateReverbMix},
 	{"Size",	EditFXParameter2,	0,	FX::FXParameterPlateReverbSize},
 	{"High damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbHighDamp},
 	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp},

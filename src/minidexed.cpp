@@ -3203,14 +3203,31 @@ std::string ToHz (int nValue, int nWidth)
 	return buf;
 }
 
+std::string ToDryWet (int nValue, int nWidth)
+{
+	unsigned dry, wet;
+	if (nValue <= 50)
+	{
+		dry = 100;
+		wet = nValue * 2;
+	}
+	else
+	{
+		dry = 100 - ((nValue - 50) * 2);
+		wet = 100;
+	}
+
+	return std::to_string (dry) + ":" + std::to_string(wet) + (wet == 0 ? " Off" : "");
+}
+
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
-	{0,	100,	0,	1,	"YKChorusMix"},
+	{0,	100,	0,	1,	"YKChorusMix",	ToDryWet},
 	{0,	1,	1,	1,	"YKChorusEnable1",	ToOnOff},
 	{0,	1,	1,	1,	"YKChorusEnable2",	ToOnOff},
 	{0,	100,	50,	1,	"YKChorusLFORate1"},
 	{0,	100,	83,	1,	"YKChorusLFORate2"},
-	{0,	100,	0,	1,	"DreamDelayMix"},
+	{0,	100,	0,	1,	"DreamDelayMix",	ToDryWet},
 	{0,	2,	0,	1,	"DreamDelayMode",	ToDelayMode},
 	{0,	112,	36,	1,	"DreamDelayTime",	ToDelayTime, FX::FXComposite},
 	{0,	112,	36,	1,	"DreamDelayTimeL",	ToDelayTime},
@@ -3218,7 +3235,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{30,	240,	120,	1,	"DreamDelayTempo",	ToBPM},
 	{0,	100,	60,	1,	"DreamDelayFeedback"},
 	{0,	60,	50,	1,	"DreamDelayHighCut",	ToHz},
-	{0,	100,	0,	1,	"PlateReverbMix"},
+	{0,	100,	0,	1,	"PlateReverbMix",	ToDryWet},
 	{0,	99,	50,	1,	"PlateReverbSize"},
 	{0,	99,	25,	1,	"PlateReverbHighDamp"},
 	{0,	99,	25,	1,	"PlateReverbLowDamp"},
