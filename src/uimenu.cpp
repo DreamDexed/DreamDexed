@@ -202,7 +202,7 @@ const CUIMenu::TMenuItem CUIMenu::s_ChorusMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_DelayMenu[] =
 {
-	{"Mix",			EditFXParameter2,	0,	CMiniDexed::FXParameterDelayMix},
+	{"Mix Dry:Wet",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayMix},
 	{"Mode",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayMode},
 	{"Time",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTime},
 	{"Time Left",		EditFXParameter2,	0,	CMiniDexed::FXParameterDelayTimeL},
@@ -215,7 +215,7 @@ const CUIMenu::TMenuItem CUIMenu::s_DelayMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 {
-	{"Mix",		EditFXParameter2,	0,	CMiniDexed::FXParameterReverbMix},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbMix},
 	{"Size",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbSize},
 	{"High damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbHighDamp},
 	{"Low damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowDamp},
@@ -400,7 +400,7 @@ CUIMenu::TParameter CUIMenu::s_FXParameter[CMiniDexed::FXParameterUnknown] =
 	{0,	1,	1,	ToOnOff},		// FXParameterChorusEnable2
 	{0,	100,	1},				// FXParameterChorusLFORate1
 	{0,	100,	1},				// FXParameterChorusLFORate2
-	{0,	100,	1},				// FXParameterDelayMix,
+	{0,	100,	1,	ToDryWet},		// FXParameterDelayMix,
 	{0,	2,	1,	ToDelayMode},		// FXParameterDelayMode,
 	{0,	112,	1,	ToDelayTime},		// FXParameterDelayTime,
 	{0,	112,	1,	ToDelayTime},		// FXParameterDelayTimeL,
@@ -408,7 +408,7 @@ CUIMenu::TParameter CUIMenu::s_FXParameter[CMiniDexed::FXParameterUnknown] =
 	{30,	240,	1,	ToBPM},			// FXParameterDelayTempo,
 	{0,	100,	1},				// FXParameterDelayFeedback,
 	{0,	60,	1,	ToHz},			// FXParameterDelayHighCut,
-	{0,	100,	1},				// FXParameterReverbMix
+	{0,	100,	1,	ToDryWet},		// FXParameterReverbMix
 	{0,	99,	1},				// FXParameterReverbSize
 	{0,	99,	1},				// FXParameterReverbHighDamp
 	{0,	99,	1},				// FXParameterReverbLowDamp
@@ -1636,6 +1636,23 @@ std::string CUIMenu::ToMillisec (int nValue, int nWidth)
 std::string CUIMenu::ToRatio (int nValue, int nWidth)
 {
 	return std::to_string (nValue) + ":1";
+}
+
+std::string CUIMenu::ToDryWet (int nValue, int nWidth)
+{
+	unsigned dry, wet;
+	if (nValue <= 50)
+	{
+		dry = 100;
+		wet = nValue * 2;
+	}
+	else
+	{
+		dry = 100 - ((nValue - 50) * 2);
+		wet = 100;
+	}
+
+	return std::to_string (dry) + ":" + std::to_string(wet) + (wet == 0 ? " Off" : "");
 }
 
 std::string CUIMenu::ToHz (int nValue, int nWidth)
