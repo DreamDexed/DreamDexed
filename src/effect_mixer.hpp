@@ -194,19 +194,25 @@ public:
 
 		assert(in);
 
-		if (mp[channel][0] == mp_w[channel][0])
-			arm_scale_f32(in, mp[channel][0], tmp, buffer_length);
-		else
-			scale_ramp_f32(in, &mp[channel][0], mp_w[channel][0], ramp, tmp, buffer_length);
+		if (mp[channel][0] != 0.0f || mp_w[channel][0] != 0.0f)
+		{
+			if (mp[channel][0] == mp_w[channel][0])
+				arm_scale_f32(in, mp[channel][0], tmp, buffer_length);
+			else
+				scale_ramp_f32(in, &mp[channel][0], mp_w[channel][0], ramp, tmp, buffer_length);
 
-		arm_add_f32(sumbufL, tmp, sumbufL, buffer_length);
+			arm_add_f32(sumbufL, tmp, sumbufL, buffer_length);
+		}
 
-		if (mp[channel][1] == mp_w[channel][1])
-			arm_scale_f32(in, mp[channel][1], tmp, buffer_length);
-		else
-			scale_ramp_f32(in, &mp[channel][1], mp_w[channel][1], ramp, tmp, buffer_length);
+		if (mp[channel][1] != 0.0f || mp_w[channel][1] != 0.0f)
+		{
+			if (mp[channel][1] == mp_w[channel][1])
+				arm_scale_f32(in, mp[channel][1], tmp, buffer_length);
+			else
+				scale_ramp_f32(in, &mp[channel][1], mp_w[channel][1], ramp, tmp, buffer_length);
 
-		arm_add_f32(sumbufR, tmp, sumbufR, buffer_length);
+			arm_add_f32(sumbufR, tmp, sumbufR, buffer_length);
+		}
 	}
 
 	void getMix(float32_t* bufferL, float32_t* bufferR)
