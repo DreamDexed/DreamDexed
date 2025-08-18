@@ -176,7 +176,7 @@ bool CPerformanceConfig::Load (void)
 			// the volume calculated by x^4, but FxSend uses x^2
 			float32_t reverbSend = m_Properties.GetNumber (PropertyName, 50);
 			reverbSend = pow(mapfloat(reverbSend, 0.0f, 99.0f, 0.0f, 1.0f), 2);
-			m_nFXSend[nTG][0] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
+			m_nFXSend[nTG][1] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
 		}
 	
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
@@ -352,13 +352,21 @@ bool CPerformanceConfig::Load (void)
 
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
 	{
-		m_nFXReverbMix[0] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
-		m_nFXReverbSize[0] = m_Properties.GetNumber ("ReverbSize", 70);
-		m_nFXReverbHighDamp[0] = m_Properties.GetNumber ("ReverbHighDamp", 50);
-		m_nFXReverbLowDamp[0] = m_Properties.GetNumber ("ReverbLowDamp", 50);
-		m_nFXReverbLowPass[0] = m_Properties.GetNumber ("ReverbLowPass", 30);
-		m_nFXReverbDiffusion[0] = m_Properties.GetNumber ("ReverbDiffusion", 65);
-		m_nFXLevel[0] = m_Properties.GetNumber ("ReverbEnable", 1) ? m_Properties.GetNumber ("ReverbLevel", 99) : 0;
+		// use FX1 as a TG mixer
+		for (unsigned nTG = 0; nTG < CConfig::AllToneGenerators; ++nTG)
+		{
+			m_nFXSend[nTG][0] = 99;
+		}
+		m_nFXLevel[0] = 99;
+
+		// setup Reverb to FX2
+		m_nFXReverbMix[1] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
+		m_nFXReverbSize[1] = m_Properties.GetNumber ("ReverbSize", 70);
+		m_nFXReverbHighDamp[1] = m_Properties.GetNumber ("ReverbHighDamp", 50);
+		m_nFXReverbLowDamp[1] = m_Properties.GetNumber ("ReverbLowDamp", 50);
+		m_nFXReverbLowPass[1] = m_Properties.GetNumber ("ReverbLowPass", 30);
+		m_nFXReverbDiffusion[1] = m_Properties.GetNumber ("ReverbDiffusion", 65);
+		m_nFXLevel[1] = m_Properties.GetNumber ("ReverbEnable", 1) ? m_Properties.GetNumber ("ReverbLevel", 99) : 0;
 	}
 
 	return bResult;
