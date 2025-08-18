@@ -1183,6 +1183,11 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		m_EQSpinLock.Release();
 		break;
 
+	case ParameterMixerDryLevel:
+		nValue = constrain(nValue, 0, 99);
+		tg_mixer->gain(mapfloat(nValue,0,99,0.0f,1.0f));
+		break;
+
 	default:
 		assert (0);
 		break;
@@ -1976,6 +1981,8 @@ bool CMiniDexed::DoSavePerformance (void)
 	m_PerformanceConfig.SetMasterCompressorRelease (m_nParameter[ParameterMasterCompressorRelease]);
 	m_PerformanceConfig.SetMasterCompressorHPFilterEnable (m_nParameter[ParameterMasterCompressorHPFilterEnable]);
 
+	m_PerformanceConfig.SetMixerDryLevel (m_nParameter[ParameterMixerDryLevel]);
+
 	if(m_bSaveAsDeault)
 	{
 		m_PerformanceConfig.SetNewPerformanceBank(0);
@@ -2701,6 +2708,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 	SetParameter (ParameterMasterCompressorAttack, m_PerformanceConfig.GetMasterCompressorAttack ());
 	SetParameter (ParameterMasterCompressorRelease, m_PerformanceConfig.GetMasterCompressorRelease ());
 	SetParameter (ParameterMasterCompressorHPFilterEnable, m_PerformanceConfig.GetMasterCompressorHPFilterEnable ());
+
+	SetParameter (ParameterMixerDryLevel, m_PerformanceConfig.GetMixerDryLevel ());
 
 	m_UI.DisplayChanged ();
 }
