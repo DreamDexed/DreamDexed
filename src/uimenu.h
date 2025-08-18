@@ -124,6 +124,7 @@ private:
 	static std::string TodBFS (int nValue, int nWidth);
 	static std::string ToMillisec (int nValue, int nWidth);
 	static std::string ToRatio (int nValue, int nWidth);
+	static std::string ToDryWet (int nVallue, int nWidth);
 	static std::string ToHz (int nValue, int nWidth);
 	static std::string ToDelayMode (int nValue, int nWidth);
 	static std::string ToDelayTime (int nValue, int nWidth);
