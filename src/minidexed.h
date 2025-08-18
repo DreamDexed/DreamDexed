@@ -434,7 +434,6 @@ private:
 	bool m_bProfileEnabled;
 
 	AudioFXChain* fx_chain[CConfig::FXChains];
-	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
 	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXChains];
 
 	CSpinLock m_FXSpinLock;
