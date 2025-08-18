@@ -164,10 +164,11 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
-	{"SendFX1",	MenuHandler,		s_FXMenu, 	0},
-	{"SendFX2",	MenuHandler,		s_FXMenu, 	1},
-	{"EQ",		MenuHandler,		s_MasterEQMenu},
-	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
+	{"Dry Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMixerDryLevel},
+	{"SendFX1",		MenuHandler,		s_FXMenu, 	0},
+	{"SendFX2",		MenuHandler,		s_FXMenu, 	1},
+	{"EQ",			MenuHandler,		s_MasterEQMenu},
+	{"Compressor",		MenuHandler,		s_MasterCompressorMenu},
 	{0}
 };
 
@@ -325,6 +326,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{-24,	24,	1,	TodB},			// ParameterMasterEQGain
 	{0,	46,	1,	ToHz},			// ParameterMasterEQLowMidFreq
 	{28,	59,	1,	ToHz},			// ParameterMasterEQMidHighFreq
+	{0,	99,	1},				// ParameterMixerDryLevel
 };
 
 // must match CMiniDexed::TTGParameter
