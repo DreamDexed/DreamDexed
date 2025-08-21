@@ -36,8 +36,8 @@ jobs:
       - name: Install 64-bit toolchain
         run: |
           set -ex
-          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-elf.tar.xz
-          tar xf arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-elf.tar.xz
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz
+          tar xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz
 
       - name: Build for Raspberry Pi 5 (64-bit)
         run: |
@@ -121,8 +121,8 @@ jobs:
       - name: Install 32-bit toolchain
         run: |
           set -ex
-          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
-          tar xf arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          tar xf arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
 
       - name: Build for Raspberry Pi 2 (32-bit)
         run: |
