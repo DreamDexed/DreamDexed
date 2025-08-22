@@ -1349,6 +1349,58 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_FXSpinLock.Release ();
 		break;
 
+	case FX::FXParameterCloudSeed2Preset:
+		fx_chain[nFX]->cloudseed2.loadPreset (nValue);
+		break;
+
+	case FX::FXParameterCloudSeed2Interpolation:
+	case FX::FXParameterCloudSeed2LowCutEnabled:
+	case FX::FXParameterCloudSeed2HighCutEnabled:
+	case FX::FXParameterCloudSeed2InputMix:
+	case FX::FXParameterCloudSeed2LowCut:
+	case FX::FXParameterCloudSeed2HighCut:
+	case FX::FXParameterCloudSeed2DryOut:
+	case FX::FXParameterCloudSeed2EarlyOut:
+	case FX::FXParameterCloudSeed2LateOut:
+	case FX::FXParameterCloudSeed2TapEnabled:
+	case FX::FXParameterCloudSeed2TapCount:
+	case FX::FXParameterCloudSeed2TapDecay:
+	case FX::FXParameterCloudSeed2TapPredelay:
+	case FX::FXParameterCloudSeed2TapLength:
+	case FX::FXParameterCloudSeed2EarlyDiffuseEnabled:
+	case FX::FXParameterCloudSeed2EarlyDiffuseCount:
+	case FX::FXParameterCloudSeed2EarlyDiffuseDelay:
+	case FX::FXParameterCloudSeed2EarlyDiffuseModAmount:
+	case FX::FXParameterCloudSeed2EarlyDiffuseFeedback:
+	case FX::FXParameterCloudSeed2EarlyDiffuseModRate:
+	case FX::FXParameterCloudSeed2LateMode:
+	case FX::FXParameterCloudSeed2LateLineCount:
+	case FX::FXParameterCloudSeed2LateDiffuseEnabled:
+	case FX::FXParameterCloudSeed2LateDiffuseCount:
+	case FX::FXParameterCloudSeed2LateLineSize:
+	case FX::FXParameterCloudSeed2LateLineModAmount:
+	case FX::FXParameterCloudSeed2LateDiffuseDelay:
+	case FX::FXParameterCloudSeed2LateDiffuseModAmount:
+	case FX::FXParameterCloudSeed2LateLineDecay:
+	case FX::FXParameterCloudSeed2LateLineModRate:
+	case FX::FXParameterCloudSeed2LateDiffuseFeedback:
+	case FX::FXParameterCloudSeed2LateDiffuseModRate:
+	case FX::FXParameterCloudSeed2EqLowShelfEnabled:
+	case FX::FXParameterCloudSeed2EqHighShelfEnabled:
+	case FX::FXParameterCloudSeed2EqLowpassEnabled:
+	case FX::FXParameterCloudSeed2EqLowFreq:
+	case FX::FXParameterCloudSeed2EqHighFreq:
+	case FX::FXParameterCloudSeed2EqCutoff:
+	case FX::FXParameterCloudSeed2EqLowGain:
+	case FX::FXParameterCloudSeed2EqHighGain:
+	case FX::FXParameterCloudSeed2EqCrossSeed:
+	case FX::FXParameterCloudSeed2SeedTap:
+	case FX::FXParameterCloudSeed2SeedDiffusion:
+	case FX::FXParameterCloudSeed2SeedDelay:
+	case FX::FXParameterCloudSeed2SeedPostDiffusion:
+		fx_chain[nFX]->cloudseed2.setParameter (Parameter - FX::FXParameterCloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
+		break;
+
 	case FX::FXParameterReturnLevel:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->set_level (nValue / 99.0f);
@@ -1365,6 +1417,12 @@ int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
 {
 	assert (nFX < CConfig::FXChains);
 	assert (Parameter < FX::FXParameterUnknown);
+
+	if (Parameter >= FX::FXParameterCloudSeed2Interpolation && Parameter <= FX::FXParameterCloudSeed2SeedPostDiffusion)
+	{
+		const FX::FXParameterType &p = FX::s_FXParameter[Parameter];
+		return mapfloat(fx_chain[nFX]->cloudseed2.getParameter (Parameter - FX::FXParameterCloudSeed2Interpolation), 0.0f, 1.0f, p.Minimum, p.Maximum);
+	}
 
 	return m_nFXParameter[nFX][Parameter];
 }
@@ -3221,6 +3279,8 @@ std::string ToDryWet (int nValue, int nWidth)
 	return std::to_string (dry) + ":" + std::to_string(wet) + (wet == 0 ? " Off" : "");
 }
 
+constexpr const char *FX::s_CS2PresetNames[];
+
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
 	{0,	100,	0,	1,	"YKChorusMix",	ToDryWet},
@@ -3242,5 +3302,51 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	99,	25,	1,	"PlateReverbLowDamp"},
 	{0,	99,	85,	1,	"PlateReverbLowPass"},
 	{0,	99,	65,	1,	"PlateReverbDiffusion"},
+	{0,	FX::cs2_preset_num - 1,	0,	1,	"CloudSeed2Preset",	FX::getCS2PresetName, FX::FXComposite},
+	{0,	1,	0,	1,	"CloudSeed2Interpolation", ToOnOff},
+	{0,	1,	0,	1,	"CloudSeed2LowCutEnabled", ToOnOff},
+	{0,	1,	0,	1,	"CloudSeed2HighCutEnabled", ToOnOff},
+	{0,	127,	0,	1,	"CloudSeed2InputMix"},
+	{0,	127,	0,	1,	"CloudSeed2LowCut"},
+	{0,	127,	127,	1,	"CloudSeed2HighCut"},
+	{0,	127,	127,	1,	"CloudSeed2DryOut"},
+	{0,	127,	0,	1,	"CloudSeed2EarlyOut"},
+	{0,	127,	0,	1,	"CloudSeed2LateOut"},
+	{0,	1,	0,	1,	"CloudSeed2TapEnabled", ToOnOff},
+	{0,	127,	64,	1,	"CloudSeed2TapCount"},
+	{0,	127,	127,	1,	"CloudSeed2TapDecay"},
+	{0,	127,	0,	1,	"CloudSeed2TapPredelay"},
+	{0,	127,	62,	1,	"CloudSeed2TapLength"},
+	{0,	1,	0,	1,	"CloudSeed2EarlyDiffuseEnabled", ToOnOff},
+	{1,	12,	4,	1,	"CloudSeed2EarlyDiffuseCount"},
+	{0,	127,	18,	1,	"CloudSeed2EarlyDiffuseDelay"},
+	{0,	127,	19,	1,	"CloudSeed2EarlyDiffuseModAmount"},
+	{0,	127,	89,	1,	"CloudSeed2EarlyDiffuseFeedback"},
+	{0,	127,	20,	1,	"CloudSeed2EarlyDiffuseModRate"},
+	{0,	1,	1,	1,	"CloudSeed2LateMode", AudioEffectCloudSeed2::GetLateMode},
+	{1,	12,	6,	1,	"CloudSeed2LateLineCount"},
+	{0,	1,	0,	1,	"CloudSeed2LateDiffuseEnabled", ToOnOff},
+	{1,	8,	2,	1,	"CloudSeed2LateDiffuseCount"},
+	{0,	127,	64,	1,	"CloudSeed2LateLineSize"},
+	{0,	127,	19,	1,	"CloudSeed2LateLineModAmount"},
+	{0,	127,	64,	1,	"CloudSeed2LateDiffuseDelay"},
+	{0,	127,	20,	1,	"CloudSeed2LateDiffuseModAmount"},
+	{0,	127,	62,	1,	"CloudSeed2LateLineDecay"},
+	{0,	127,	20,	1,	"CloudSeed2LateLineModRate"},
+	{0,	127,	90,	1,	"CloudSeed2LateDiffuseFeedback"},
+	{0,	127,	19,	1,	"CloudSeed2LateDiffuseModRate"},
+	{0,	1,	0,	1,	"CloudSeed2EqLowShelfEnabled", ToOnOff},
+	{0,	1,	0,	1,	"CloudSeed2EqHighShelfEnabled", ToOnOff},
+	{0,	1,	0,	1,	"CloudSeed2EqLowpassEnabled", ToOnOff},
+	{0,	127,	40,	1,	"CloudSeed2EqLowFreq"},
+	{0,	127,	65,	1,	"CloudSeed2EqHighFreq"},
+	{0,	127,	104,	1,	"CloudSeed2EqCutoff"},
+	{0,	127,	107,	1,	"CloudSeed2EqLowGain"},
+	{0,	127,	108,	1,	"CloudSeed2EqHighGain"},
+	{0,	127,	0,	1,	"CloudSeed2EqCrossSeed"},
+	{0,	127,	62,	1,	"CloudSeed2SeedTap"},
+	{0,	127,	6,	1,	"CloudSeed2SeedDiffusion"},
+	{0,	127,	12,	1,	"CloudSeed2SeedDelay"},
+	{0,	127,	19,	1,	"CloudSeed2SeedPostDiffusion"},
 	{0,	99,	0,	1,	"ReturnLevel"},
 };
