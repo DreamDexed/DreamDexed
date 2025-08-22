@@ -175,6 +175,15 @@ private:
 	static const TMenuItem s_YKChorusMenu[];
 	static const TMenuItem s_DreamDelayMenu[];
 	static const TMenuItem s_PlateReverbMenu[];
+	static const TMenuItem s_CloudSeed2Menu[];
+	static const TMenuItem s_CloudSeed2InputMenu[];
+	static const TMenuItem s_CloudSeed2MultitapMenu[];
+	static const TMenuItem s_CloudSeed2EarlyDiffusionMenu[];
+	static const TMenuItem s_CloudSeed2LateDiffusionMenu[];
+	static const TMenuItem s_CloudSeed2LateLineMenu[];
+	static const TMenuItem s_CloudSeed2LowShelfMenu[];
+	static const TMenuItem s_CloudSeed2HighShelfMenu[];
+	static const TMenuItem s_CloudSeed2LowPassMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_MasterCompressorMenu[];
 	static const TMenuItem s_FXSendMenu[];

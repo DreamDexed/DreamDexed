@@ -1,0 +1,937 @@
+/*
+ * CloudSeed
+ * Ported from https://github.com/GhostNoteAudio/CloudSeedCore
+ */
+
+#pragma once
+
+#define BUFFER_SIZE 128
+#define SLOW_CLEAR_SIZE 192000 // may need to be adjusted for other Pis
+
+#include "../CloudSeedCore/DSP/ReverbController.h"
+#include <atomic>
+
+namespace Parameter = Cloudseed::Parameter;
+
+static const float UInit[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.0,
+    [Parameter::LowCut] = 0.0,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 1.0,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.0,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.5,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.4957000017166138,
+    [Parameter::EarlyDiffuseEnabled] = 0.0,
+    [Parameter::EarlyDiffuseCount] = 0.2960000038146973,
+    [Parameter::EarlyDiffuseDelay] = 0.146699994802475,
+    [Parameter::EarlyDiffuseModAmount] = 0.1559000015258789,
+    [Parameter::EarlyDiffuseFeedback] = 0.7066999673843384,
+    [Parameter::EarlyDiffuseModRate] = 0.1626999974250793,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.4599999785423279,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.2226999998092651,
+    [Parameter::LateLineSize] = 0.5,
+    [Parameter::LateLineModAmount] = 0.1560000032186508,
+    [Parameter::LateDiffuseDelay] = 0.510699987411499,
+    [Parameter::LateDiffuseModAmount] = 0.1600999981164932,
+    [Parameter::LateLineDecay] = 0.4959999918937683,
+    [Parameter::LateLineModRate] = 0.1652999967336655,
+    [Parameter::LateDiffuseFeedback] = 0.7119999527931213,
+    [Parameter::LateDiffuseModRate] = 0.1507000029087067,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.3199999928474426,
+    [Parameter::EqHighFreq] = 0.5151999592781067,
+    [Parameter::EqCutoff] = 0.8260999917984009,
+    [Parameter::EqLowGain] = 0.8495000004768372,
+    [Parameter::EqHighGain] = 0.8504999876022339,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.01009999960660934,
+    [Parameter::SeedDiffusion] = 0.05059999972581863,
+    [Parameter::SeedDelay] = 0.1002999991178513,
+    [Parameter::SeedPostDiffusion] = 0.1500999927520752,
+};
+
+static const float FXDivineInspiration[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.2346999943256378,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 0.0,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.7786999940872192,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.1599999964237213,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.7172999978065491,
+    [Parameter::EarlyDiffuseDelay] = 0.7386999726295471,
+    [Parameter::EarlyDiffuseModAmount] = 0.2505999803543091,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4786999821662903,
+    [Parameter::LateLineSize] = 0.687999963760376,
+    [Parameter::LateLineModAmount] = 0.7547000050544739,
+    [Parameter::LateDiffuseDelay] = 0.6279999613761902,
+    [Parameter::LateDiffuseModAmount] = 0.4614000022411346,
+    [Parameter::LateLineDecay] = 0.8199999928474426,
+    [Parameter::LateLineModRate] = 0.6279999613761902,
+    [Parameter::LateDiffuseFeedback] = 0.6319999694824219,
+    [Parameter::LateDiffuseModRate] = 0.3267000019550323,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 1.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.5346999764442444,
+    [Parameter::EqCutoff] = 0.8172999620437622,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.543999969959259,
+    [Parameter::EqCrossSeed] = 0.1119999960064888,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1469999998807907,
+    [Parameter::SeedDelay] = 0.2309999912977219,
+    [Parameter::SeedPostDiffusion] = 0.2899999916553497,
+};
+
+static const float FXLawsOfPhysics[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 1.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.2800000011920929,
+    [Parameter::LowCut] = 0.1772999912500381,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 1.0,
+    [Parameter::EarlyOut] = 0.7999999523162842,
+    [Parameter::LateOut] = 0.6439999938011169,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 1.0,
+    [Parameter::TapDecay] = 0.5040000081062317,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 1.0,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 1.0,
+    [Parameter::EarlyDiffuseDelay] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModAmount] = 0.6158999800682068,
+    [Parameter::EarlyDiffuseFeedback] = 0.5026999711990356,
+    [Parameter::EarlyDiffuseModRate] = 0.3666999936103821,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.6039999723434448,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.3240000009536743,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.5759999752044678,
+    [Parameter::LateLineModRate] = 0.0372999981045723,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.4079999923706055,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.2680000066757202,
+    [Parameter::SeedTap] = 0.3489999771118164,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float FXSlowBraaam[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 1.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.1319999992847443,
+    [Parameter::LowCut] = 0.3599999845027924,
+    [Parameter::HighCut] = 0.1400000005960464,
+    [Parameter::DryOut] = 0.0,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.6839999556541443,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.5839999914169312,
+    [Parameter::TapDecay] = 0.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 1.0,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.7759999632835388,
+    [Parameter::EarlyDiffuseDelay] = 0.4986999928951263,
+    [Parameter::EarlyDiffuseModAmount] = 0.4838999807834625,
+    [Parameter::EarlyDiffuseFeedback] = 0.5467000007629395,
+    [Parameter::EarlyDiffuseModRate] = 0.3026999831199646,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.08399999886751175,
+    [Parameter::LateLineModAmount] = 0.1519999951124191,
+    [Parameter::LateDiffuseDelay] = 0.363999992609024,
+    [Parameter::LateDiffuseModAmount] = 0.4387999773025513,
+    [Parameter::LateLineDecay] = 0.5640000104904175,
+    [Parameter::LateLineModRate] = 0.2532999813556671,
+    [Parameter::LateDiffuseFeedback] = 0.7106999754905701,
+    [Parameter::LateDiffuseModRate] = 0.1826999932527542,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.1119999960064888,
+    [Parameter::EqHighFreq] = 0.5813999772071838,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.8240000009536743,
+    [Parameter::EqHighGain] = 0.8479999899864197,
+    [Parameter::EqCrossSeed] = 0.1759999990463257,
+    [Parameter::SeedTap] = 0.7879999876022339,
+    [Parameter::SeedDiffusion] = 0.3240000009536743,
+    [Parameter::SeedDelay] = 0.1730999946594238,
+    [Parameter::SeedPostDiffusion] = 0.3233000040054321,
+};
+
+static const float FXTheUpsideDown[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.2800000011920929,
+    [Parameter::LowCut] = 0.1772999912500381,
+    [Parameter::HighCut] = 0.3759999871253967,
+    [Parameter::DryOut] = 0.7080000042915344,
+    [Parameter::EarlyOut] = 0.9559999704360962,
+    [Parameter::LateOut] = 0.6279999613761902,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.1599999964237213,
+    [Parameter::TapDecay] = 0.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 1.0,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 1.0,
+    [Parameter::EarlyDiffuseDelay] = 0.9466999769210815,
+    [Parameter::EarlyDiffuseModAmount] = 0.5598999857902527,
+    [Parameter::EarlyDiffuseFeedback] = 0.510699987411499,
+    [Parameter::EarlyDiffuseModRate] = 0.4587000012397766,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.6039999723434448,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.3919999897480011,
+    [Parameter::LateLineModAmount] = 0.3319999873638153,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.715999960899353,
+    [Parameter::LateLineModRate] = 0.1412999927997589,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.4079999923706055,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.1319999992847443,
+    [Parameter::SeedTap] = 0.8539999723434448,
+    [Parameter::SeedDiffusion] = 0.1129999980330467,
+    [Parameter::SeedDelay] = 0.3800999820232391,
+    [Parameter::SeedPostDiffusion] = 0.2633000016212463,
+};
+
+static const float LBigSoundStage[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.2346999943256378,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 1.0,
+    [Parameter::EarlyOut] = 0.687999963760376,
+    [Parameter::LateOut] = 0.7559999823570251,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.1599999964237213,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.4172999858856201,
+    [Parameter::EarlyDiffuseDelay] = 0.6947000026702881,
+    [Parameter::EarlyDiffuseModAmount] = 0.3425999879837036,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.3506999909877777,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.6240000128746033,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 1.0,
+    [Parameter::LateLineSize] = 0.2479999959468842,
+    [Parameter::LateLineModAmount] = 0.0,
+    [Parameter::LateDiffuseDelay] = 0.1759999990463257,
+    [Parameter::LateDiffuseModAmount] = 0.1959999948740005,
+    [Parameter::LateLineDecay] = 0.4120000004768372,
+    [Parameter::LateLineModRate] = 0.0,
+    [Parameter::LateDiffuseFeedback] = 0.8840000033378601,
+    [Parameter::LateDiffuseModRate] = 0.2586999833583832,
+    [Parameter::EqLowShelfEnabled] = 1.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.2639999985694885,
+    [Parameter::EqHighFreq] = 0.5346999764442444,
+    [Parameter::EqCutoff] = 0.8172999620437622,
+    [Parameter::EqLowGain] = 0.9720000028610229,
+    [Parameter::EqHighGain] = 0.543999969959259,
+    [Parameter::EqCrossSeed] = 0.1119999960064888,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1469999998807907,
+    [Parameter::SeedDelay] = 0.2309999912977219,
+    [Parameter::SeedPostDiffusion] = 0.2899999916553497,
+};
+
+static const float LDiffusionCyclone[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.0746999979019165,
+    [Parameter::LowCut] = 0.1292999982833862,
+    [Parameter::HighCut] = 0.6119999885559082,
+    [Parameter::DryOut] = 0.9079999923706055,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.7786999940872192,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.1599999964237213,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.2132999897003174,
+    [Parameter::EarlyDiffuseDelay] = 0.2906999886035919,
+    [Parameter::EarlyDiffuseModAmount] = 0.1145999953150749,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2226999998092651,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4786999821662903,
+    [Parameter::LateLineSize] = 0.3199999928474426,
+    [Parameter::LateLineModAmount] = 0.2586999833583832,
+    [Parameter::LateDiffuseDelay] = 0.3759999871253967,
+    [Parameter::LateDiffuseModAmount] = 0.2893999814987183,
+    [Parameter::LateLineDecay] = 0.7519999742507935,
+    [Parameter::LateLineModRate] = 0.2239999920129776,
+    [Parameter::LateDiffuseFeedback] = 0.7080000042915344,
+    [Parameter::LateDiffuseModRate] = 0.2506999969482422,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 1.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.5346999764442444,
+    [Parameter::EqCutoff] = 0.8172999620437622,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.543999969959259,
+    [Parameter::EqCrossSeed] = 0.1119999960064888,
+    [Parameter::SeedTap] = 0.0,
+    [Parameter::SeedDiffusion] = 0.1219999939203262,
+    [Parameter::SeedDelay] = 0.3039999902248383,
+    [Parameter::SeedPostDiffusion] = 0.3409999907016754,
+};
+
+static const float LScreamIntoTheVoid[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 1.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.2346999943256378,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 0.4852999746799469,
+    [Parameter::DryOut] = 0.6998999714851379,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.7786999940872192,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.1599999964237213,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.7172999978065491,
+    [Parameter::EarlyDiffuseDelay] = 0.7386999726295471,
+    [Parameter::EarlyDiffuseModAmount] = 0.2505999803543091,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.8319999575614929,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4186999797821045,
+    [Parameter::LateLineSize] = 0.3999999761581421,
+    [Parameter::LateLineModAmount] = 0.146699994802475,
+    [Parameter::LateDiffuseDelay] = 0.3519999980926514,
+    [Parameter::LateDiffuseModAmount] = 0.3653999865055084,
+    [Parameter::LateLineDecay] = 0.7199999690055847,
+    [Parameter::LateLineModRate] = 0.1959999948740005,
+    [Parameter::LateDiffuseFeedback] = 0.7119999527931213,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.5346999764442444,
+    [Parameter::EqCutoff] = 0.5012999773025513,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.543999969959259,
+    [Parameter::EqCrossSeed] = 0.1119999960064888,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.07299999892711639,
+    [Parameter::SeedDelay] = 0.1939999908208847,
+    [Parameter::SeedPostDiffusion] = 0.3039999902248383,
+};
+
+static const float M90sDigitalReverb[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.2800000011920929,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 0.7239999771118164,
+    [Parameter::DryOut] = 0.9720000028610229,
+    [Parameter::EarlyOut] = 0.4959999918937683,
+    [Parameter::LateOut] = 0.6173999905586243,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.2960000038146973,
+    [Parameter::EarlyDiffuseDelay] = 0.5467000007629395,
+    [Parameter::EarlyDiffuseModAmount] = 0.3039000034332275,
+    [Parameter::EarlyDiffuseFeedback] = 0.5787000060081482,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.2680000066757202,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.3120000064373016,
+    [Parameter::LateLineModRate] = 0.0372999981045723,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 1.0,
+    [Parameter::EqLowFreq] = 0.4079999923706055,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float MAiryAmbience[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.07069999724626541,
+    [Parameter::LowCut] = 0.0,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 0.9785999655723572,
+    [Parameter::EarlyOut] = 0.5559999942779541,
+    [Parameter::LateOut] = 0.4280999898910522,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.2360000014305115,
+    [Parameter::EarlyDiffuseDelay] = 0.3066999912261963,
+    [Parameter::EarlyDiffuseModAmount] = 0.143899992108345,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.8319999575614929,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4186999797821045,
+    [Parameter::LateLineSize] = 0.1079999953508377,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.2506999969482422,
+    [Parameter::LateDiffuseModAmount] = 0.2480999976396561,
+    [Parameter::LateLineDecay] = 0.5879999995231628,
+    [Parameter::LateLineModRate] = 0.2292999923229218,
+    [Parameter::LateDiffuseFeedback] = 0.7119999527931213,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 1.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.1959999948740005,
+    [Parameter::EqHighFreq] = 0.7013999819755554,
+    [Parameter::EqCutoff] = 0.9759999513626099,
+    [Parameter::EqLowGain] = 0.687999963760376,
+    [Parameter::EqHighGain] = 0.2746999859809875,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float MDarkPlate[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 1.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.2346999943256378,
+    [Parameter::LowCut] = 0.6399999856948853,
+    [Parameter::HighCut] = 0.2933000028133392,
+    [Parameter::DryOut] = 0.8705999851226807,
+    [Parameter::EarlyOut] = 0.0,
+    [Parameter::LateOut] = 0.6613999605178833,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 0.0,
+    [Parameter::EarlyDiffuseCount] = 0.2960000038146973,
+    [Parameter::EarlyDiffuseDelay] = 0.3066999912261963,
+    [Parameter::EarlyDiffuseModAmount] = 0.143899992108345,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.4693999886512756,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.6345999836921692,
+    [Parameter::LateLineModRate] = 0.2292999923229218,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.9759999513626099,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float MGhostly[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.0,
+    [Parameter::LowCut] = 0.0,
+    [Parameter::HighCut] = 0.1920000016689301,
+    [Parameter::DryOut] = 1.0,
+    [Parameter::EarlyOut] = 0.7199999690055847,
+    [Parameter::LateOut] = 0.4799999892711639,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.03599999845027924,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.7080000042915344,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.1560000032186508,
+    [Parameter::EarlyDiffuseDelay] = 0.5986999869346619,
+    [Parameter::EarlyDiffuseModAmount] = 0.927899956703186,
+    [Parameter::EarlyDiffuseFeedback] = 0.6987000107765198,
+    [Parameter::EarlyDiffuseModRate] = 0.2866999804973602,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 1.0,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.08399999886751175,
+    [Parameter::LateLineModAmount] = 0.335999995470047,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.5640000104904175,
+    [Parameter::LateLineModRate] = 0.2532999813556671,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 1.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.1119999960064888,
+    [Parameter::EqHighFreq] = 0.6413999795913696,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.8240000009536743,
+    [Parameter::EqHighGain] = 0.8319999575614929,
+    [Parameter::EqCrossSeed] = 0.1759999990463257,
+    [Parameter::SeedTap] = 0.7879999876022339,
+    [Parameter::SeedDiffusion] = 0.3240000009536743,
+    [Parameter::SeedDelay] = 0.1730999946594238,
+    [Parameter::SeedPostDiffusion] = 0.3233000040054321,
+};
+
+static const float MTappedLines[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 1.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.0,
+    [Parameter::LowCut] = 0.6092999577522278,
+    [Parameter::HighCut] = 0.7239999771118164,
+    [Parameter::DryOut] = 0.9720000028610229,
+    [Parameter::EarlyOut] = 1.0,
+    [Parameter::LateOut] = 0.5679999589920044,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.06399999558925629,
+    [Parameter::TapDecay] = 0.7719999551773071,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.8586999773979187,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.4839999973773956,
+    [Parameter::EarlyDiffuseDelay] = 0.2307000011205673,
+    [Parameter::EarlyDiffuseModAmount] = 0.6678999662399292,
+    [Parameter::EarlyDiffuseFeedback] = 0.7426999807357788,
+    [Parameter::EarlyDiffuseModRate] = 0.2866999804973602,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.515999972820282,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.2680000066757202,
+    [Parameter::LateLineModAmount] = 0.171999990940094,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.715999960899353,
+    [Parameter::LateLineModRate] = 0.2572999894618988,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 1.0,
+    [Parameter::EqLowFreq] = 0.4079999923706055,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.6599999666213989,
+    [Parameter::SeedTap] = 0.4639999866485596,
+    [Parameter::SeedDiffusion] = 0.3240000009536743,
+    [Parameter::SeedDelay] = 0.09409999847412109,
+    [Parameter::SeedPostDiffusion] = 0.3233000040054321,
+};
+
+static const float SFastAttack[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.2800000011920929,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 0.7239999771118164,
+    [Parameter::DryOut] = 0.9720000028610229,
+    [Parameter::EarlyOut] = 0.6800000071525574,
+    [Parameter::LateOut] = 0.5399999618530273,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.06799999624490738,
+    [Parameter::TapDecay] = 0.9559999704360962,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.6520000100135803,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.2960000038146973,
+    [Parameter::EarlyDiffuseDelay] = 0.5467000007629395,
+    [Parameter::EarlyDiffuseModAmount] = 0.3039000034332275,
+    [Parameter::EarlyDiffuseFeedback] = 0.5787000060081482,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.3079999983310699,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4879999756813049,
+    [Parameter::LateLineSize] = 0.4079999923706055,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.239999994635582,
+    [Parameter::LateDiffuseModAmount] = 0.1467999964952469,
+    [Parameter::LateLineDecay] = 0.4439999759197235,
+    [Parameter::LateLineModRate] = 0.0372999981045723,
+    [Parameter::LateDiffuseFeedback] = 0.8506999611854553,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 0.0,
+    [Parameter::EqLowpassEnabled] = 1.0,
+    [Parameter::EqLowFreq] = 0.4079999923706055,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.7439999580383301,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.2680000066757202,
+    [Parameter::SeedTap] = 0.3489999771118164,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float SSmallPlate[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 0.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 1.0,
+    [Parameter::InputMix] = 0.2346999943256378,
+    [Parameter::LowCut] = 0.2933000028133392,
+    [Parameter::HighCut] = 0.687999963760376,
+    [Parameter::DryOut] = 0.8705999851226807,
+    [Parameter::EarlyOut] = 0.3680000007152557,
+    [Parameter::LateOut] = 0.5281000137329102,
+    [Parameter::TapEnabled] = 0.0,
+    [Parameter::TapCount] = 0.1959999948740005,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.9866999983787537,
+    [Parameter::EarlyDiffuseEnabled] = 1.0,
+    [Parameter::EarlyDiffuseCount] = 0.2960000038146973,
+    [Parameter::EarlyDiffuseDelay] = 0.3066999912261963,
+    [Parameter::EarlyDiffuseModAmount] = 0.143899992108345,
+    [Parameter::EarlyDiffuseFeedback] = 0.7706999778747559,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.8319999575614929,
+    [Parameter::LateDiffuseEnabled] = 0.0,
+    [Parameter::LateDiffuseCount] = 0.4186999797821045,
+    [Parameter::LateLineSize] = 0.543999969959259,
+    [Parameter::LateLineModAmount] = 0.2719999849796295,
+    [Parameter::LateDiffuseDelay] = 0.2506999969482422,
+    [Parameter::LateDiffuseModAmount] = 0.2480999976396561,
+    [Parameter::LateLineDecay] = 0.4959999918937683,
+    [Parameter::LateLineModRate] = 0.2292999923229218,
+    [Parameter::LateDiffuseFeedback] = 0.7119999527931213,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.7053999900817871,
+    [Parameter::EqCutoff] = 0.9759999513626099,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.8906999826431274,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.3339999914169312,
+    [Parameter::SeedDiffusion] = 0.1850000023841858,
+    [Parameter::SeedDelay] = 0.2180999964475632,
+    [Parameter::SeedPostDiffusion] = 0.3652999997138977,
+};
+
+static const float SSnappyAttack[Parameter::COUNT] = {
+    [Parameter::Interpolation] = 1.0,
+    [Parameter::LowCutEnabled] = 0.0,
+    [Parameter::HighCutEnabled] = 0.0,
+    [Parameter::InputMix] = 0.3026999831199646,
+    [Parameter::LowCut] = 0.0,
+    [Parameter::HighCut] = 1.0,
+    [Parameter::DryOut] = 1.0,
+    [Parameter::EarlyOut] = 0.371999979019165,
+    [Parameter::LateOut] = 0.6319999694824219,
+    [Parameter::TapEnabled] = 1.0,
+    [Parameter::TapCount] = 0.5239999890327454,
+    [Parameter::TapDecay] = 1.0,
+    [Parameter::TapPredelay] = 0.0,
+    [Parameter::TapLength] = 0.3226999938488007,
+    [Parameter::EarlyDiffuseEnabled] = 0.0,
+    [Parameter::EarlyDiffuseCount] = 0.2119999974966049,
+    [Parameter::EarlyDiffuseDelay] = 0.0,
+    [Parameter::EarlyDiffuseModAmount] = 0.2198999971151352,
+    [Parameter::EarlyDiffuseFeedback] = 0.7106999754905701,
+    [Parameter::EarlyDiffuseModRate] = 0.2466999888420105,
+    [Parameter::LateMode] = 1.0,
+    [Parameter::LateLineCount] = 0.3279999792575836,
+    [Parameter::LateDiffuseEnabled] = 1.0,
+    [Parameter::LateDiffuseCount] = 0.03199999779462814,
+    [Parameter::LateLineSize] = 0.3014000058174133,
+    [Parameter::LateLineModAmount] = 0.1159999966621399,
+    [Parameter::LateDiffuseDelay] = 0.3479999899864197,
+    [Parameter::LateDiffuseModAmount] = 0.2547999918460846,
+    [Parameter::LateLineDecay] = 0.2425999939441681,
+    [Parameter::LateLineModRate] = 0.2292999923229218,
+    [Parameter::LateDiffuseFeedback] = 0.7306999564170837,
+    [Parameter::LateDiffuseModRate] = 0.1666999906301498,
+    [Parameter::EqLowShelfEnabled] = 0.0,
+    [Parameter::EqHighShelfEnabled] = 1.0,
+    [Parameter::EqLowpassEnabled] = 0.0,
+    [Parameter::EqLowFreq] = 0.3879999816417694,
+    [Parameter::EqHighFreq] = 0.5133999586105347,
+    [Parameter::EqCutoff] = 0.9759999513626099,
+    [Parameter::EqLowGain] = 0.5559999942779541,
+    [Parameter::EqHighGain] = 0.7680000066757202,
+    [Parameter::EqCrossSeed] = 0.0,
+    [Parameter::SeedTap] = 0.5879999995231628,
+    [Parameter::SeedDiffusion] = 0.2549999952316284,
+    [Parameter::SeedDelay] = 0.09809999912977219,
+    [Parameter::SeedPostDiffusion] = 0.189300000667572,
+};
+
+static const float *Presets[] = {
+        UInit,
+        FXDivineInspiration,
+        FXLawsOfPhysics,
+        FXSlowBraaam,
+        FXTheUpsideDown,
+        LBigSoundStage,
+        LDiffusionCyclone,
+        LScreamIntoTheVoid,
+        M90sDigitalReverb,
+        MAiryAmbience,
+        MDarkPlate,
+        MGhostly,
+        MTappedLines,
+        SFastAttack,
+        SSmallPlate,
+        SSnappyAttack,
+};
+
+class AudioEffectCloudSeed2
+{
+public:
+	static std::string GetLateMode (int nValue, int nWidth)
+	{
+		return nValue ? "Post" : "Pre";
+	}
+
+    AudioEffectCloudSeed2(float samplerate):
+    samplerate{samplerate},
+    ramp_dt{10.0f / samplerate},
+    engine{(int)samplerate},
+    targetVol{},
+    needBufferClear{},
+    waitBufferClear{},
+    needParameterLoad{},
+    preset{},
+    vol{}
+    {
+    }
+
+    void setParameter(unsigned paramID, float param)
+    {
+        engine.SetParameter(paramID, param);
+    }
+
+    float getParameter(unsigned paramID)
+    {
+        return engine.GetAllParameters()[paramID];
+    }
+
+    void process(float32_t* inblockL, float32_t* inblockR, uint16_t len)
+    {
+        if (targetVol == 0.0f && vol > 0.0f)
+        {
+            engine.Process(inblockL, inblockR, inblockL, inblockR, len);
+            for (uint16_t i = 0; i < len; ++i)
+            {
+                vol = std::max(0.0f, vol - ramp_dt);
+                inblockL[i] *= vol;
+                inblockR[i] *= vol;
+            }
+
+            return;
+        }
+
+        if (needBufferClear)
+        {
+            engine.StartSlowClear();
+            needBufferClear = false;
+            waitBufferClear = true;
+        }
+
+        if (waitBufferClear)
+        {
+            if (engine.SlowClearDone(SLOW_CLEAR_SIZE))
+                waitBufferClear = false;
+
+            memset(inblockL, 0, len * sizeof *inblockL);
+            memset(inblockR, 0, len * sizeof *inblockR);
+
+            return;
+        }
+
+        if (needParameterLoad)
+        {
+            unsigned needParam = needParameterLoad;
+            unsigned paramID = Parameter::COUNT - needParam;
+            engine.SetParameter(paramID, Presets[preset][paramID]);
+            needParameterLoad = needParam - 1;
+            
+            memset(inblockL, 0, len * sizeof *inblockL);
+            memset(inblockR, 0, len * sizeof *inblockR);
+
+            if (!needParameterLoad)
+                targetVol = 1.0f;
+
+            return;
+        }
+
+        if (targetVol == 1.0f && vol < 1.0f)
+        {
+            engine.Process(inblockL, inblockR, inblockL, inblockR, len);
+            for (uint16_t i = 0; i < len; ++i)
+            {
+                vol = std::min(vol + ramp_dt, 1.0f);
+                inblockL[i] *= vol;
+                inblockR[i] *= vol;
+            }
+
+            return;
+        } 
+
+        if (isDisabled()) return;
+
+        engine.Process(inblockL, inblockR, inblockL, inblockR, len);
+    }
+
+    void loadPreset(unsigned p)
+    {
+        preset = constrain(p, 0u, sizeof Presets / sizeof *Presets - 1);
+
+        targetVol = 0.0f;
+        needBufferClear = true;
+        needParameterLoad = Parameter::COUNT;
+    }
+
+    void setNeedBufferClear()
+    {
+        needBufferClear = true;
+    }
+
+    void setRampedDown()
+    {
+        vol = 0.0f;
+    }
+
+    bool isDisabled()
+    {
+        double *params = engine.GetAllParameters();
+        return params[Parameter::DryOut] == 1.0f && params[Parameter::EarlyOut] == 0.0f && params[Parameter::LateOut] == 0.0f;
+    }
+
+private:
+    float samplerate;
+    float ramp_dt;
+    Cloudseed::ReverbController engine;
+    std::atomic<float> targetVol;
+    std::atomic<bool> needBufferClear;
+    bool waitBufferClear;
+    std::atomic<unsigned> needParameterLoad;
+    std::atomic<unsigned> preset;
+
+    std::atomic<float> vol;
+};
