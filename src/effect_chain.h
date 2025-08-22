@@ -3,6 +3,7 @@
 #include "effect_chorus.h"
 #include "effect_delay.h"
 #include "effect_platervbstereo.h"
+#include "effect_cloudseed.h"
 
 class AudioFXChain
 {
@@ -11,6 +12,7 @@ public:
         chorus{samplerate},
         delay{samplerate},
         reverb{samplerate},
+        cloudseed{samplerate},
         level{}
         {
         }
@@ -23,6 +25,7 @@ public:
                 chorus.process(inputL, inputR, len);
                 delay.process(inputL, inputR, len);
                 reverb.process(inputL, inputR, inputL, inputR, len);
+                cloudseed.process(inputL, inputR, len);
                 arm_scale_f32(inputL, level, inputL, len);
                 arm_scale_f32(inputR, level, inputR, len);
         }
@@ -31,11 +34,16 @@ public:
         {
                 delay.resetState();
                 reverb.reset();
+
+                // Cloudseed automatically take care of its buffers (ramp down + slow clear + ramp up)
+                // Here, the master vol is ramped down, so we can skip its ramp down phase
+                cloudseed.setRampedDown();
         }
 
         AudioEffectChorus chorus;
         AudioEffectDelay delay;
         AudioEffectPlateReverb reverb;
+        AudioEffectCloudSeed cloudseed;
 
 private:
         float level;
