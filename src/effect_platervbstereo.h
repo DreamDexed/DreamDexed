@@ -44,7 +44,7 @@
 #ifndef _EFFECT_PLATERVBSTEREO_H
 #define _EFFECT_PLATERVBSTEREO_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <arm_math.h>
 #include "common.h"
 

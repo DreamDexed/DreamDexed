@@ -31,9 +31,9 @@
  */
 
 
-#include <stdio.h>
+#include <cstdio>
 #include <cstdlib>
-#include <assert.h>
+#include <cassert>
 #include "effect_platervbstereo.h"
 
 #define INP_ALLP_COEFF      (0.65f)                         // default input allpass coeff

@@ -31,7 +31,7 @@
 #include "perftimer.h"
 #include <fatfs/ff.h>
 #include <atomic>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <circle/types.h>
 #include <circle/interrupt.h>

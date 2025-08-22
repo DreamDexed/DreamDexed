@@ -18,12 +18,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "sysexfileloader.h"
-#include <stdio.h>
+#include <cstdio>
 #include <dirent.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <strings.h>
-#include <assert.h>
+#include <cassert>
 #include <circle/logger.h>
 #include "voices.c"
 

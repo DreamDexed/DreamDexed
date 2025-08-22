@@ -26,9 +26,9 @@
 #include <circle/net/syslogdaemon.h>
 #include <circle/net/ipaddress.h>
 #include <circle/gpiopin.h>
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdio>
+#include <cassert>
 #include "arm_float_to_q23.h"
 #include "arm_scale_zc_ramp_f32.h"
 #include "arm_scale_zip_f32.h"

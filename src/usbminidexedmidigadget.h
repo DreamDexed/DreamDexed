@@ -24,7 +24,7 @@
 
 #if RASPPI==5
 #include <circle/sysconfig.h>
-#include <assert.h>
+#include <cassert>
 
 #warning No support for USB Gadget Mode on RPI 5 yet
 class CUSBMiniDexedMIDIGadget

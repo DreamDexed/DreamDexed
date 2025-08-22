@@ -24,7 +24,7 @@
 #include <circle/logger.h>
 #include <cstring>
 #include "serialmididevice.h"
-#include <assert.h>
+#include <cassert>
 
 LOGMODULE("serialmididevice");
 
