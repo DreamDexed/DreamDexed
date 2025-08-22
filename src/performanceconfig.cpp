@@ -276,7 +276,11 @@ bool CPerformanceConfig::Load (void)
 			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
 
 			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
-			m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber (PropertyName, p.Default);
+
+			if (nParam == FX::FXParameterCloudSeed2Preset)
+				m_nFXParameter[nFX][nParam] = FX::getIDFromCS2PresetName(m_Properties.GetString (PropertyName, ""));
+			else
+				m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber (PropertyName, p.Default);
 		}
 	}
 
@@ -480,7 +484,11 @@ bool CPerformanceConfig::Save (void)
 			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
 
 			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
-			m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
+
+			if (nParam == FX::FXParameterCloudSeed2Preset)
+				m_Properties.SetString (PropertyName, FX::getCS2PresetName(m_nFXParameter[nFX][nParam], 0).c_str());
+			else
+				m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
 		}
 	}
 

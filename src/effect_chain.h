@@ -1,5 +1,6 @@
 #pragma once
 
+#include "effect_cloudseed2.h"
 #include "effect_dreamdelay.h"
 #include "effect_platervbstereo.h"
 #include "effect_ykchorus.h"
@@ -11,6 +12,7 @@ public:
         yk_chorus{samplerate},
         dream_delay{samplerate},
         plate_reverb{samplerate},
+        cloudseed2{samplerate},
         level{}
         {
         }
@@ -23,6 +25,7 @@ public:
                 yk_chorus.process(inputL, inputR, len);
                 dream_delay.process(inputL, inputR, len);
                 plate_reverb.process(inputL, inputR, inputL, inputR, len);
+                cloudseed2.process(inputL, inputR, len);
                 arm_scale_f32(inputL, level, inputL, len);
                 arm_scale_f32(inputR, level, inputR, len);
         }
@@ -31,11 +34,15 @@ public:
         {
                 dream_delay.resetState();
                 plate_reverb.reset();
+
+                cloudseed2.setRampedDown();
+                cloudseed2.setNeedBufferClear();
         }
 
         AudioEffectYKChorus yk_chorus;
         AudioEffectDreamDelay dream_delay;
         AudioEffectPlateReverb plate_reverb;
+        AudioEffectCloudSeed2 cloudseed2;
 
 private:
         float level;
