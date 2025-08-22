@@ -20,7 +20,7 @@
 #include "pckeyboard.h"
 #include <circle/devicenameservice.h>
 #include <circle/util.h>
-#include <assert.h>
+#include <cassert>
 
 struct TKeyInfo
 {

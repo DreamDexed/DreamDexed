@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 
 #include "midi.h"
 
@@ -31,31 +31,31 @@ public:
     void setLow_dB(float value)
     {
         fLow = value;
-        lowVol = pow(10.0f, fLow / 20.0f);
+        lowVol = std::pow(10.0f, fLow / 20.0f);
     }
 
     void setMid_dB(float value)
     {
         fMid = value;
-        midVol = pow(10.0f, fMid / 20.0f);
+        midVol = std::pow(10.0f, fMid / 20.0f);
     }
 
     void setHigh_dB(float value)
     {
         fHigh = value;
-        highVol = pow(10.0f, fHigh / 20.0f);
+        highVol = std::pow(10.0f, fHigh / 20.0f);
     }
 
     void setGain_dB(float value)
     {
         fGain = value;
-        outVol = pow(10.0f, fGain / 20.0f);
+        outVol = std::pow(10.0f, fGain / 20.0f);
     }
 
     float setLowMidFreq(float value)
     {
         fLowMidFreq = std::min(value, fMidHighFreq);
-        xLP  = exp(-2.0f * M_PI * fLowMidFreq / samplerate);
+        xLP  = std::exp(-2.0f * M_PI * fLowMidFreq / samplerate);
         a0LP = 1.0f - xLP;
         b1LP = -xLP;
         return fLowMidFreq;
@@ -64,7 +64,7 @@ public:
     float setMidHighFreq(float value)
     {
         fMidHighFreq = std::max(value, fLowMidFreq);
-        xHP  = exp(-2.0f * M_PI * fMidHighFreq / samplerate);
+        xHP  = std::exp(-2.0f * M_PI * fMidHighFreq / samplerate);
         a0HP = 1.0f - xHP;
         b1HP = -xHP;
         return fMidHighFreq;
@@ -101,7 +101,7 @@ public:
 
         for (uint16_t i=0; i < len; ++i)
         {
-            float inValue = isnan(block[i]) ? 0.0f : block[i];
+            float inValue = std::isnan(block[i]) ? 0.0f : block[i];
 
             tmpLP = a0LP * inValue - b1LP * tmpLP;
             outLP = tmpLP;

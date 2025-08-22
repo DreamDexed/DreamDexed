@@ -5,8 +5,8 @@
 #define effect_mixer_h_
 
 #include <cstdint>
-#include <assert.h>
-#include "arm_math.h"
+#include <cassert>
+#include <arm_math.h>
 #include "arm_scale_zc_ramp_f32.h"
 
 #define UNITY_GAIN 1.0f

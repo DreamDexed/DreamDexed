@@ -21,7 +21,7 @@
 #include <circle/logger.h>
 #include <circle/synchronize.h>
 #include <circle/gpiopin.h>
-#include <assert.h>
+#include <cassert>
 #include <circle/usb/usbhcidevice.h>
 #include "usbminidexedmidigadget.h"
 
