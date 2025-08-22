@@ -187,6 +187,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
 	{"Chorus",	MenuHandler,		s_ChorusMenu},
 	{"Delay",	MenuHandler,		s_DelayMenu},
 	{"Reverb",	MenuHandler,		s_ReverbMenu},
+	{"CloudSeed",	MenuHandler,		s_CloudSeedMenu},
 	{0},
 };
 
@@ -220,6 +221,13 @@ const CUIMenu::TMenuItem CUIMenu::s_ReverbMenu[] =
 	{"Low damp",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowDamp},
 	{"Low pass",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbLowPass},
 	{"Diffusion",	EditFXParameter2,	0,	CMiniDexed::FXParameterReverbDiffusion},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeedMenu[] =
+{
+	{"Enable",	EditFXParameter2,	0,	CMiniDexed::FXParameterCloudSeedEnable},
+	{"Preset",	EditFXParameter2,	0,	CMiniDexed::FXParameterCloudSeedPreset},
 	{0}
 };
 
@@ -412,6 +420,8 @@ CUIMenu::TParameter CUIMenu::s_FXParameter[CMiniDexed::FXParameterUnknown] =
 	{0,	99,	1},				// FXParameterReverbLowDamp
 	{0,	99,	1},				// FXParameterReverbLowPass
 	{0,	99,	1},				// FXParameterReverbDiffusion
+	{0,	1,	1,	ToOnOff},		// FXParameterCloudSeedEnable,
+	{0,	AudioEffectCloudSeed::GetPresetNum()-1,	1,	ToCloudSeedPreset},	// FXParameterCloudSeedPreset,
 	{0,	99,	1},				// FXParameterLevel
 };
 
@@ -1689,6 +1699,30 @@ std::string CUIMenu::ToDelayTime (int nValue, int nWidth)
 std::string CUIMenu::ToBPM(int nValue, int nWidth)
 {
 	return std::to_string(nValue) + " BPM";
+}
+
+std::string CUIMenu::ToCloudSeedPreset (int nValue, int nWidth)
+{
+	static const char *Preset[] = {
+        	"FXDivineInspiration",
+        	"FXLawsOfPhysics",
+        	"FXSlowBraaam",
+        	"FXTheUpsideDown",
+        	"LBigSoundStage",
+        	"LDiffusionCyclone",
+        	"LScreamIntoTheVoid",
+        	"M90sDigitalReverb",
+        	"MAiryAmbience",
+        	"MDarkPlate",
+        	"MGhostly",
+        	"MTappedLines",
+        	"SFastAttack",
+        	"SSmallPlate",
+        	"SSnappyAttack",
+	};
+
+	assert (nValue >= 0 && (unsigned)nValue < sizeof Preset / sizeof *Preset);
+	return Preset[nValue];
 }
 
 void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
