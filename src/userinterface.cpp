@@ -22,8 +22,8 @@
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/startup.h>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 LOGMODULE ("ui");
 

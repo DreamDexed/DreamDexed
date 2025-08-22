@@ -23,7 +23,7 @@
 
 #include <synth_dexed.h>
 #include <circle/spinlock.h>
-#include <stdint.h>
+#include <cstdint>
 
 #include "effect_3bandeq.h"
 #include "compressor.h"

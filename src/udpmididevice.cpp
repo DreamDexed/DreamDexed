@@ -24,7 +24,7 @@
 #include <circle/logger.h>
 #include <cstring>
 #include "udpmididevice.h"
-#include <assert.h>
+#include <cassert>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/in.h>
 

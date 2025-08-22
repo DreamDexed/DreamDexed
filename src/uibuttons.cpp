@@ -19,9 +19,9 @@
 //
 #include "uibuttons.h"
 #include <circle/logger.h>
-#include <assert.h>
+#include <cassert>
 #include <circle/timer.h>
-#include <string.h>
+#include <cstring>
 #include "midi.h"
 
 LOGMODULE ("uibuttons");
