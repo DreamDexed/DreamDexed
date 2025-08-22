@@ -229,6 +229,8 @@ public:
 		FXParameterReverbLowDamp,
 		FXParameterReverbLowPass,
 		FXParameterReverbDiffusion,
+		FXParameterCloudSeedEnable,
+		FXParameterCloudSeedPreset,
 		FXParameterLevel,
 		FXParameterUnknown,
 	};

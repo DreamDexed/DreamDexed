@@ -285,6 +285,9 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		SetFXParameter (FXParameterReverbLowPass, 85, nFX);
 		SetFXParameter (FXParameterReverbDiffusion, 65, nFX);
 
+		SetFXParameter (FXParameterCloudSeedEnable, 0, nFX);
+		SetFXParameter (FXParameterCloudSeedPreset, 0, nFX);
+
 		SetFXParameter (FXParameterLevel, 0, nFX);
 	}
 	// END setup reverb
@@ -1337,6 +1340,16 @@ void CMiniDexed::SetFXParameter (TFXParameter Parameter, int nValue, unsigned nF
 		m_FXSpinLock.Release ();
 		break;
 
+	case FXParameterCloudSeedEnable:
+		nValue=constrain((int)nValue,0,1);
+		fx_chain[nFX]->cloudseed.setEnable (nValue);
+		break;
+
+	case FXParameterCloudSeedPreset:
+		nValue=constrain((int)nValue,0,AudioEffectCloudSeed::GetPresetNum()-1);
+		fx_chain[nFX]->cloudseed.setPreset (nValue);
+		break;
+
 	case FXParameterLevel:
 		nValue=constrain((int)nValue,0,99);
 		m_FXSpinLock.Acquire ();
@@ -1908,6 +1921,8 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetFXReverbLowDamp (GetFXParameter (FXParameterReverbLowDamp, nFX), nFX);
 		m_PerformanceConfig.SetFXReverbLowPass (GetFXParameter (FXParameterReverbLowPass, nFX), nFX);
 		m_PerformanceConfig.SetFXReverbDiffusion (GetFXParameter (FXParameterReverbDiffusion, nFX), nFX);
+		m_PerformanceConfig.SetFXCloudSeedEnable (GetFXParameter (FXParameterCloudSeedEnable, nFX), nFX);
+		m_PerformanceConfig.SetFXCloudSeedPreset (GetFXParameter (FXParameterCloudSeedPreset, nFX), nFX);
 		m_PerformanceConfig.SetFXLevel (GetFXParameter (FXParameterLevel, nFX), nFX);
 	}
 
@@ -2619,6 +2634,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		SetFXParameter (FXParameterReverbLowDamp, m_PerformanceConfig.GetFXReverbLowDamp (nFX), nFX);
 		SetFXParameter (FXParameterReverbLowPass, m_PerformanceConfig.GetFXReverbLowPass (nFX), nFX);
 		SetFXParameter (FXParameterReverbDiffusion, m_PerformanceConfig.GetFXReverbDiffusion (nFX), nFX);
+		SetFXParameter (FXParameterCloudSeedEnable, m_PerformanceConfig.GetFXCloudSeedEnable (nFX), nFX);
+		SetFXParameter (FXParameterCloudSeedPreset, m_PerformanceConfig.GetFXCloudSeedPreset (nFX), nFX);
 		SetFXParameter (FXParameterLevel, m_PerformanceConfig.GetFXLevel (nFX), nFX);
 	}
 

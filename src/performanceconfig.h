@@ -149,6 +149,10 @@ public:
 	unsigned GetFXReverbLowDamp (unsigned nFX) const;			// 0 .. 99
 	unsigned GetFXReverbLowPass (unsigned nFX) const;			// 0 .. 99
 	unsigned GetFXReverbDiffusion (unsigned nFX) const;		// 0 .. 99
+
+	bool GetFXCloudSeedEnable (unsigned nFX);
+	unsigned GetFXCloudSeedPreset (unsigned nFX);
+
 	unsigned GetFXLevel (unsigned nFX) const;			// 0 .. 99
 
 	void SetFXChorusEnable1 (bool bValue, unsigned nFX);
@@ -170,6 +174,10 @@ public:
 	void SetFXReverbLowDamp (unsigned nValue, unsigned nFX);
 	void SetFXReverbLowPass (unsigned nValue, unsigned nFX);
 	void SetFXReverbDiffusion (unsigned nValue, unsigned nFX);
+
+	void SetFXCloudSeedEnable (unsigned nValue, unsigned nFX);
+	void SetFXCloudSeedPreset (unsigned nValue, unsigned nFX);
+
 	void SetFXLevel (unsigned nValue, unsigned nFX);
 
 	int GetMasterEQLow () const;
@@ -311,6 +319,10 @@ private:
 	unsigned m_nFXReverbLowDamp[CConfig::FXChains];
 	unsigned m_nFXReverbLowPass[CConfig::FXChains];
 	unsigned m_nFXReverbDiffusion[CConfig::FXChains];
+
+	bool m_bFXCloudSeedEnable[CConfig::FXChains];
+	unsigned m_nFXCloudSeedPreset[CConfig::FXChains];
+
 	unsigned m_nFXLevel[CConfig::FXChains];
 
 	int m_nMasterEQLow;

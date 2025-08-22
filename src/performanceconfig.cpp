@@ -316,6 +316,12 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("FX%uReverbDiffusion", nFX+1);
 		m_nFXReverbDiffusion[nFX] = m_Properties.GetNumber (PropertyName, 65);
 
+		PropertyName.Format ("FX%uCloudSeedEnable", nFX+1);
+		m_bFXCloudSeedEnable[nFX] = m_Properties.GetNumber (PropertyName, 0);
+
+		PropertyName.Format ("FX%uCloudSeedPreset", nFX+1);
+		m_nFXCloudSeedPreset[nFX] = m_Properties.GetNumber (PropertyName, 0);
+
 		PropertyName.Format ("FX%uLevel", nFX+1);
 		m_nFXLevel[nFX] = m_Properties.GetNumber (PropertyName, 0);
 	}
@@ -564,6 +570,12 @@ bool CPerformanceConfig::Save (void)
 
 		PropertyName.Format ("FX%uReverbDiffusion", nFX+1);
 		m_Properties.SetNumber (PropertyName, m_nFXReverbDiffusion[nFX]);
+
+		PropertyName.Format ("FX%uCloudSeedEnable", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_bFXCloudSeedEnable[nFX]);
+
+		PropertyName.Format ("FX%uCloudSeedPreset", nFX+1);
+		m_Properties.SetNumber (PropertyName, m_nFXCloudSeedPreset[nFX]);
 
 		PropertyName.Format ("FX%uLevel", nFX+1);
 		m_Properties.SetNumber (PropertyName, m_nFXLevel[nFX]);
@@ -907,6 +919,19 @@ unsigned CPerformanceConfig::GetFXReverbDiffusion (unsigned nFX) const
 	return m_nFXReverbDiffusion[nFX];
 }
 
+bool CPerformanceConfig::GetFXCloudSeedEnable (unsigned nFX)
+{
+	assert (nFX < CConfig::FXChains);
+	return m_bFXCloudSeedEnable[nFX];
+}
+
+unsigned CPerformanceConfig::GetFXCloudSeedPreset (unsigned nFX)
+{
+	assert (nFX < CConfig::FXChains);
+	return m_nFXCloudSeedPreset[nFX];
+}
+
+
 unsigned CPerformanceConfig::GetFXLevel (unsigned nFX) const
 {
 	assert (nFX < CConfig::FXChains);
@@ -1013,6 +1038,18 @@ void CPerformanceConfig::SetFXReverbDiffusion (unsigned nValue, unsigned nFX)
 {
 	assert (nFX < CConfig::FXChains);
 	m_nFXReverbDiffusion[nFX] = nValue;
+}
+
+void CPerformanceConfig::SetFXCloudSeedEnable (unsigned nValue, unsigned nFX)
+{
+	assert (nFX < CConfig::FXChains);
+	m_bFXCloudSeedEnable[nFX] = nValue;
+}
+
+void CPerformanceConfig::SetFXCloudSeedPreset (unsigned nValue, unsigned nFX)
+{
+	assert (nFX < CConfig::FXChains);
+	m_nFXCloudSeedPreset[nFX] = nValue;
 }
 
 void CPerformanceConfig::SetFXLevel (unsigned nValue, unsigned nFX)

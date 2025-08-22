@@ -132,6 +132,7 @@ private:
 	static std::string ToDelayMode (int nValue, int nWidth);
 	static std::string ToDelayTime (int nValue, int nWidth);
 	static std::string ToBPM (int nValue, int nWidth);
+	static std::string ToCloudSeedPreset (int nValue, int nWidth);
 
 
 	void TGShortcutHandler (TMenuEvent Event);
@@ -177,6 +178,7 @@ private:
 	static const TMenuItem s_ChorusMenu[];
 	static const TMenuItem s_DelayMenu[];
 	static const TMenuItem s_ReverbMenu[];
+	static const TMenuItem s_CloudSeedMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_LimiterMenu[];
 	static const TMenuItem s_FXSendMenu[];
