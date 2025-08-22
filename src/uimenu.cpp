@@ -178,6 +178,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
 	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
+	{"CloudSeed2",		MenuHandler,		s_CloudSeed2Menu},
 	{0},
 };
 
@@ -213,6 +214,105 @@ const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowPass},
 	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterPlateReverbDiffusion},
 	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2Menu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2Preset},
+	{"Dry Out",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2DryOut},
+	{"Early Out",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyOut},
+	{"Late Out",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateOut},
+	{"Early FB",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseFeedback},
+	{"Late FB",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseFeedback},
+	{"Tap Decay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapDecay},
+	{"Late Decay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineDecay},
+	{"Late Lines",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineCount},
+	{"Input",	MenuHandler,		s_CloudSeed2InputMenu},
+	{"Multitap Delay",	MenuHandler,	s_CloudSeed2MultitapMenu},
+	{"Early Diffusion",	MenuHandler,	s_CloudSeed2EarlyDiffusionMenu},
+	{"Late Diffusion",	MenuHandler,	s_CloudSeed2LateDiffusionMenu},
+	{"Late Lines",		MenuHandler,	s_CloudSeed2LateLineMenu},
+	{"Low Shelf",		MenuHandler,	s_CloudSeed2LowShelfMenu},
+	{"High Shelf",		MenuHandler,	s_CloudSeed2HighShelfMenu},
+	{"Low Pass",		MenuHandler,	s_CloudSeed2LowPassMenu},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2InputMenu[] =
+{
+	{"Interpolation",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2Interpolation},
+	{"L/R Input Mix",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2InputMix},
+	{"High Cut Enabled",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2HighCutEnabled},
+	{"High Cut",		EditFXParameter2,	0,	FX::FXParameterCloudSeed2HighCut},
+	{"Low Cut Enabled",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LowCutEnabled},
+	{"Low Cut",		EditFXParameter2,	0,	FX::FXParameterCloudSeed2LowCut},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2MultitapMenu[] =
+{
+	{"Enabled",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapEnabled},
+	{"Count",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapCount},
+	{"Decay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapDecay},
+	{"Predelay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapPredelay},
+	{"Length",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2TapLength},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2EarlyDiffusionMenu[] =
+{
+	{"Enabled",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseEnabled},
+	{"Stage Count",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseCount},
+	{"Delay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseDelay},
+	{"Feedback",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseFeedback},
+	{"Mod Amount",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseModAmount},
+	{"Mod Rate",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EarlyDiffuseModRate},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LateDiffusionMenu[] =
+{
+	{"Enabled",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseEnabled},
+	{"Stage Count",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseCount},
+	{"Delay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseDelay},
+	{"Feedback",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseFeedback},
+	{"Mod Amount",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseModAmount},
+	{"Mod Rate",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateDiffuseModRate},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LateLineMenu[] =
+{
+	{"Mode",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateMode},
+	{"Count",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineCount},
+	{"Size",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineSize},
+	{"Decay",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineDecay},
+	{"Mod Amt",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineModAmount},
+	{"Mod Rate",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2LateLineModRate},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowShelfMenu[] =
+{
+	{"Enable",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqLowShelfEnabled},
+	{"Freq",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqLowFreq},
+	{"Gain",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqLowGain},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2HighShelfMenu[] =
+{
+	{"Enable",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqHighShelfEnabled},
+	{"Freq",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqHighFreq},
+	{"Gain",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqHighGain},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowPassMenu[] =
+{
+	{"Enable",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqLowpassEnabled},
+	{"Cutoff",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqCutoff},
+	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =
