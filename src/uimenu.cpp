@@ -132,8 +132,8 @@ const CUIMenu::TMenuItem CUIMenu::s_EditPortamentoMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EditNoteLimitMenu[] =
 {
-	{"Limit Low",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitLow},
-	{"Limit High",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitHigh},
+	{"Limit Low",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitLow, .OnSelect=InputKeyDown},
+	{"Limit High",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitHigh, .OnSelect=InputKeyDown},
 	{"Shift",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteShift},
 	{0}
 };
@@ -1728,6 +1728,16 @@ void CUIMenu::TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void 
 	pThis->m_bSplashShow = false;
 	
 	pThis->EventHandler (MenuEventUpdate);
+}
+
+void CUIMenu::InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	assert (pUIMenu);
+
+	int nLastKeyDown = pUIMenu->m_pMiniDexed->GetLastKeyDown ();	
+	CMiniDexed::TTGParameter Param = (CMiniDexed::TTGParameter) pUIMenu->m_nCurrentParameter;
+	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2]; 
+	pUIMenu->m_pMiniDexed->SetTGParameter(Param, nLastKeyDown, nTG);
 }
 
 void CUIMenu::PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event)
