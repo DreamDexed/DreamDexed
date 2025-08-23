@@ -73,6 +73,7 @@ public:
 
 	bool GetCompressorEnable (unsigned nTG) const; 		// 0 .. 1
 	int GetCompressorPreGain (unsigned nTG) const;
+	int GetCompressorMakeupGain (unsigned nTG) const;
 	unsigned GetCompressorAttack (unsigned nTG) const;
 	unsigned GetCompressorRelease (unsigned nTG) const;
 	int GetCompressorThresh (unsigned nTG) const;
@@ -110,6 +111,7 @@ public:
 
 	void SetCompressorEnable (bool nValue, unsigned nTG);
 	void SetCompressorPreGain (int nValue, unsigned nTG);
+	void SetCompressorMakeupGain (int nValue, unsigned nTG);
 	void SetCompressorAttack (unsigned nValue, unsigned nTG);
 	void SetCompressorRelease (unsigned nValue, unsigned nTG);	
 	void SetCompressorThresh (int nValue, unsigned nTG);
@@ -241,6 +243,7 @@ private:
 	
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
+	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
 	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
