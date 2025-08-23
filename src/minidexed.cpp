@@ -131,6 +131,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 
 		m_bCompressorEnable[i] = 1;
 		m_nCompressorPreGain[i] = 0;
+		m_nCompressorMakeupGain[i] = 0;
 		m_nCompressorAttack[i] = 5;
 		m_nCompressorRelease[i] = 200;
 		m_nCompressorThresh[i] = -20;
@@ -1276,6 +1277,7 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 
 	case TGParameterCompressorEnable:	SetCompressorEnable (nValue, nTG); break;
 	case TGParameterCompressorPreGain:	SetCompressorPreGain (nValue, nTG); break;
+	case TGParameterCompressorMakeupGain:	SetCompressorMakeupGain (nValue, nTG); break;
 	case TGParameterCompressorAttack:	SetCompressorAttack (nValue, nTG); break;
 	case TGParameterCompressorRelease:	SetCompressorRelease (nValue, nTG); break;
 	case TGParameterCompressorThresh:	SetCompressorThresh (nValue, nTG); break;
@@ -1343,6 +1345,7 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	
 	case TGParameterCompressorEnable:	return m_bCompressorEnable[nTG];
 	case TGParameterCompressorPreGain:	return m_nCompressorPreGain[nTG];
+	case TGParameterCompressorMakeupGain:	return m_nCompressorMakeupGain[nTG];
 	case TGParameterCompressorAttack:	return m_nCompressorAttack[nTG];
 	case TGParameterCompressorRelease:	return m_nCompressorRelease[nTG];
 	case TGParameterCompressorThresh:	return m_nCompressorThresh[nTG];
@@ -1745,6 +1748,7 @@ bool CMiniDexed::DoSavePerformance (void)
 
 		m_PerformanceConfig.SetCompressorEnable (m_bCompressorEnable[nTG], nTG);
 		m_PerformanceConfig.SetCompressorPreGain (m_nCompressorPreGain[nTG], nTG);
+		m_PerformanceConfig.SetCompressorMakeupGain (m_nCompressorMakeupGain[nTG], nTG);
 		m_PerformanceConfig.SetCompressorAttack (m_nCompressorAttack[nTG], nTG);
 		m_PerformanceConfig.SetCompressorRelease (m_nCompressorRelease[nTG], nTG);	
 		m_PerformanceConfig.SetCompressorThresh (m_nCompressorThresh[nTG], nTG);
@@ -1810,6 +1814,18 @@ void CMiniDexed::SetCompressorPreGain (int preGain, unsigned nTG)
 	assert (m_pTG[nTG]);
 	m_nCompressorPreGain[nTG] = preGain;
 	m_pTG[nTG]->Compr.setPreGain_dB (preGain);
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetCompressorMakeupGain (int makeupGain, unsigned nTG)
+{
+	makeupGain = constrain (makeupGain, -20, 20);
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (m_pTG[nTG]);
+	m_nCompressorMakeupGain[nTG] = makeupGain;
+	m_pTG[nTG]->Compr.setMakeupGain_dB (makeupGain);
 	m_UI.ParameterChanged ();
 }
 
@@ -2438,6 +2454,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 		SetCompressorEnable (m_PerformanceConfig.GetCompressorEnable (nTG), nTG);
 		SetCompressorPreGain (m_PerformanceConfig.GetCompressorPreGain (nTG), nTG);
+		SetCompressorMakeupGain (m_PerformanceConfig.GetCompressorMakeupGain (nTG), nTG);
 		SetCompressorAttack (m_PerformanceConfig.GetCompressorAttack (nTG), nTG);;
 		SetCompressorRelease (m_PerformanceConfig.GetCompressorRelease (nTG), nTG);
 		SetCompressorThresh (m_PerformanceConfig.GetCompressorThresh (nTG), nTG);

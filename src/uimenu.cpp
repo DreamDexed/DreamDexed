@@ -98,6 +98,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 {
 	{"Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorEnable},
 	{"Pre Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorPreGain},
+	{"Makeup Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorMakeupGain},
 	{"Attack",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorAttack},
 	{"Release",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRelease},
 	{"Threshold",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorThresh},
@@ -342,6 +343,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0, 1, 1, ToOnOff}, //AT EGBias	
 	{0,	1,	1,	ToOnOff},	// TGParameterCompressorEnable
 	{-20,	20,	1,	TodB},		// TGParameterCompressorPreGain
+	{-20,	20,	1,	TodB},		// TGParameterCompressorMakeupGain
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorAttack
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
 	{-60,	0,	1,	TodBFS},	// TGParameterCompressorThresh

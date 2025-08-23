@@ -215,6 +215,9 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("CompressorPreGain%u", nTG+1);
 		m_nCompressorPreGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
+		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
+		m_nCompressorMakeupGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+
 		PropertyName.Format ("CompressorAttack%u", nTG+1);
 		m_nCompressorAttack[nTG] = m_Properties.GetNumber (PropertyName, 5);
 
@@ -389,6 +392,9 @@ bool CPerformanceConfig::Save (void)
 
 		PropertyName.Format ("CompressorPreGain%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nCompressorPreGain[nTG]);
+
+		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nCompressorMakeupGain[nTG]);
 
 		PropertyName.Format ("CompressorAttack%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nCompressorAttack[nTG]);
@@ -1059,6 +1065,18 @@ int CPerformanceConfig::GetCompressorPreGain (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
 	return m_nCompressorPreGain[nTG];
+}
+
+void CPerformanceConfig::SetCompressorMakeupGain (int nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nCompressorMakeupGain[nTG] = nValue;
+}
+
+int CPerformanceConfig::GetCompressorMakeupGain (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nCompressorMakeupGain[nTG];
 }
 
 void CPerformanceConfig::SetCompressorAttack (unsigned nValue, unsigned nTG)

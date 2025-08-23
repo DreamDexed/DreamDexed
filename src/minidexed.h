@@ -111,6 +111,7 @@ public:
 
 	void SetCompressorEnable (bool compressor, unsigned nTG);	// 0 .. 1 (default 1)
 	void SetCompressorPreGain (int preGain, unsigned nTG);		// -20 .. 20 dB (default 0)
+	void SetCompressorMakeupGain (int makeupGain, unsigned nTG);	// -20 .. 20 dB (default 0)
 	void SetCompressorAttack (unsigned attack, unsigned nTG);	// 0 .. 1000 ms (default 5)
 	void SetCompressorRelease (unsigned release, unsigned nTG);	// 0 .. 1000 ms (default 200)
 	void SetCompressorThresh (int thresh, unsigned nTG);		// -60 .. 0 dBFS (default -20)
@@ -261,6 +262,7 @@ public:
 
 		TGParameterCompressorEnable,
 		TGParameterCompressorPreGain,
+		TGParameterCompressorMakeupGain,
 		TGParameterCompressorAttack,
 		TGParameterCompressorRelease,
 		TGParameterCompressorThresh,
@@ -358,6 +360,7 @@ private:
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
+	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
 	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
