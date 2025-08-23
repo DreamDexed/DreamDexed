@@ -111,6 +111,8 @@ private:
 	static std::string ToLFOWaveform (int nValue, int nWidth);
 	static std::string ToTransposeNote (int nValue, int nWidth);
 	static std::string ToBreakpointNote (int nValue, int nWidth);
+	static std::string ToMIDINote (int nValue, int nWidth);
+	static std::string ToMIDINoteShift (int nValue, int nWidth);
 	static std::string ToKeyboardCurve (int nValue, int nWidth);
 	static std::string ToOscillatorMode (int nValue, int nWidth);
 	static std::string ToOscillatorDetune (int nValue, int nWidth);
@@ -169,6 +171,7 @@ private:
 	static const TMenuItem s_SaveMenu[];
 	static const TMenuItem s_EditPitchBendMenu[];
 	static const TMenuItem s_EditPortamentoMenu[];
+	static const TMenuItem s_EditNoteLimitMenu[];
 	static const TMenuItem s_PerformanceMenu[];
 	
 	static const TMenuItem s_ModulationMenu[];
@@ -180,6 +183,8 @@ private:
 	static const TParameter s_OPParameter[];
 
 	static const char s_NoteName[100][5];
+	static const char s_MIDINoteName[128][9];
+	static const char s_MIDINoteShift[49][8];
 
 	std::string m_InputText="1234567890ABCD";
 	unsigned m_InputTextPosition=0;

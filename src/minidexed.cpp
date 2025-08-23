@@ -1238,6 +1238,9 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 	case TGParameterPortamentoMode:		setPortamentoMode (nValue, nTG);	break;
 	case TGParameterPortamentoGlissando:	setPortamentoGlissando (nValue, nTG);	break;
 	case TGParameterPortamentoTime:		setPortamentoTime (nValue, nTG);	break;
+	case TGParameterNoteLimitLow:		setNoteLimitLow (nValue, nTG);		break;
+	case TGParameterNoteLimitHigh:		setNoteLimitHigh (nValue, nTG);		break;
+	case TGParameterNoteShift:		setNoteShift (nValue, nTG);		break;
 	case TGParameterMonoMode:		setMonoMode (nValue , nTG);	break; 
 	
 	case TGParameterMWRange:					setModController(0, 0, nValue, nTG); break;
@@ -1310,6 +1313,9 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterPortamentoMode:		return m_nPortamentoMode[nTG];
 	case TGParameterPortamentoGlissando:	return m_nPortamentoGlissando[nTG];
 	case TGParameterPortamentoTime:		return m_nPortamentoTime[nTG];
+	case TGParameterNoteLimitLow:		return m_nNoteLimitLow[nTG];
+	case TGParameterNoteLimitHigh:		return m_nNoteLimitHigh[nTG];
+	case TGParameterNoteShift:		return m_nNoteShift[nTG];
 	case TGParameterMonoMode:		return m_bMonoMode[nTG] ? 1 : 0; 
 	
 	case TGParameterMWRange:					return getModController(0, 0, nTG);
@@ -1993,6 +1999,51 @@ void CMiniDexed::setPortamentoTime(uint8_t time, uint8_t nTG)
 	m_UI.ParameterChanged ();
 }
 
+void CMiniDexed::setNoteLimitLow(unsigned limit, uint8_t nTG)
+{
+	limit = constrain (limit, 0u, 127u);
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (m_pTG[nTG]);
+
+	m_nNoteLimitLow[nTG] = limit;
+
+	// reset all notes, so they don't stay down
+	m_pTG[nTG]->deactivate();
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::setNoteLimitHigh(unsigned limit, uint8_t nTG)
+{
+	limit = constrain (limit, 0u, 127u);
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (m_pTG[nTG]);
+
+	m_nNoteLimitHigh[nTG] = limit;
+
+	// reset all notes, so they don't stay down
+	m_pTG[nTG]->deactivate();
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::setNoteShift(int shift, uint8_t nTG)
+{
+	shift = constrain (shift, -24, 24);
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (m_pTG[nTG]);
+
+	m_nNoteShift[nTG] = shift;
+
+	// reset all notes, so they don't stay down
+	m_pTG[nTG]->deactivate();
+	m_UI.ParameterChanged ();
+}
+
 void CMiniDexed::setModWheelRange(uint8_t range, uint8_t nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -2359,9 +2410,9 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		setPortamentoGlissando (m_PerformanceConfig.GetPortamentoGlissando  (nTG), nTG);
 		setPortamentoTime (m_PerformanceConfig.GetPortamentoTime (nTG), nTG);
 
-		m_nNoteLimitLow[nTG] = m_PerformanceConfig.GetNoteLimitLow (nTG);
-		m_nNoteLimitHigh[nTG] = m_PerformanceConfig.GetNoteLimitHigh (nTG);
-		m_nNoteShift[nTG] = m_PerformanceConfig.GetNoteShift (nTG);
+		setNoteLimitLow(m_PerformanceConfig.GetNoteLimitLow (nTG), nTG);
+		setNoteLimitHigh(m_PerformanceConfig.GetNoteLimitHigh (nTG), nTG);
+		setNoteShift(m_PerformanceConfig.GetNoteShift (nTG), nTG);
 		
 		if(m_PerformanceConfig.VoiceDataFilled(nTG) && nTG < m_nToneGenerators) 
 		{
