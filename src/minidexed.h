@@ -129,6 +129,9 @@ public:
 	void setPortamentoMode(uint8_t mode, uint8_t nTG);
 	void setPortamentoGlissando(uint8_t glissando, uint8_t nTG);
 	void setPortamentoTime(uint8_t time, uint8_t nTG);
+	void setNoteLimitLow(unsigned limit, uint8_t nTG);
+	void setNoteLimitHigh(unsigned limit, uint8_t nTG);
+	void setNoteShift(int shift, uint8_t nTG);
 	void setModWheelRange(uint8_t range, uint8_t nTG);
 	void setModWheelTarget(uint8_t target, uint8_t nTG);
 	void setFootControllerRange(uint8_t range, uint8_t nTG);
@@ -229,6 +232,9 @@ public:
 		TGParameterPortamentoMode,
 		TGParameterPortamentoGlissando,
 		TGParameterPortamentoTime,
+		TGParameterNoteLimitLow,
+		TGParameterNoteLimitHigh,
+		TGParameterNoteShift,
 		TGParameterMonoMode,  
 				
 		TGParameterMWRange,
