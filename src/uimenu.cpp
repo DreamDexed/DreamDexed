@@ -924,6 +924,11 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 	case MenuEventUpdateParameter:
 		break;
 
+	case MenuEventSelect:
+		if (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].OnSelect)
+			pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].OnSelect(pUIMenu, Event);
+		break;
+
 	case MenuEventStepDown:
 		nValue -= rParam.Increment;
 		if (nValue < rParam.Minimum)
@@ -962,7 +967,6 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      Value.c_str (),
 				      nValue > rParam.Minimum, nValue < rParam.Maximum);
-				   
 }
 
 void CUIMenu::EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event)

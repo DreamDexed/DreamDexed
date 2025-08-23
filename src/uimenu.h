@@ -70,6 +70,7 @@ private:
 		TMenuHandler *Handler;
 		const TMenuItem *MenuItem;
 		unsigned Parameter;
+		TMenuHandler* OnSelect;
 	};
 
 	typedef std::string TToString (int nValue, int nWidth);
