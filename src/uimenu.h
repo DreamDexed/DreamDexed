@@ -139,6 +139,7 @@ private:
 	static void TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 	static void InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
 private:
 	CUserInterface *m_pUI;
 	CMiniDexed *m_pMiniDexed;
