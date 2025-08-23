@@ -134,7 +134,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EditNoteLimitMenu[] =
 {
 	{"Limit Low",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitLow, .OnSelect=InputKeyDown},
 	{"Limit High",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteLimitHigh, .OnSelect=InputKeyDown},
-	{"Shift",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteShift},
+	{"Shift",		EditTGParameter2,	0,	CMiniDexed::TGParameterNoteShift, .OnSelect=InputShiftKeyDown},
 	{0}
 };
 
@@ -444,6 +444,7 @@ const char CUIMenu::s_MIDINoteShift[49][8] =
 };
 
 static const unsigned NoteC3 = 39;
+static const unsigned MIDINoteC3 = 60;
 
 const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 {
@@ -1738,6 +1739,17 @@ void CUIMenu::InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event)
 	CMiniDexed::TTGParameter Param = (CMiniDexed::TTGParameter) pUIMenu->m_nCurrentParameter;
 	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2]; 
 	pUIMenu->m_pMiniDexed->SetTGParameter(Param, nLastKeyDown, nTG);
+}
+
+void CUIMenu::InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	assert (pUIMenu);
+
+	int nLastKeyDown = pUIMenu->m_pMiniDexed->GetLastKeyDown () - MIDINoteC3;
+	CMiniDexed::TTGParameter Param = (CMiniDexed::TTGParameter) pUIMenu->m_nCurrentParameter;
+	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-2]; 
+	if (nLastKeyDown >= -24 && nLastKeyDown <= 24)
+		pUIMenu->m_pMiniDexed->SetTGParameter(Param, nLastKeyDown, nTG);
 }
 
 void CUIMenu::PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event)
