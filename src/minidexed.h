@@ -175,6 +175,8 @@ public:
 	bool IsValidPerformance(unsigned nID);
 	bool IsValidPerformanceBank(unsigned nBankID);
 
+	int GetLastKeyDown();
+
 	// Must match the order in CUIMenu::TParameter
 	enum TParameter
 	{
@@ -393,6 +395,8 @@ private:
 	std::atomic<unsigned> m_nFramesToProcess;
 	float32_t m_OutputLevel[CConfig::AllToneGenerators][CConfig::MaxChunkSize];
 #endif
+
+	int m_nLastKeyDown;
 
 	CPerformanceTimer m_GetChunkTimer;
 	bool m_bProfileEnabled;
