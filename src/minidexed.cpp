@@ -63,6 +63,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 #ifdef ARM_ALLOW_MULTI_CORE
 //	m_nActiveTGsLog2 (0),
 #endif
+	m_nLastKeyDown{},
 	m_GetChunkTimer ("GetChunk",
 			 1000000U * pConfig->GetChunkSize ()/2 / pConfig->GetSampleRate ()),
 	m_bProfileEnabled (m_pConfig->GetProfileEnabled ()),
@@ -900,6 +901,8 @@ void CMiniDexed::keydown (int16_t pitch, uint8_t velocity, unsigned nTG)
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	assert (m_pTG[nTG]);
+
+	m_nLastKeyDown = pitch;
 
 	pitch = ApplyNoteLimits (pitch, nTG);
 	if (pitch >= 0)
@@ -2493,6 +2496,11 @@ bool CMiniDexed::IsValidPerformance(unsigned nID)
 bool CMiniDexed::IsValidPerformanceBank(unsigned nBankID)
 {
 	return m_PerformanceConfig.IsValidPerformanceBank(nBankID);
+}
+
+int CMiniDexed::GetLastKeyDown()
+{
+	return m_nLastKeyDown;
 }
 
 void CMiniDexed::SetVoiceName (const std::string &VoiceName, unsigned nTG)
