@@ -98,11 +98,11 @@ const CUIMenu::TMenuItem CUIMenu::s_EditCompressorMenu[] =
 {
 	{"Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorEnable},
 	{"Pre Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorPreGain},
-	{"Makeup Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorMakeupGain},
-	{"Attack",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorAttack},
-	{"Release",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRelease},
 	{"Threshold",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorThresh},
 	{"Ratio",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRatio},
+	{"Attack",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorAttack},
+	{"Release",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorRelease},
+	{"Makeup Gain",	EditTGParameter2,	0,	CMiniDexed::TGParameterCompressorMakeupGain},
 	{0}
 };
 
@@ -197,10 +197,10 @@ const CUIMenu::TMenuItem CUIMenu::s_LimiterMenu[] =
 {
 	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterEnable},
 	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterPreGain},
-	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterAttack},
-	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterRelease},
 	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterThresh},
 	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterRatio},
+	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterAttack},
+	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterRelease},
 	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterHPFilterEnable},
 	{0}
 };
@@ -289,10 +289,10 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
 	{0,	1,	1,	ToOnOff},		// ParameterLimiterEnable
 	{-20,	20,	1,	TodB},			// ParameterLimiterPreGain
-	{0,	1000,	5,	ToMillisec},		// ParameterLimiterAttack
-	{0,	1000,	5,	ToMillisec},		// ParameterLimiterRelease
 	{-60,	0,	1,	TodBFS},		// ParameterLimiterThresh
 	{1,	20,	1,	ToRatio},		// ParameterLimiterRatio
+	{0,	1000,	5,	ToMillisec},		// ParameterLimiterAttack
+	{0,	1000,	5,	ToMillisec},		// ParameterLimiterRelease
 	{0,	1,	1,	ToOnOff},		// ParameterLimiterHPFilterEnable
 	{-24,	24,	1,	TodB},			// ParameterMasterEQLow
 	{-24,	24,	1,	TodB},			// ParameterMasterEQMid
@@ -343,11 +343,11 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0, 1, 1, ToOnOff}, //AT EGBias	
 	{0,	1,	1,	ToOnOff},	// TGParameterCompressorEnable
 	{-20,	20,	1,	TodB},		// TGParameterCompressorPreGain
-	{-20,	20,	1,	TodB},		// TGParameterCompressorMakeupGain
-	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorAttack
-	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
 	{-60,	0,	1,	TodBFS},	// TGParameterCompressorThresh
 	{1,	20,	1,	ToRatio},	// TGParameterCompressorRatio
+	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorAttack
+	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
+	{-20,	20,	1,	TodB},		// TGParameterCompressorMakeupGain
 	{-24,	24,	1,	TodB},		// TGParameterEQLow
 	{-24,	24,	1,	TodB},		// TGParameterEQMid
 	{-24,	24,	1,	TodB},		// TGParameterEQHigh
