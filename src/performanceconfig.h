@@ -73,11 +73,11 @@ public:
 
 	bool GetCompressorEnable (unsigned nTG) const; 		// 0 .. 1
 	int GetCompressorPreGain (unsigned nTG) const;
-	int GetCompressorMakeupGain (unsigned nTG) const;
-	unsigned GetCompressorAttack (unsigned nTG) const;
-	unsigned GetCompressorRelease (unsigned nTG) const;
 	int GetCompressorThresh (unsigned nTG) const;
 	unsigned GetCompressorRatio (unsigned nTG) const;
+	unsigned GetCompressorAttack (unsigned nTG) const;
+	unsigned GetCompressorRelease (unsigned nTG) const;
+	int GetCompressorMakeupGain (unsigned nTG) const;
 
 	void SetBankNumber (unsigned nValue, unsigned nTG);
 	void SetVoiceNumber (unsigned nValue, unsigned nTG);
@@ -111,11 +111,11 @@ public:
 
 	void SetCompressorEnable (bool nValue, unsigned nTG);
 	void SetCompressorPreGain (int nValue, unsigned nTG);
-	void SetCompressorMakeupGain (int nValue, unsigned nTG);
+	void SetCompressorThresh (int nValue, unsigned nTG);
+	void SetCompressorRatio (unsigned nValue, unsigned nTG);	
 	void SetCompressorAttack (unsigned nValue, unsigned nTG);
 	void SetCompressorRelease (unsigned nValue, unsigned nTG);	
-	void SetCompressorThresh (int nValue, unsigned nTG);
-	void SetCompressorRatio (unsigned nValue, unsigned nTG);
+	void SetCompressorMakeupGain (int nValue, unsigned nTG);
 
 	int GetEQLow (unsigned nTG) const;
 	int GetEQMid (unsigned nTG) const;
@@ -164,18 +164,18 @@ public:
 
 	bool GetLimiterEnable () const;
 	int GetLimiterPreGain () const;
-	unsigned GetLimiterAttack () const;
-	unsigned GetLimiterRelease () const;
 	int GetLimiterThresh () const;
 	unsigned GetLimiterRatio () const;
+	unsigned GetLimiterAttack () const;
+	unsigned GetLimiterRelease () const;
 	bool GetLimiterHPFilterEnable () const;
 
 	void SetLimiterEnable (bool nValue);
 	void SetLimiterPreGain (int nValue);
-	void SetLimiterAttack (unsigned nValue);
-	void SetLimiterRelease (unsigned nValue);	
 	void SetLimiterThresh (int nValue);
 	void SetLimiterRatio (unsigned nValue);
+	void SetLimiterAttack (unsigned nValue);
+	void SetLimiterRelease (unsigned nValue);	
 	void SetLimiterHPFilterEnable (bool nValue);
 
 	bool VoiceDataFilled(unsigned nTG);
@@ -243,11 +243,11 @@ private:
 	
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
-	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
-	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
-	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRatio[CConfig::AllToneGenerators];
+	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
+	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
+	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
 
 	int m_nEQLow[CConfig::AllToneGenerators];
 	int m_nEQMid[CConfig::AllToneGenerators];
@@ -286,10 +286,10 @@ private:
 
 	bool m_bLimiterEnable;
 	int m_nLimiterPreGain;
-	unsigned m_nLimiterAttack;
-	unsigned m_nLimiterRelease;
 	int m_nLimiterThresh;
 	unsigned m_nLimiterRatio;
+	unsigned m_nLimiterAttack;
+	unsigned m_nLimiterRelease;
 	bool m_bLimiterHPFilterEnable;
 };
 

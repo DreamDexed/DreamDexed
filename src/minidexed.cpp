@@ -131,11 +131,11 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 
 		m_bCompressorEnable[i] = 1;
 		m_nCompressorPreGain[i] = 0;
-		m_nCompressorMakeupGain[i] = 0;
-		m_nCompressorAttack[i] = 5;
-		m_nCompressorRelease[i] = 200;
 		m_nCompressorThresh[i] = -20;
 		m_nCompressorRatio[i] = 5;
+		m_nCompressorAttack[i] = 5;
+		m_nCompressorRelease[i] = 200;
+		m_nCompressorMakeupGain[i] = 0;
 
 		m_nEQLow[i] = 0;
 		m_nEQMid[i] = 0;
@@ -287,10 +287,10 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 
 	SetParameter (ParameterLimiterEnable, 1);
 	SetParameter (ParameterLimiterPreGain, 0);
-	SetParameter (ParameterLimiterAttack, 5);
-	SetParameter (ParameterLimiterRelease, 5);
 	SetParameter (ParameterLimiterThresh, -3);
 	SetParameter (ParameterLimiterRatio, 20);
+	SetParameter (ParameterLimiterAttack, 5);
+	SetParameter (ParameterLimiterRelease, 5);
 	SetParameter (ParameterLimiterHPFilterEnable, 0);
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
@@ -1120,22 +1120,6 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		m_LimiterSpinLock.Release ();
 		break;
 
-	case ParameterLimiterAttack:
-		nValue=constrain(nValue,0,1000);
-		m_LimiterSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_Limiter[i].setAttack_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
-		m_LimiterSpinLock.Release ();
-		break;
-
-	case ParameterLimiterRelease:
-		nValue=constrain(nValue,0,1000);
-		m_LimiterSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_Limiter[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
-		m_LimiterSpinLock.Release ();
-		break;
-
 	case ParameterLimiterThresh:
 		nValue=constrain(nValue,-60,0);
 		m_LimiterSpinLock.Acquire ();
@@ -1149,6 +1133,22 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		m_LimiterSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
 			m_Limiter[i].setCompressionRatio(nValue);
+		m_LimiterSpinLock.Release ();
+		break;
+
+	case ParameterLimiterAttack:
+		nValue=constrain(nValue,0,1000);
+		m_LimiterSpinLock.Acquire ();
+		for (int i=0; i<2; ++i)
+			m_Limiter[i].setAttack_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
+		m_LimiterSpinLock.Release ();
+		break;
+
+	case ParameterLimiterRelease:
+		nValue=constrain(nValue,0,1000);
+		m_LimiterSpinLock.Acquire ();
+		for (int i=0; i<2; ++i)
+			m_Limiter[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
 		m_LimiterSpinLock.Release ();
 		break;
 
@@ -1277,11 +1277,11 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 
 	case TGParameterCompressorEnable:	SetCompressorEnable (nValue, nTG); break;
 	case TGParameterCompressorPreGain:	SetCompressorPreGain (nValue, nTG); break;
-	case TGParameterCompressorMakeupGain:	SetCompressorMakeupGain (nValue, nTG); break;
-	case TGParameterCompressorAttack:	SetCompressorAttack (nValue, nTG); break;
-	case TGParameterCompressorRelease:	SetCompressorRelease (nValue, nTG); break;
 	case TGParameterCompressorThresh:	SetCompressorThresh (nValue, nTG); break;
 	case TGParameterCompressorRatio:	SetCompressorRatio (nValue, nTG); break;
+	case TGParameterCompressorAttack:	SetCompressorAttack (nValue, nTG); break;
+	case TGParameterCompressorRelease:	SetCompressorRelease (nValue, nTG); break;
+	case TGParameterCompressorMakeupGain:	SetCompressorMakeupGain (nValue, nTG); break;
 
 	case TGParameterEQLow:			SetEQLow (nValue, nTG); break;
 	case TGParameterEQMid:			SetEQMid (nValue, nTG); break;
@@ -1345,11 +1345,11 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	
 	case TGParameterCompressorEnable:	return m_bCompressorEnable[nTG];
 	case TGParameterCompressorPreGain:	return m_nCompressorPreGain[nTG];
-	case TGParameterCompressorMakeupGain:	return m_nCompressorMakeupGain[nTG];
+	case TGParameterCompressorThresh:	return m_nCompressorThresh[nTG];
+	case TGParameterCompressorRatio:	return m_nCompressorRatio[nTG];	
 	case TGParameterCompressorAttack:	return m_nCompressorAttack[nTG];
 	case TGParameterCompressorRelease:	return m_nCompressorRelease[nTG];
-	case TGParameterCompressorThresh:	return m_nCompressorThresh[nTG];
-	case TGParameterCompressorRatio:	return m_nCompressorRatio[nTG];
+	case TGParameterCompressorMakeupGain:	return m_nCompressorMakeupGain[nTG];
 
 	case TGParameterEQLow:			return m_nEQLow[nTG]; break;
 	case TGParameterEQMid:			return m_nEQMid[nTG]; break;
@@ -1748,11 +1748,11 @@ bool CMiniDexed::DoSavePerformance (void)
 
 		m_PerformanceConfig.SetCompressorEnable (m_bCompressorEnable[nTG], nTG);
 		m_PerformanceConfig.SetCompressorPreGain (m_nCompressorPreGain[nTG], nTG);
-		m_PerformanceConfig.SetCompressorMakeupGain (m_nCompressorMakeupGain[nTG], nTG);
+		m_PerformanceConfig.SetCompressorThresh (m_nCompressorThresh[nTG], nTG);
+		m_PerformanceConfig.SetCompressorRatio (m_nCompressorRatio[nTG], nTG);		
 		m_PerformanceConfig.SetCompressorAttack (m_nCompressorAttack[nTG], nTG);
 		m_PerformanceConfig.SetCompressorRelease (m_nCompressorRelease[nTG], nTG);	
-		m_PerformanceConfig.SetCompressorThresh (m_nCompressorThresh[nTG], nTG);
-		m_PerformanceConfig.SetCompressorRatio (m_nCompressorRatio[nTG], nTG);
+		m_PerformanceConfig.SetCompressorMakeupGain (m_nCompressorMakeupGain[nTG], nTG);
 
 		m_PerformanceConfig.SetEQLow (m_nEQLow[nTG], nTG);
 		m_PerformanceConfig.SetEQMid (m_nEQMid[nTG], nTG);
@@ -1779,10 +1779,10 @@ bool CMiniDexed::DoSavePerformance (void)
 
 	m_PerformanceConfig.SetLimiterEnable (m_nParameter[ParameterLimiterEnable]);
 	m_PerformanceConfig.SetLimiterPreGain (m_nParameter[ParameterLimiterPreGain]);
-	m_PerformanceConfig.SetLimiterAttack (m_nParameter[ParameterLimiterAttack]);
-	m_PerformanceConfig.SetLimiterRelease (m_nParameter[ParameterLimiterRelease]);
 	m_PerformanceConfig.SetLimiterThresh (m_nParameter[ParameterLimiterThresh]);
 	m_PerformanceConfig.SetLimiterRatio (m_nParameter[ParameterLimiterRatio]);
+	m_PerformanceConfig.SetLimiterAttack (m_nParameter[ParameterLimiterAttack]);
+	m_PerformanceConfig.SetLimiterRelease (m_nParameter[ParameterLimiterRelease]);
 	m_PerformanceConfig.SetLimiterHPFilterEnable (m_nParameter[ParameterLimiterHPFilterEnable]);
 
 	if(m_bSaveAsDeault)
@@ -1817,15 +1817,27 @@ void CMiniDexed::SetCompressorPreGain (int preGain, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
-void CMiniDexed::SetCompressorMakeupGain (int makeupGain, unsigned nTG)
+void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
 {
-	makeupGain = constrain (makeupGain, -20, 20);
+	thresh = constrain (thresh, -60, 0);
 	assert (nTG < CConfig::AllToneGenerators);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	assert (m_pTG[nTG]);
-	m_nCompressorMakeupGain[nTG] = makeupGain;
-	m_pTG[nTG]->Compr.setMakeupGain_dB (makeupGain);
+	m_nCompressorThresh[nTG] = thresh;
+	m_pTG[nTG]->Compr.setThresh_dBFS (thresh);
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
+{
+	ratio = constrain (ratio, 1u, 20u);
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (m_pTG[nTG]);
+	m_nCompressorRatio[nTG] = ratio;
+	m_pTG[nTG]->Compr.setCompressionRatio (ratio);
 	m_UI.ParameterChanged ();
 }
 
@@ -1853,27 +1865,15 @@ void CMiniDexed::SetCompressorRelease (unsigned release, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
-void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
+void CMiniDexed::SetCompressorMakeupGain (int makeupGain, unsigned nTG)
 {
-	thresh = constrain (thresh, -60, 0);
+	makeupGain = constrain (makeupGain, -20, 20);
 	assert (nTG < CConfig::AllToneGenerators);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	assert (m_pTG[nTG]);
-	m_nCompressorThresh[nTG] = thresh;
-	m_pTG[nTG]->Compr.setThresh_dBFS (thresh);
-	m_UI.ParameterChanged ();
-}
-
-void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
-{
-	ratio = constrain (ratio, 1u, 20u);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
-
-	assert (m_pTG[nTG]);
-	m_nCompressorRatio[nTG] = ratio;
-	m_pTG[nTG]->Compr.setCompressionRatio (ratio);
+	m_nCompressorMakeupGain[nTG] = makeupGain;
+	m_pTG[nTG]->Compr.setMakeupGain_dB (makeupGain);
 	m_UI.ParameterChanged ();
 }
 
@@ -2454,11 +2454,11 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 		SetCompressorEnable (m_PerformanceConfig.GetCompressorEnable (nTG), nTG);
 		SetCompressorPreGain (m_PerformanceConfig.GetCompressorPreGain (nTG), nTG);
-		SetCompressorMakeupGain (m_PerformanceConfig.GetCompressorMakeupGain (nTG), nTG);
+		SetCompressorThresh (m_PerformanceConfig.GetCompressorThresh (nTG), nTG);
+		SetCompressorRatio (m_PerformanceConfig.GetCompressorRatio (nTG), nTG);		
 		SetCompressorAttack (m_PerformanceConfig.GetCompressorAttack (nTG), nTG);;
 		SetCompressorRelease (m_PerformanceConfig.GetCompressorRelease (nTG), nTG);
-		SetCompressorThresh (m_PerformanceConfig.GetCompressorThresh (nTG), nTG);
-		SetCompressorRatio (m_PerformanceConfig.GetCompressorRatio (nTG), nTG);
+		SetCompressorMakeupGain (m_PerformanceConfig.GetCompressorMakeupGain (nTG), nTG);
 
 		SetEQLow (m_PerformanceConfig.GetEQLow (nTG), nTG);
 		SetEQMid (m_PerformanceConfig.GetEQMid (nTG), nTG);
@@ -2486,10 +2486,10 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 	SetParameter (ParameterLimiterEnable, m_PerformanceConfig.GetLimiterEnable ());
 	SetParameter (ParameterLimiterPreGain, m_PerformanceConfig.GetLimiterPreGain ());
-	SetParameter (ParameterLimiterAttack, m_PerformanceConfig.GetLimiterAttack ());
-	SetParameter (ParameterLimiterRelease, m_PerformanceConfig.GetLimiterRelease ());
 	SetParameter (ParameterLimiterThresh, m_PerformanceConfig.GetLimiterThresh ());
 	SetParameter (ParameterLimiterRatio, m_PerformanceConfig.GetLimiterRatio ());
+	SetParameter (ParameterLimiterAttack, m_PerformanceConfig.GetLimiterAttack ());
+	SetParameter (ParameterLimiterRelease, m_PerformanceConfig.GetLimiterRelease ());
 	SetParameter (ParameterLimiterHPFilterEnable, m_PerformanceConfig.GetLimiterHPFilterEnable ());
 
 	m_UI.DisplayChanged ();

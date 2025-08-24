@@ -111,11 +111,11 @@ public:
 
 	void SetCompressorEnable (bool compressor, unsigned nTG);	// 0 .. 1 (default 1)
 	void SetCompressorPreGain (int preGain, unsigned nTG);		// -20 .. 20 dB (default 0)
-	void SetCompressorMakeupGain (int makeupGain, unsigned nTG);	// -20 .. 20 dB (default 0)
-	void SetCompressorAttack (unsigned attack, unsigned nTG);	// 0 .. 1000 ms (default 5)
-	void SetCompressorRelease (unsigned release, unsigned nTG);	// 0 .. 1000 ms (default 200)
 	void SetCompressorThresh (int thresh, unsigned nTG);		// -60 .. 0 dBFS (default -20)
 	void SetCompressorRatio (unsigned ratio, unsigned nTG);		// 1 .. 20 (default 5)
+	void SetCompressorAttack (unsigned attack, unsigned nTG);	// 0 .. 1000 ms (default 5)
+	void SetCompressorRelease (unsigned release, unsigned nTG);	// 0 .. 1000 ms (default 200)
+	void SetCompressorMakeupGain (int makeupGain, unsigned nTG);	// -20 .. 20 dB (default 0)
 
 	void SetEQLow (int nValue, unsigned nTG);
 	void SetEQMid (int nValue, unsigned nTG);
@@ -193,10 +193,10 @@ public:
 		ParameterMasterVolume,
 		ParameterLimiterEnable,
 		ParameterLimiterPreGain,
-		ParameterLimiterAttack,
-		ParameterLimiterRelease,
 		ParameterLimiterThresh,
 		ParameterLimiterRatio,
+		ParameterLimiterAttack,
+		ParameterLimiterRelease,
 		ParameterLimiterHPFilterEnable,
 		ParameterMasterEQLow,
 		ParameterMasterEQMid,
@@ -262,11 +262,11 @@ public:
 
 		TGParameterCompressorEnable,
 		TGParameterCompressorPreGain,
-		TGParameterCompressorMakeupGain,
-		TGParameterCompressorAttack,
-		TGParameterCompressorRelease,
 		TGParameterCompressorThresh,
 		TGParameterCompressorRatio,
+		TGParameterCompressorAttack,
+		TGParameterCompressorRelease,
+		TGParameterCompressorMakeupGain,
 		
 		TGParameterEQLow,
 		TGParameterEQMid,
@@ -360,11 +360,11 @@ private:
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
-	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
-	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
-	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
 	unsigned m_nCompressorRatio[CConfig::AllToneGenerators];
+	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
+	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
+	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
   
 	int m_nEQLow[CConfig::AllToneGenerators];
 	int m_nEQMid[CConfig::AllToneGenerators];

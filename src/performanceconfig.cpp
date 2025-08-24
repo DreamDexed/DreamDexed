@@ -215,8 +215,11 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("CompressorPreGain%u", nTG+1);
 		m_nCompressorPreGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
-		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
-		m_nCompressorMakeupGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format ("CompressorThresh%u", nTG+1);
+		m_nCompressorThresh[nTG] = m_Properties.GetSignedNumber (PropertyName, -20);
+
+		PropertyName.Format ("CompressorRatio%u", nTG+1);
+		m_nCompressorRatio[nTG] = m_Properties.GetNumber (PropertyName, 5);
 
 		PropertyName.Format ("CompressorAttack%u", nTG+1);
 		m_nCompressorAttack[nTG] = m_Properties.GetNumber (PropertyName, 5);
@@ -224,11 +227,8 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("CompressorRelease%u", nTG+1);
 		m_nCompressorRelease[nTG] = m_Properties.GetNumber (PropertyName, 200);
 
-		PropertyName.Format ("CompressorThresh%u", nTG+1);
-		m_nCompressorThresh[nTG] = m_Properties.GetSignedNumber (PropertyName, -20);
-
-		PropertyName.Format ("CompressorRatio%u", nTG+1);
-		m_nCompressorRatio[nTG] = m_Properties.GetNumber (PropertyName, 5);
+		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
+		m_nCompressorMakeupGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
 		PropertyName.Format ("EQLow%u", nTG+1);
 		m_nEQLow[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
@@ -266,10 +266,10 @@ bool CPerformanceConfig::Load (void)
 
 	m_bLimiterEnable = m_Properties.GetNumber ("LimiterEnable", 1);
 	m_nLimiterPreGain = m_Properties.GetSignedNumber ("LimiterPreGain", 0);
-	m_nLimiterAttack = m_Properties.GetNumber ("LimiterAttack", 5);
-	m_nLimiterRelease = m_Properties.GetNumber ("LimiterRelease", 5);
 	m_nLimiterThresh = m_Properties.GetSignedNumber ("LimiterThresh", -3);
 	m_nLimiterRatio = m_Properties.GetNumber ("LimiterRatio", 20);
+	m_nLimiterAttack = m_Properties.GetNumber ("LimiterAttack", 5);
+	m_nLimiterRelease = m_Properties.GetNumber ("LimiterRelease", 5);
 	m_bLimiterHPFilterEnable = m_Properties.GetNumber ("LimiterHPFilterEnable", 0);
 
 	// Compatibility
@@ -393,8 +393,11 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("CompressorPreGain%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nCompressorPreGain[nTG]);
 
-		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nCompressorMakeupGain[nTG]);
+		PropertyName.Format ("CompressorThresh%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nCompressorThresh[nTG]);
+
+		PropertyName.Format ("CompressorRatio%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nCompressorRatio[nTG]);
 
 		PropertyName.Format ("CompressorAttack%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nCompressorAttack[nTG]);
@@ -402,11 +405,8 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("CompressorRelease%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nCompressorRelease[nTG]);
 
-		PropertyName.Format ("CompressorThresh%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nCompressorThresh[nTG]);
-
-		PropertyName.Format ("CompressorRatio%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nCompressorRatio[nTG]);
+		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
+		m_Properties.SetSignedNumber (PropertyName, m_nCompressorMakeupGain[nTG]);
 
 		PropertyName.Format ("EQLow%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nEQLow[nTG]);
@@ -445,10 +445,10 @@ bool CPerformanceConfig::Save (void)
 
 	m_Properties.SetNumber ("LimiterEnable", m_bLimiterEnable);
 	m_Properties.SetSignedNumber ("LimiterPreGain", m_nLimiterPreGain);
-	m_Properties.SetNumber ("LimiterAttack", m_nLimiterAttack);
-	m_Properties.SetNumber ("LimiterRelease", m_nLimiterRelease);
 	m_Properties.SetSignedNumber ("LimiterThresh", m_nLimiterThresh);
 	m_Properties.SetNumber ("LimiterRatio", m_nLimiterRatio);
+	m_Properties.SetNumber ("LimiterAttack", m_nLimiterAttack);
+	m_Properties.SetNumber ("LimiterRelease", m_nLimiterRelease);
 	m_Properties.SetNumber ("LimiterHPFilterEnable", m_bLimiterHPFilterEnable);
 
 	return m_Properties.Save ();
@@ -811,16 +811,6 @@ int CPerformanceConfig::GetLimiterPreGain () const
 	return m_nLimiterPreGain;
 }
 
-unsigned CPerformanceConfig::GetLimiterAttack () const
-{
-	return m_nLimiterAttack;
-}
-
-unsigned CPerformanceConfig::GetLimiterRelease () const
-{
-	return m_nLimiterRelease;
-}
-
 int CPerformanceConfig::GetLimiterThresh () const
 {
 	return m_nLimiterThresh;
@@ -829,6 +819,16 @@ int CPerformanceConfig::GetLimiterThresh () const
 unsigned CPerformanceConfig::GetLimiterRatio () const
 {
 	return m_nLimiterRatio;
+}
+
+unsigned CPerformanceConfig::GetLimiterAttack () const
+{
+	return m_nLimiterAttack;
+}
+
+unsigned CPerformanceConfig::GetLimiterRelease () const
+{
+	return m_nLimiterRelease;
 }
 
 bool CPerformanceConfig::GetLimiterHPFilterEnable () const
@@ -846,16 +846,6 @@ void CPerformanceConfig::SetLimiterPreGain (int nValue)
 	m_nLimiterPreGain= nValue;
 }
 
-void CPerformanceConfig::SetLimiterAttack (unsigned nValue)
-{
-	m_nLimiterAttack = nValue;
-}
-
-void CPerformanceConfig::SetLimiterRelease (unsigned nValue)
-{
-	m_nLimiterRelease = nValue;
-}
-
 void CPerformanceConfig::SetLimiterThresh (int nValue)
 {
 	m_nLimiterThresh = nValue;
@@ -864,6 +854,16 @@ void CPerformanceConfig::SetLimiterThresh (int nValue)
 void CPerformanceConfig::SetLimiterRatio (unsigned nValue)
 {
 	m_nLimiterRatio = nValue;
+}
+
+void CPerformanceConfig::SetLimiterAttack (unsigned nValue)
+{
+	m_nLimiterAttack = nValue;
+}
+
+void CPerformanceConfig::SetLimiterRelease (unsigned nValue)
+{
+	m_nLimiterRelease = nValue;
 }
 
 void CPerformanceConfig::SetLimiterHPFilterEnable (bool nValue)
@@ -1067,16 +1067,28 @@ int CPerformanceConfig::GetCompressorPreGain (unsigned nTG) const
 	return m_nCompressorPreGain[nTG];
 }
 
-void CPerformanceConfig::SetCompressorMakeupGain (int nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorThresh (int nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	m_nCompressorMakeupGain[nTG] = nValue;
+	m_nCompressorThresh[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetCompressorMakeupGain (unsigned nTG) const
+int CPerformanceConfig::GetCompressorThresh (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	return m_nCompressorMakeupGain[nTG];
+	return m_nCompressorThresh[nTG];
+}
+
+void CPerformanceConfig::SetCompressorRatio (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nCompressorRatio[nTG] = nValue;
+}
+
+unsigned CPerformanceConfig::GetCompressorRatio (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nCompressorRatio[nTG];
 }
 
 void CPerformanceConfig::SetCompressorAttack (unsigned nValue, unsigned nTG)
@@ -1103,28 +1115,16 @@ unsigned CPerformanceConfig::GetCompressorRelease (unsigned nTG) const
 	return m_nCompressorRelease[nTG];
 }
 
-void CPerformanceConfig::SetCompressorThresh (int nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorMakeupGain (int nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	m_nCompressorThresh[nTG] = nValue;
+	m_nCompressorMakeupGain[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetCompressorThresh (unsigned nTG) const
+int CPerformanceConfig::GetCompressorMakeupGain (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	return m_nCompressorThresh[nTG];
-}
-
-void CPerformanceConfig::SetCompressorRatio (unsigned nValue, unsigned nTG)
-{
-	assert (nTG < CConfig::AllToneGenerators);
-	m_nCompressorRatio[nTG] = nValue;
-}
-
-unsigned CPerformanceConfig::GetCompressorRatio (unsigned nTG) const
-{
-	assert (nTG < CConfig::AllToneGenerators);
-	return m_nCompressorRatio[nTG];
+	return m_nCompressorMakeupGain[nTG];
 }
 
 
