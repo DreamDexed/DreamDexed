@@ -114,3 +114,17 @@ This project stands on the shoulders of giants. Special thanks to:
 - [dwhinham/mt32-pi](https://github.com/dwhinham/mt32-pi) for creating networking support for Circle
 - [omersiar](https://github.com/omersiar) for porting networking support to MiniDexed
 - [soyersoyer](https://github.com/soyersoyer) for sound and other improvements, and for debugging
+  
+## About the Reverb (Cloud Seed)
+
+DreamDexed includes the **Cloud Seed** reverb algorithm, originally created by [Ghost Note Audio](https://github.com/ValdemarOrn/CloudSeed).
+
+- The algorithm is MIT-licensed and may be used in both free and commercial projects.  
+- **Cloud Seed** is the work of Ghost Note Audio and not part of DreamDexed itself.  
+- When mentioning *Cloud Seed* in documentation or marketing, it must be clear that DreamDexed is an independent project that simply makes use of this reverb algorithm.  
+- Ghost Note Audio reserves the right to withdraw the use of the *Cloud Seed* name if these conditions are not respected.  
+
+### Credits 
+A huge thanks to **Ghost Note Audio** for releasing this gem under MIT.  
+Without Cloud Seed, our DX tones would be stuck in the dry desert of 80s presets —  
+now they can float through infinite digital cathedrals. 🌌🎹✨
