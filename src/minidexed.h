@@ -439,6 +439,11 @@ private:
 	bool m_bLoadPerformanceBusy;
 	bool m_bLoadPerformanceBankBusy;
 	bool m_bSaveAsDeault;
+
+	std::atomic<bool> m_bVolRampDownWait;
+	std::atomic<bool> m_bVolRampedDown;
+
+	const float32_t m_fRamp;
 };
 
 #endif

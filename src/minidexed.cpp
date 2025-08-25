@@ -87,7 +87,10 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	m_bSetFirstPerformance (false),
 	m_bDeletePerformance (false),
 	m_bLoadPerformanceBusy(false),
-	m_bLoadPerformanceBankBusy(false)
+	m_bLoadPerformanceBankBusy(false),
+	m_bVolRampDownWait{},
+	m_bVolRampedDown{},
+	m_fRamp{10.0f / pConfig->GetSampleRate()}
 {
 	assert (m_pConfig);
 		
@@ -477,12 +480,21 @@ void CMiniDexed::Process (bool bPlugAndPlayUpdated)
 		pScheduler->Yield();
 	}
 	
-	if (m_bSetNewPerformance && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
+	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
 	{
+		for (unsigned i = 0; i < m_nToneGenerators; ++i)
+		{
+			m_pTG[i]->resetState();
+		}
+
 		DoSetNewPerformance ();
+
+		reverb->reset();
+
 		if (m_nSetNewPerformanceID == GetActualPerformanceID())
 		{
 			m_bSetNewPerformance = false;
+			m_bVolRampedDown = false;
 		}
 		pScheduler->Yield();
 	}
@@ -1630,7 +1642,25 @@ void CMiniDexed::ProcessSound (void)
 			}
 
 			// Convert dual float array (left, right) to single int32 (q23) array (left/right)
-			if (m_fMasterVolume[0] == m_fMasterVolumeW && m_fMasterVolume[1] == m_fMasterVolumeW)
+			if (m_bVolRampDownWait)
+			{
+				float targetVol = 0.0f;
+
+				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], targetVol, m_fRamp, SampleBuffer[0], nFrames);
+				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], targetVol, m_fRamp, SampleBuffer[1], nFrames);
+				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
+
+				if (targetVol == m_fMasterVolume[0] && targetVol == m_fMasterVolume[1])
+				{
+					m_bVolRampDownWait = false;
+					m_bVolRampedDown = true;
+				}
+			}
+			else if (m_bVolRampedDown)
+			{
+				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], 0.0f, tmp_float, nFrames);
+			}
+			else if (m_fMasterVolume[0] == m_fMasterVolumeW && m_fMasterVolume[1] == m_fMasterVolumeW)
 			{
 				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], m_fMasterVolumeW, tmp_float, nFrames);
 			}
@@ -2325,6 +2355,8 @@ bool CMiniDexed::SetNewPerformance(unsigned nID)
 {
 	m_bSetNewPerformance = true;
 	m_nSetNewPerformanceID = nID;
+	if (!m_bVolRampedDown)
+		m_bVolRampDownWait = true;
 
 	return true;
 }
