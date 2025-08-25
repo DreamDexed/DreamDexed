@@ -98,6 +98,16 @@ public:
 		m_SpinLock.Release ();
 	}
 
+	void resetState ()
+	{
+		m_SpinLock.Acquire ();
+		deactivate ();
+		resetFxState ();
+		EQ.resetState ();
+		Compr.resetStates ();
+		m_SpinLock.Release ();
+	}
+
 	AudioEffect3BandEQ EQ;
 	Compressor Compr;
 
