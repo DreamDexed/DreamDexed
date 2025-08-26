@@ -93,6 +93,8 @@ public:
     unsigned getLowMidFreq_n() const { return nLowMidFreq; }
     unsigned getMidHighFreq_n() const { return nMidHighFreq; }
 
+    void resetState() { tmpLP = 0.0f; tmpHP = 0.0f; }
+
     void process(float32_t* block, uint16_t len)
     {
         float outLP, outHP;
