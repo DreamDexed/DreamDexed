@@ -552,6 +552,7 @@ void CMiniDexed::Run (unsigned nCore)
 		while (m_CoreStatus[nCore] != CoreStatusExit)
 		{
 			ProcessSound ();
+			WaitForEvent ();
 		}
 	}
 	else								// core 2 and 3
