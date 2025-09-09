@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cassert>
 #include <arm_math.h>
-#include "arm_scale_zc_ramp_f32.h"
 
 #define UNITY_GAIN 1.0f
 #define MAX_GAIN 1.0f
@@ -16,10 +15,41 @@
 #define MAX_PANORAMA 1.0f
 #define MIN_PANORAMA 0.0f
 
+void inline scale_ramp_f32(
+  const float32_t * pSrc,
+        float32_t * pScale,
+        float32_t dScale,
+	float32_t ramp,
+        float32_t * pDst,
+        uint32_t blockSize)
+{
+  uint32_t blkCnt;                               /* Loop counter */
+  float32_t scale = *pScale;
+
+  blkCnt = blockSize;
+
+  while (blkCnt > 0U)
+  {
+    *pDst++ = *pSrc++ * scale;
+
+    blkCnt--;
+
+    if (blkCnt && scale != dScale)
+    {
+      if (dScale > scale) scale = fmin(dScale, scale + ramp);
+      else if (dScale < scale) scale = fmax(dScale, scale - ramp);
+    }    
+  }
+
+  *pScale = scale;
+}
+
+
 template <int NN> class AudioMixer
 {
 public:
-	AudioMixer(uint16_t len)
+	AudioMixer(uint16_t len, float32_t samplerate):
+	ramp{10.0f / samplerate} // 100ms
 	{
 		buffer_length=len;
 		for (uint8_t i=0; i<NN; i++)
@@ -84,12 +114,13 @@ protected:
 	float32_t multiplier[NN];
 	float32_t* sumbufL;
 	uint16_t buffer_length;
+	const float32_t ramp;
 };
 
 template <int NN> class AudioStereoMixer : public AudioMixer<NN>
 {
 public:
-	AudioStereoMixer(uint16_t len) : AudioMixer<NN>(len)
+	AudioStereoMixer(uint16_t len, float32_t samplerate) : AudioMixer<NN>(len, samplerate)
 	{
 		for (uint8_t i=0; i<NN; i++)
 		{
@@ -165,14 +196,14 @@ public:
 		if (mp[channel][0] == mp_w[channel][0])
 			arm_scale_f32(in, mp[channel][0], tmp, buffer_length);
 		else
-			arm_scale_zc_ramp_f32(in, &mp[channel][0], mp_w[channel][0], tmp, buffer_length);
+			scale_ramp_f32(in, &mp[channel][0], mp_w[channel][0], ramp, tmp, buffer_length);
 
 		arm_add_f32(sumbufL, tmp, sumbufL, buffer_length);
 
 		if (mp[channel][1] == mp_w[channel][1])
 			arm_scale_f32(in, mp[channel][1], tmp, buffer_length);
 		else
-			arm_scale_zc_ramp_f32(in, &mp[channel][1], mp_w[channel][1], tmp, buffer_length);
+			scale_ramp_f32(in, &mp[channel][1], mp_w[channel][1], ramp, tmp, buffer_length);
 
 		arm_add_f32(sumbufR, tmp, sumbufR, buffer_length);
 	}
@@ -211,6 +242,7 @@ protected:
 	using AudioMixer<NN>::sumbufL;
 	using AudioMixer<NN>::multiplier;
 	using AudioMixer<NN>::buffer_length;
+	using AudioMixer<NN>::ramp;
 	float32_t panorama[NN][2];
 	float32_t mp[NN][2];
 	float32_t mp_w[NN][2];
