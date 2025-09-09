@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cassert>
 #include "arm_float_to_q23.h"
-#include "arm_scale_zc_ramp_f32.h"
 #include "arm_scale_zip_f32.h"
 #include "arm_zip_f32.h"
 
@@ -260,11 +259,11 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 #endif
 
 	// BEGIN setup tg_mixer
-	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
+	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
 	// END setup tgmixer
 
 	// BEGIN setup reverb
-	reverb_send_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2);
+	reverb_send_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
 	reverb = new AudioEffectPlateReverb(pConfig->GetSampleRate());
 
 	SetParameter (ParameterMasterEQLow, 0);
@@ -1637,8 +1636,8 @@ void CMiniDexed::ProcessSound (void)
 			}
 			else
 			{
-				arm_scale_zc_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, SampleBuffer[0], nFrames);
-				arm_scale_zc_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, SampleBuffer[1], nFrames);
+				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, m_fRamp, SampleBuffer[0], nFrames);
+				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, m_fRamp, SampleBuffer[1], nFrames);
 				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
 			}
 
