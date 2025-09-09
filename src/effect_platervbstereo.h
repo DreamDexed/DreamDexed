@@ -109,6 +109,8 @@ public:
     void set_bypass(bool state) {bypass = state;};
     void tgl_bypass(void) {bypass ^=1;}
     float32_t get_level(void) {return reverb_level;}
+
+    void reset();
 private:
     bool bypass = false;
     float32_t reverb_level;
