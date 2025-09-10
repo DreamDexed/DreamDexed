@@ -30,15 +30,16 @@ void inline scale_ramp_f32(
 
   while (blkCnt > 0U)
   {
+    if (scale != dScale)
+    {
+      scale = dScale > scale ?
+      	fmin(dScale, scale + ramp):
+      	fmax(dScale, scale - ramp);
+    }
+
     *pDst++ = *pSrc++ * scale;
 
     blkCnt--;
-
-    if (blkCnt && scale != dScale)
-    {
-      if (dScale > scale) scale = fmin(dScale, scale + ramp);
-      else if (dScale < scale) scale = fmax(dScale, scale - ramp);
-    }    
   }
 
   *pScale = scale;
