@@ -555,6 +555,9 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 		
 						case MIDI_CC_PAN_POSITION:
+							if (m_pSynthesizer->GetTGParameter(CMiniDexed::TGParameterTGLink, nTG))
+								break;
+
 							m_pSynthesizer->SetPan (pMessage[2], nTG);
 							break;
 		
@@ -602,6 +605,9 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 		
 						case MIDI_CC_DETUNE_LEVEL:
+							if (m_pSynthesizer->GetTGParameter(CMiniDexed::TGParameterTGLink, nTG))
+								break;
+
 							if (pMessage[2] == 0)
 							{
 								// 0 to 127, with 0 being no detune effect applied at all

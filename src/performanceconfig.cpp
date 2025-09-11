@@ -184,7 +184,10 @@ bool CPerformanceConfig::Load (void)
 		
 		PropertyName.Format ("MonoMode%u", nTG+1);
 		m_bMonoMode[nTG] = m_Properties.GetNumber (PropertyName, 0) != 0;
-				
+		
+		PropertyName.Format ("TGLink%u", nTG+1);
+		m_nTGLink[nTG] = m_Properties.GetNumber (PropertyName, 0);
+
 		PropertyName.Format ("ModulationWheelRange%u", nTG+1);
 		m_nModulationWheelRange[nTG] = m_Properties.GetNumber (PropertyName, 99); 
 		
@@ -362,7 +365,10 @@ bool CPerformanceConfig::Save (void)
 		
 		PropertyName.Format ("MonoMode%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_bMonoMode[nTG] ? 1 : 0);
-				
+
+		PropertyName.Format ("TGLink%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nTGLink[nTG]);
+
 		PropertyName.Format ("ModulationWheelRange%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nModulationWheelRange[nTG]);
 	
@@ -945,6 +951,17 @@ void CPerformanceConfig::SetMonoMode (bool bValue, unsigned nTG)
 bool CPerformanceConfig::GetMonoMode (unsigned nTG) const
 {
 	return m_bMonoMode[nTG];
+}
+
+void CPerformanceConfig::SetTGLink (unsigned nTGLink, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nTGLink[nTG] = nTGLink;
+}
+
+unsigned CPerformanceConfig::GetTGLink (unsigned nTG) const
+{
+	return m_nTGLink[nTG];
 }
 
 void CPerformanceConfig::SetModulationWheelRange (unsigned nValue, unsigned nTG)

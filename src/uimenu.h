@@ -120,6 +120,7 @@ private:
 	static std::string ToPortaMode (int nValue, int nWidth);
 	static std::string ToPortaGlissando (int nValue, int nWidth);
 	static std::string ToPolyMono (int nValue, int nWidth);
+	static std::string ToTGLinkName (int nValue, int nWidth);
 	static std::string TodB (int nValue, int nWidth);
 	static std::string TodBFS (int nValue, int nWidth);
 	static std::string ToMillisec (int nValue, int nWidth);
