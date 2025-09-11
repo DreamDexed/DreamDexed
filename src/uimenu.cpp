@@ -86,6 +86,7 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Portamento",		MenuHandler,		s_EditPortamentoMenu},
 	{"Note Limit",		MenuHandler,	s_EditNoteLimitMenu},
 	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode}, 
+	{"TG-Link",		EditTGParameter,	0,	CMiniDexed::TGParameterTGLink},
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
 	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
 	{"EQ",		MenuHandler,		s_EQMenu},
@@ -325,6 +326,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	127,					1, ToMIDINote},		// TGParameterNoteLimitHigh
 	{-24,	24,					1, ToMIDINoteShift},	// TGParameterNoteShift
 	{0,	1,					1, ToPolyMono}, 		// TGParameterMonoMode 
+	{0,	4,					1, ToTGLinkName}, 		// TGParameterTGLink
 	{0, 99, 1}, //MW Range
 	{0, 1, 1, ToOnOff}, //MW Pitch
 	{0, 1, 1, ToOnOff}, //MW Amp
@@ -1378,6 +1380,12 @@ std::string CUIMenu::ToPolyMono (int nValue, int nWidth)
 	case 1:		return "Mono";
 	default:	return std::to_string (nValue);
 	}
+}
+
+std::string CUIMenu::ToTGLinkName (int nValue, int nWidth)
+{
+	if (nValue == 0) return "-";
+	return std::string{(char)(nValue + 'A' - 1)};
 }
 
 std::string CUIMenu::TodB (int nValue, int nWidth)
