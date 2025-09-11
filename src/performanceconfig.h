@@ -61,6 +61,7 @@ public:
 	unsigned GetPortamentoGlissando (unsigned nTG) const;		// 0 .. 1
 	unsigned GetPortamentoTime (unsigned nTG) const;		// 0 .. 99
 	bool GetMonoMode (unsigned nTG) const; 				// 0 .. 1
+	unsigned GetTGLink (unsigned nTG) const;		// 0 .. 4
 	
 	unsigned GetModulationWheelRange (unsigned nTG) const; // 0 .. 99
 	unsigned GetModulationWheelTarget (unsigned nTG) const; // 0 .. 7
@@ -99,6 +100,7 @@ public:
 	void SetVoiceDataToTxt (const uint8_t *pData, unsigned nTG); 
 	uint8_t *GetVoiceDataFromTxt (unsigned nTG);
 	void SetMonoMode (bool bOKValue, unsigned nTG); 
+	void SetTGLink (unsigned nTGLink, unsigned nTG);
 
 	void SetModulationWheelRange (unsigned nValue, unsigned nTG);
 	void SetModulationWheelTarget (unsigned nValue, unsigned nTG);
@@ -231,6 +233,7 @@ private:
 	unsigned m_nPortamentoTime[CConfig::AllToneGenerators];
 	std::string m_nVoiceDataTxt[CConfig::AllToneGenerators]; 
 	bool m_bMonoMode[CConfig::AllToneGenerators]; 
+	unsigned m_nTGLink[CConfig::AllToneGenerators];
 
 	unsigned m_nModulationWheelRange[CConfig::AllToneGenerators];
 	unsigned m_nModulationWheelTarget[CConfig::AllToneGenerators];
