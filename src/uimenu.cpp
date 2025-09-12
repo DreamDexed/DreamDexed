@@ -1431,22 +1431,41 @@ void CUIMenu::TGShortcutHandler (TMenuEvent Event)
 
 	assert (   Event == MenuEventPressAndStepDown
 		|| Event == MenuEventPressAndStepUp);
-	if (Event == MenuEventPressAndStepDown)
+
+	if (m_pParentMenu == s_EQMenu || m_pParentMenu == s_EditCompressorMenu)
 	{
-		nTG--;
+		if (Event == MenuEventPressAndStepDown)
+		{
+			EventHandler (MenuEventBack);
+			EventHandler (MenuEventStepDown);
+			EventHandler (MenuEventSelect);
+		}
+		else
+		{
+			EventHandler (MenuEventBack);
+			EventHandler (MenuEventStepUp);
+			EventHandler (MenuEventSelect);
+		}
 	}
 	else
 	{
-		nTG++;
-	}
+		if (Event == MenuEventPressAndStepDown)
+		{
+			nTG--;
+		}
+		else
+		{
+			nTG++;
+		}
 
-	if (nTG < m_nToneGenerators)
-	{
-		m_nMenuStackSelection[0] = nTG;
-		m_nMenuStackItem[1] = nTG;
-		m_nMenuStackParameter[1] = nTG;
+		if (nTG < m_nToneGenerators)
+		{
+			m_nMenuStackSelection[0] = nTG;
+			m_nMenuStackItem[1] = nTG;
+			m_nMenuStackParameter[1] = nTG;
 
-		EventHandler (MenuEventUpdate);
+			EventHandler (MenuEventUpdate);
+		}
 	}
 }
 
