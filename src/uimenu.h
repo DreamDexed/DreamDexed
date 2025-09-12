@@ -127,6 +127,7 @@ private:
 	static std::string ToRatio (int nValue, int nWidth);
 	static std::string ToHz (int nValue, int nWidth);
 
+	void GlobalShortcutHandler (TMenuEvent Event);
 	void TGShortcutHandler (TMenuEvent Event);
 	void OPShortcutHandler (TMenuEvent Event);
 
