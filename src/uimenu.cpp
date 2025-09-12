@@ -657,6 +657,11 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 		}
 		break;
 
+	case MenuEventPressAndStepDown:
+	case MenuEventPressAndStepUp:
+		pUIMenu->GlobalShortcutHandler (Event);
+		return;
+
 	default:
 		return;
 	}
@@ -707,6 +712,11 @@ void CUIMenu::EditGlobalParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 		}
 		pUIMenu->m_pMiniDexed->SetParameter (Param, nValue);
 		break;
+
+	case MenuEventPressAndStepDown:
+	case MenuEventPressAndStepUp:
+		pUIMenu->GlobalShortcutHandler (Event);
+		return;
 
 	default:
 		return;
@@ -1418,6 +1428,30 @@ std::string CUIMenu::ToHz (int nValue, int nWidth)
 
 	std::snprintf (buf, sizeof(buf), "%.1f kHz", hz/1000.0);
 	return buf;
+}
+
+void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
+{
+#ifdef ARM_ALLOW_MULTI_CORE
+	if (m_pParentMenu == s_ReverbMenu ||
+		m_pParentMenu == s_MasterEQMenu ||
+		m_pParentMenu == s_LimiterMenu ||
+		m_pCurrentMenu == s_TGMenu)
+	{
+		if (Event == MenuEventPressAndStepDown)
+		{
+			EventHandler (MenuEventBack);
+			EventHandler (MenuEventStepDown);
+			EventHandler (MenuEventSelect);
+		}
+		else
+		{
+			EventHandler (MenuEventBack);
+			EventHandler (MenuEventStepUp);
+			EventHandler (MenuEventSelect);
+		}
+	}
+#endif
 }
 
 void CUIMenu::TGShortcutHandler (TMenuEvent Event)
