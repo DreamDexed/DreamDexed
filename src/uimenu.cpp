@@ -669,10 +669,30 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 	if (pUIMenu->m_pCurrentMenu)				// if this is another menu?
 	{
 		bool bIsMainMenu = pUIMenu->m_pCurrentMenu == s_MainMenu;
+		bool bIsTGMenu = pUIMenu->m_pCurrentMenu == s_TGMenu;
+
+		std::string menuName = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name;
+
+		if (bIsTGMenu)
+		{
+			int nTG = pUIMenu->m_nCurrentParameter;
+			int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
+			if (nTGLink) menuName += ToTGLinkName(nTGLink, 0);
+		}
+
+		std::string selectionName = pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name;
+
+		if (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].MenuItem == s_TGMenu)
+		{
+			int nTG = pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Parameter;
+			int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
+			if (nTGLink) selectionName += ToTGLinkName(nTGLink, 0);
+		}
+
 		pUIMenu->m_pUI->DisplayWrite (
-			pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+			menuName.c_str(),
 			"",
-			pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
+			selectionName.c_str(),
 			pUIMenu->m_nCurrentSelection > 0 || bIsMainMenu,
 			!!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name || bIsMainMenu);
 	}
@@ -741,6 +761,7 @@ void CUIMenu::EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-1];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterVoiceBank, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -771,6 +792,7 @@ void CUIMenu::EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	std::string TG ("TG");
 	TG += std::to_string (nTG+1);
+	if (nTGLink) TG += ToTGLinkName(nTGLink, 0);
 
 	std::string Value =   std::to_string (nValue+1) + "="
 		       + pUIMenu->m_pMiniDexed->GetSysExFileLoader ()->GetBankName (nValue);
@@ -876,6 +898,7 @@ void CUIMenu::EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 	const TParameter &rParam = s_TGParameter[Param];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -912,6 +935,12 @@ void CUIMenu::EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	std::string TG ("TG");
 	TG += std::to_string (nTG+1);
+	if (nTGLink &&
+		Param != CMiniDexed::TGParameterTGLink &&
+		Param != CMiniDexed::TGParameterPan &&
+		Param != CMiniDexed::TGParameterMasterTune
+	)
+		TG += ToTGLinkName(nTGLink, 0);
 
 	std::string Value = GetTGValueString (Param,
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
@@ -932,6 +961,7 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 	const TParameter &rParam = s_TGParameter[Param];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -973,6 +1003,7 @@ void CUIMenu::EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event) // second me
 
 	std::string TG ("TG");
 	TG += std::to_string (nTG+1);
+	if (nTGLink) TG += ToTGLinkName(nTGLink, 0);
 
 	std::string Value = GetTGValueString (Param,
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
@@ -992,6 +1023,7 @@ void CUIMenu::EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 	const TParameter &rParam = s_VoiceParameter[nParam];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetVoiceParameter (nParam, CMiniDexed::NoOP, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -1028,6 +1060,7 @@ void CUIMenu::EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	std::string TG ("TG");
 	TG += std::to_string (nTG+1);
+	if (nTGLink) TG += ToTGLinkName(nTGLink, 0);
 
 	std::string Value = GetVoiceValueString (nParam, nValue, pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
@@ -2274,6 +2307,7 @@ void CUIMenu::EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event)
 	const TParameter &rParam = s_TGParameter[Param];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -2309,6 +2343,7 @@ void CUIMenu::EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	std::string TG ("TG");
 	TG += std::to_string (nTG+1);
+	if (nTGLink) TG += ToTGLinkName(nTGLink, 0);
 
 	std::string Value = GetTGValueString (Param,
 		pUIMenu->m_pMiniDexed->GetTGParameter (Param, nTG),
