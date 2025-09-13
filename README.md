@@ -3,10 +3,11 @@
 DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with the following additional features:
 
 - [x] Configurable default screen
-- [x] Noiseless volume change
+- [x] Noiseless performance and volume change
 - [x] Configurable TG compressors
 - [x] Limiter
 - [x] 3-band EQ (per TG and Master)
+- [x] TG-Link
 - [ ] Two Effect Send with Chrous, Delay, Reverb
 - [ ] 8 channel mixer (Rpi4+)
 - [ ] Multiple parts (RPi4+)
