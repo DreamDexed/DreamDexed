@@ -54,7 +54,7 @@ public:
 	unsigned GetNoteLimitLow (unsigned nTG) const;		// 0 .. 127
 	unsigned GetNoteLimitHigh (unsigned nTG) const;		// 0 .. 127
 	int GetNoteShift (unsigned nTG) const;			// -24 .. 24
-	unsigned GetReverbSend (unsigned nTG) const;		// 0 .. 127
+	unsigned GetFXSend (unsigned nTG, unsigned nFX) const;	// 0 .. 127
 	unsigned GetPitchBendRange (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPitchBendStep (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPortamentoMode (unsigned nTG) const;		// 0 .. 1
@@ -91,7 +91,7 @@ public:
 	void SetNoteLimitLow (unsigned nValue, unsigned nTG);
 	void SetNoteLimitHigh (unsigned nValue, unsigned nTG);
 	void SetNoteShift (int nValue, unsigned nTG);
-	void SetReverbSend (unsigned nValue, unsigned nTG);
+	void SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX);
 	void SetPitchBendRange (unsigned nValue, unsigned nTG);
 	void SetPitchBendStep (unsigned nValue, unsigned nTG);
 	void SetPortamentoMode (unsigned nValue, unsigned nTG);
@@ -134,21 +134,55 @@ public:
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
 
 	// Effects
-	bool GetReverbEnable (void) const;
-	unsigned GetReverbSize (void) const;			// 0 .. 99
-	unsigned GetReverbHighDamp (void) const;		// 0 .. 99
-	unsigned GetReverbLowDamp (void) const;			// 0 .. 99
-	unsigned GetReverbLowPass (void) const;			// 0 .. 99
-	unsigned GetReverbDiffusion (void) const;		// 0 .. 99
-	unsigned GetReverbLevel (void) const;			// 0 .. 99
+	bool GetFXChorusEnable1 (unsigned nFX) const;
+	bool GetFXChorusEnable2 (unsigned nFX) const;
+	unsigned GetFXChorusLFORate1 (unsigned nFX) const;
+	unsigned GetFXChorusLFORate2 (unsigned nFX) const;
 
-	void SetReverbEnable (bool bValue);
-	void SetReverbSize (unsigned nValue);
-	void SetReverbHighDamp (unsigned nValue);
-	void SetReverbLowDamp (unsigned nValue);
-	void SetReverbLowPass (unsigned nValue);
-	void SetReverbDiffusion (unsigned nValue);
-	void SetReverbLevel (unsigned nValue);
+	unsigned GetFXDelayMix (unsigned nFX) const;
+	unsigned GetFXDelayMode (unsigned nFX) const;
+	unsigned GetFXDelayTimeL (unsigned nFX) const;
+	unsigned GetFXDelayTimeR (unsigned nFX) const;
+	unsigned GetFXDelayTempo (unsigned nFX) const;
+	unsigned GetFXDelayFeedback (unsigned nFX) const;
+	unsigned GetFXDelayHighCut (unsigned nFX) const;
+
+	unsigned GetFXReverbMix (unsigned nFX) const;			// 0 .. 100
+	unsigned GetFXReverbSize (unsigned nFX) const;			// 0 .. 99
+	unsigned GetFXReverbHighDamp (unsigned nFX) const;		// 0 .. 99
+	unsigned GetFXReverbLowDamp (unsigned nFX) const;			// 0 .. 99
+	unsigned GetFXReverbLowPass (unsigned nFX) const;			// 0 .. 99
+	unsigned GetFXReverbDiffusion (unsigned nFX) const;		// 0 .. 99
+
+	bool GetFXCloudSeedEnable (unsigned nFX);
+	unsigned GetFXCloudSeedPreset (unsigned nFX);
+
+	unsigned GetFXLevel (unsigned nFX) const;			// 0 .. 99
+
+	void SetFXChorusEnable1 (bool bValue, unsigned nFX);
+	void SetFXChorusEnable2 (bool bValue, unsigned nFX);
+	void SetFXChorusLFORate1 (unsigned nValue, unsigned nFX);	// 0 .. 100
+	void SetFXChorusLFORate2 (unsigned nValue, unsigned nFX);	// 0 .. 100
+
+	void SetFXDelayMix (unsigned nValue, unsigned nFX);
+	void SetFXDelayMode (unsigned nValue, unsigned nFX);
+	void SetFXDelayTimeL (unsigned nValue, unsigned nFX);
+	void SetFXDelayTimeR (unsigned nValue, unsigned nFX);
+	void SetFXDelayTempo (unsigned nValue, unsigned nFX);
+	void SetFXDelayFeedback (unsigned nValue, unsigned nFX);
+	void SetFXDelayHighCut (unsigned nValue, unsigned nFX);
+
+	void SetFXReverbMix (unsigned nValue, unsigned nFX);
+	void SetFXReverbSize (unsigned nValue, unsigned nFX);
+	void SetFXReverbHighDamp (unsigned nValue, unsigned nFX);
+	void SetFXReverbLowDamp (unsigned nValue, unsigned nFX);
+	void SetFXReverbLowPass (unsigned nValue, unsigned nFX);
+	void SetFXReverbDiffusion (unsigned nValue, unsigned nFX);
+
+	void SetFXCloudSeedEnable (unsigned nValue, unsigned nFX);
+	void SetFXCloudSeedPreset (unsigned nValue, unsigned nFX);
+
+	void SetFXLevel (unsigned nValue, unsigned nFX);
 
 	int GetMasterEQLow () const;
 	int GetMasterEQMid () const;
@@ -225,7 +259,7 @@ private:
 	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
-	int m_nReverbSend[CConfig::AllToneGenerators];
+	int m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
 	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
@@ -272,13 +306,30 @@ private:
 
 	std::string NewPerformanceName="";
 
-	bool m_bReverbEnable;
-	unsigned m_nReverbSize;
-	unsigned m_nReverbHighDamp;
-	unsigned m_nReverbLowDamp;
-	unsigned m_nReverbLowPass;
-	unsigned m_nReverbDiffusion;
-	unsigned m_nReverbLevel;
+	bool m_bFXChorusEnable1[CConfig::FXChains];
+	bool m_bFXChorusEnable2[CConfig::FXChains];
+	unsigned m_nFXChorusLFORate1[CConfig::FXChains];
+	unsigned m_nFXChorusLFORate2[CConfig::FXChains];
+
+	unsigned m_nFXDelayMix[CConfig::FXChains];
+	unsigned m_nFXDelayMode[CConfig::FXChains];
+	unsigned m_nFXDelayTimeL[CConfig::FXChains];
+	unsigned m_nFXDelayTimeR[CConfig::FXChains];
+	unsigned m_nFXDelayTempo[CConfig::FXChains];
+	unsigned m_nFXDelayFeedback[CConfig::FXChains];
+	unsigned m_nFXDelayHighCut[CConfig::FXChains];
+
+	unsigned m_nFXReverbMix[CConfig::FXChains];
+	unsigned m_nFXReverbSize[CConfig::FXChains];
+	unsigned m_nFXReverbHighDamp[CConfig::FXChains];
+	unsigned m_nFXReverbLowDamp[CConfig::FXChains];
+	unsigned m_nFXReverbLowPass[CConfig::FXChains];
+	unsigned m_nFXReverbDiffusion[CConfig::FXChains];
+
+	bool m_bFXCloudSeedEnable[CConfig::FXChains];
+	unsigned m_nFXCloudSeedPreset[CConfig::FXChains];
+
+	unsigned m_nFXLevel[CConfig::FXChains];
 
 	int m_nMasterEQLow;
 	int m_nMasterEQMid;
