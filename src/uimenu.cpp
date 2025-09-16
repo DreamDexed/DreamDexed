@@ -1471,6 +1471,10 @@ void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
 		m_pParentMenu == s_LimiterMenu ||
 		m_pCurrentMenu == s_TGMenu)
 	{
+		bool bSaveCurrentSelection = m_pCurrentMenu == s_TGMenu;
+
+		unsigned nSavedSelection = m_nCurrentSelection;
+
 		if (Event == MenuEventPressAndStepDown)
 		{
 			EventHandler (MenuEventBack);
@@ -1482,6 +1486,12 @@ void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
 			EventHandler (MenuEventBack);
 			EventHandler (MenuEventStepUp);
 			EventHandler (MenuEventSelect);
+		}
+
+		if (bSaveCurrentSelection)
+		{
+			m_nCurrentSelection = nSavedSelection;
+			EventHandler (MenuEventUpdate);
 		}
 	}
 #endif
