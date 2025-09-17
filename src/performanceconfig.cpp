@@ -267,13 +267,13 @@ bool CPerformanceConfig::Load (void)
 	m_nMasterEQLowMidFreq = m_Properties.GetNumber ("MasterEQLowMidFreq", 24);
 	m_nMasterEQMidHighFreq = m_Properties.GetNumber ("MasterEQMidHighFreq", 44);
 
-	m_bLimiterEnable = m_Properties.GetNumber ("LimiterEnable", 1);
-	m_nLimiterPreGain = m_Properties.GetSignedNumber ("LimiterPreGain", 0);
-	m_nLimiterThresh = m_Properties.GetSignedNumber ("LimiterThresh", -3);
-	m_nLimiterRatio = m_Properties.GetNumber ("LimiterRatio", 20);
-	m_nLimiterAttack = m_Properties.GetNumber ("LimiterAttack", 5);
-	m_nLimiterRelease = m_Properties.GetNumber ("LimiterRelease", 5);
-	m_bLimiterHPFilterEnable = m_Properties.GetNumber ("LimiterHPFilterEnable", 0);
+	m_bMasterCompressorEnable = m_Properties.GetNumber ("MasterCompressorEnable", 1);
+	m_nMasterCompressorPreGain = m_Properties.GetSignedNumber ("MasterCompressorPreGain", 0);
+	m_nMasterCompressorThresh = m_Properties.GetSignedNumber ("MasterCompressorThresh", -3);
+	m_nMasterCompressorRatio = m_Properties.GetNumber ("MasterCompressorRatio", 20);
+	m_nMasterCompressorAttack = m_Properties.GetNumber ("MasterCompressorAttack", 5);
+	m_nMasterCompressorRelease = m_Properties.GetNumber ("MasterCompressorRelease", 5);
+	m_bMasterCompressorHPFilterEnable = m_Properties.GetNumber ("MasterCompressorHPFilterEnable", 0);
 
 	// Compatibility
 	if (m_Properties.IsSet ("CompressorEnable") && m_Properties.GetNumber ("CompressorEnable", 1) == 0)
@@ -449,13 +449,13 @@ bool CPerformanceConfig::Save (void)
 	m_Properties.SetNumber ("MasterEQLowMidFreq", m_nMasterEQLowMidFreq);
 	m_Properties.SetNumber ("MasterEQMidHighFreq", m_nMasterEQMidHighFreq);
 
-	m_Properties.SetNumber ("LimiterEnable", m_bLimiterEnable);
-	m_Properties.SetSignedNumber ("LimiterPreGain", m_nLimiterPreGain);
-	m_Properties.SetSignedNumber ("LimiterThresh", m_nLimiterThresh);
-	m_Properties.SetNumber ("LimiterRatio", m_nLimiterRatio);
-	m_Properties.SetNumber ("LimiterAttack", m_nLimiterAttack);
-	m_Properties.SetNumber ("LimiterRelease", m_nLimiterRelease);
-	m_Properties.SetNumber ("LimiterHPFilterEnable", m_bLimiterHPFilterEnable);
+	m_Properties.SetNumber ("MasterCompressorEnable", m_bMasterCompressorEnable);
+	m_Properties.SetSignedNumber ("MasterCompressorPreGain", m_nMasterCompressorPreGain);
+	m_Properties.SetSignedNumber ("MasterCompressorThresh", m_nMasterCompressorThresh);
+	m_Properties.SetNumber ("MasterCompressorRatio", m_nMasterCompressorRatio);
+	m_Properties.SetNumber ("MasterCompressorAttack", m_nMasterCompressorAttack);
+	m_Properties.SetNumber ("MasterCompressorRelease", m_nMasterCompressorRelease);
+	m_Properties.SetNumber ("MasterCompressorHPFilterEnable", m_bMasterCompressorHPFilterEnable);
 
 	return m_Properties.Save ();
 }
@@ -807,74 +807,74 @@ void CPerformanceConfig::SetMasterEQMidHighFreq (unsigned nValue)
 	m_nMasterEQMidHighFreq = nValue;
 }
 
-bool CPerformanceConfig::GetLimiterEnable () const
+bool CPerformanceConfig::GetMasterCompressorEnable () const
 {
-	return m_bLimiterEnable;
+	return m_bMasterCompressorEnable;
 }
 
-int CPerformanceConfig::GetLimiterPreGain () const
+int CPerformanceConfig::GetMasterCompressorPreGain () const
 {
-	return m_nLimiterPreGain;
+	return m_nMasterCompressorPreGain;
 }
 
-int CPerformanceConfig::GetLimiterThresh () const
+int CPerformanceConfig::GetMasterCompressorThresh () const
 {
-	return m_nLimiterThresh;
+	return m_nMasterCompressorThresh;
 }
 
-unsigned CPerformanceConfig::GetLimiterRatio () const
+unsigned CPerformanceConfig::GetMasterCompressorRatio () const
 {
-	return m_nLimiterRatio;
+	return m_nMasterCompressorRatio;
 }
 
-unsigned CPerformanceConfig::GetLimiterAttack () const
+unsigned CPerformanceConfig::GetMasterCompressorAttack () const
 {
-	return m_nLimiterAttack;
+	return m_nMasterCompressorAttack;
 }
 
-unsigned CPerformanceConfig::GetLimiterRelease () const
+unsigned CPerformanceConfig::GetMasterCompressorRelease () const
 {
-	return m_nLimiterRelease;
+	return m_nMasterCompressorRelease;
 }
 
-bool CPerformanceConfig::GetLimiterHPFilterEnable () const
+bool CPerformanceConfig::GetMasterCompressorHPFilterEnable () const
 {
-	return m_bLimiterHPFilterEnable;
+	return m_bMasterCompressorHPFilterEnable;
 }
 
-void CPerformanceConfig::SetLimiterEnable (bool nValue)
+void CPerformanceConfig::SetMasterCompressorEnable (bool nValue)
 {
-	m_bLimiterEnable = nValue;
+	m_bMasterCompressorEnable = nValue;
 }
 
-void CPerformanceConfig::SetLimiterPreGain (int nValue)
+void CPerformanceConfig::SetMasterCompressorPreGain (int nValue)
 {
-	m_nLimiterPreGain= nValue;
+	m_nMasterCompressorPreGain= nValue;
 }
 
-void CPerformanceConfig::SetLimiterThresh (int nValue)
+void CPerformanceConfig::SetMasterCompressorThresh (int nValue)
 {
-	m_nLimiterThresh = nValue;
+	m_nMasterCompressorThresh = nValue;
 }
 
-void CPerformanceConfig::SetLimiterRatio (unsigned nValue)
+void CPerformanceConfig::SetMasterCompressorRatio (unsigned nValue)
 {
-	m_nLimiterRatio = nValue;
+	m_nMasterCompressorRatio = nValue;
 }
 
-void CPerformanceConfig::SetLimiterAttack (unsigned nValue)
+void CPerformanceConfig::SetMasterCompressorAttack (unsigned nValue)
 {
-	m_nLimiterAttack = nValue;
+	m_nMasterCompressorAttack = nValue;
 }
 
-void CPerformanceConfig::SetLimiterRelease (unsigned nValue)
+void CPerformanceConfig::SetMasterCompressorRelease (unsigned nValue)
 {
-	m_nLimiterRelease = nValue;
+	m_nMasterCompressorRelease = nValue;
 }
 
-void CPerformanceConfig::SetLimiterHPFilterEnable (bool nValue)
+void CPerformanceConfig::SetMasterCompressorHPFilterEnable (bool nValue)
 {
-	m_bLimiterHPFilterEnable = nValue;
+	m_bMasterCompressorHPFilterEnable = nValue;
 }
 
 // Pitch bender and portamento:

@@ -70,7 +70,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	tg_mixer(nullptr),
 	reverb_send_mixer(nullptr),
 	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
-	m_Limiter {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
+	m_MasterCompressor {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_pNet(nullptr),
 	m_pNetDevice(nullptr),
 	m_WLAN(nullptr),
@@ -288,13 +288,13 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	SetParameter (ParameterReverbLevel, 99);
 	// END setup reverb
 
-	SetParameter (ParameterLimiterEnable, 1);
-	SetParameter (ParameterLimiterPreGain, 0);
-	SetParameter (ParameterLimiterThresh, -3);
-	SetParameter (ParameterLimiterRatio, 20);
-	SetParameter (ParameterLimiterAttack, 5);
-	SetParameter (ParameterLimiterRelease, 5);
-	SetParameter (ParameterLimiterHPFilterEnable, 0);
+	SetParameter (ParameterMasterCompressorEnable, 1);
+	SetParameter (ParameterMasterCompressorPreGain, 0);
+	SetParameter (ParameterMasterCompressorThresh, -3);
+	SetParameter (ParameterMasterCompressorRatio, 20);
+	SetParameter (ParameterMasterCompressorAttack, 5);
+	SetParameter (ParameterMasterCompressorRelease, 5);
+	SetParameter (ParameterMasterCompressorHPFilterEnable, 0);
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
 		
@@ -1121,54 +1121,54 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		m_UI.ParameterChanged ();
 		break;
 
-	case ParameterLimiterEnable:
+	case ParameterMasterCompressorEnable:
 		break;
 
-	case ParameterLimiterPreGain:
+	case ParameterMasterCompressorPreGain:
 		nValue=constrain(nValue,-20,20);
-		m_LimiterSpinLock.Acquire ();
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].setPreGain_dB(nValue);
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].setPreGain_dB(nValue);
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
-	case ParameterLimiterThresh:
+	case ParameterMasterCompressorThresh:
 		nValue=constrain(nValue,-60,0);
-		m_LimiterSpinLock.Acquire ();
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].setThresh_dBFS(nValue);
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].setThresh_dBFS(nValue);
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
-	case ParameterLimiterRatio:
+	case ParameterMasterCompressorRatio:
 		nValue=constrain(nValue,1,20);
-		m_LimiterSpinLock.Acquire ();
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].setCompressionRatio(nValue);
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].setCompressionRatio(nValue);
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
-	case ParameterLimiterAttack:
+	case ParameterMasterCompressorAttack:
 		nValue=constrain(nValue,0,1000);
-		m_LimiterSpinLock.Acquire ();
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].setAttack_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].setAttack_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
-	case ParameterLimiterRelease:
+	case ParameterMasterCompressorRelease:
 		nValue=constrain(nValue,0,1000);
-		m_LimiterSpinLock.Acquire ();
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
-	case ParameterLimiterHPFilterEnable:
-		m_LimiterSpinLock.Acquire ();
+	case ParameterMasterCompressorHPFilterEnable:
+		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_Limiter[i].enableHPFilter(nValue);
-		m_LimiterSpinLock.Release ();
+			m_MasterCompressor[i].enableHPFilter(nValue);
+		m_MasterCompressorSpinLock.Release ();
 		break;
 
 	case ParameterMasterEQLow:
@@ -1655,12 +1655,12 @@ void CMiniDexed::ProcessSound (void)
 			m_MasterEQ[1].process(SampleBuffer[1], nFrames);
 			m_EQSpinLock.Release();
 
-			if (m_nParameter[ParameterLimiterEnable])
+			if (m_nParameter[ParameterMasterCompressorEnable])
 			{
-				m_LimiterSpinLock.Acquire ();
-				m_Limiter[0].doCompression (SampleBuffer[0], nFrames);
-				m_Limiter[1].doCompression (SampleBuffer[1], nFrames);
-				m_LimiterSpinLock.Release ();
+				m_MasterCompressorSpinLock.Acquire ();
+				m_MasterCompressor[0].doCompression (SampleBuffer[0], nFrames);
+				m_MasterCompressor[1].doCompression (SampleBuffer[1], nFrames);
+				m_MasterCompressorSpinLock.Release ();
 			}
 
 			// swap stereo channels if needed prior to writing back out
@@ -1836,13 +1836,13 @@ bool CMiniDexed::DoSavePerformance (void)
 	m_PerformanceConfig.SetMasterEQLowMidFreq (m_nParameter[ParameterMasterEQLowMidFreq]);
 	m_PerformanceConfig.SetMasterEQMidHighFreq (m_nParameter[ParameterMasterEQMidHighFreq]);
 
-	m_PerformanceConfig.SetLimiterEnable (m_nParameter[ParameterLimiterEnable]);
-	m_PerformanceConfig.SetLimiterPreGain (m_nParameter[ParameterLimiterPreGain]);
-	m_PerformanceConfig.SetLimiterThresh (m_nParameter[ParameterLimiterThresh]);
-	m_PerformanceConfig.SetLimiterRatio (m_nParameter[ParameterLimiterRatio]);
-	m_PerformanceConfig.SetLimiterAttack (m_nParameter[ParameterLimiterAttack]);
-	m_PerformanceConfig.SetLimiterRelease (m_nParameter[ParameterLimiterRelease]);
-	m_PerformanceConfig.SetLimiterHPFilterEnable (m_nParameter[ParameterLimiterHPFilterEnable]);
+	m_PerformanceConfig.SetMasterCompressorEnable (m_nParameter[ParameterMasterCompressorEnable]);
+	m_PerformanceConfig.SetMasterCompressorPreGain (m_nParameter[ParameterMasterCompressorPreGain]);
+	m_PerformanceConfig.SetMasterCompressorThresh (m_nParameter[ParameterMasterCompressorThresh]);
+	m_PerformanceConfig.SetMasterCompressorRatio (m_nParameter[ParameterMasterCompressorRatio]);
+	m_PerformanceConfig.SetMasterCompressorAttack (m_nParameter[ParameterMasterCompressorAttack]);
+	m_PerformanceConfig.SetMasterCompressorRelease (m_nParameter[ParameterMasterCompressorRelease]);
+	m_PerformanceConfig.SetMasterCompressorHPFilterEnable (m_nParameter[ParameterMasterCompressorHPFilterEnable]);
 
 	if(m_bSaveAsDeault)
 	{
@@ -2557,13 +2557,13 @@ void CMiniDexed::LoadPerformanceParameters(void)
 	SetParameter (ParameterMasterEQLowMidFreq, m_PerformanceConfig.GetMasterEQLowMidFreq ());
 	SetParameter (ParameterMasterEQMidHighFreq, m_PerformanceConfig.GetMasterEQMidHighFreq ());
 
-	SetParameter (ParameterLimiterEnable, m_PerformanceConfig.GetLimiterEnable ());
-	SetParameter (ParameterLimiterPreGain, m_PerformanceConfig.GetLimiterPreGain ());
-	SetParameter (ParameterLimiterThresh, m_PerformanceConfig.GetLimiterThresh ());
-	SetParameter (ParameterLimiterRatio, m_PerformanceConfig.GetLimiterRatio ());
-	SetParameter (ParameterLimiterAttack, m_PerformanceConfig.GetLimiterAttack ());
-	SetParameter (ParameterLimiterRelease, m_PerformanceConfig.GetLimiterRelease ());
-	SetParameter (ParameterLimiterHPFilterEnable, m_PerformanceConfig.GetLimiterHPFilterEnable ());
+	SetParameter (ParameterMasterCompressorEnable, m_PerformanceConfig.GetMasterCompressorEnable ());
+	SetParameter (ParameterMasterCompressorPreGain, m_PerformanceConfig.GetMasterCompressorPreGain ());
+	SetParameter (ParameterMasterCompressorThresh, m_PerformanceConfig.GetMasterCompressorThresh ());
+	SetParameter (ParameterMasterCompressorRatio, m_PerformanceConfig.GetMasterCompressorRatio ());
+	SetParameter (ParameterMasterCompressorAttack, m_PerformanceConfig.GetMasterCompressorAttack ());
+	SetParameter (ParameterMasterCompressorRelease, m_PerformanceConfig.GetMasterCompressorRelease ());
+	SetParameter (ParameterMasterCompressorHPFilterEnable, m_PerformanceConfig.GetMasterCompressorHPFilterEnable ());
 
 	m_UI.DisplayChanged ();
 }

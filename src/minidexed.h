@@ -194,13 +194,13 @@ public:
 		ParameterPerformanceSelectChannel,
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
-		ParameterLimiterEnable,
-		ParameterLimiterPreGain,
-		ParameterLimiterThresh,
-		ParameterLimiterRatio,
-		ParameterLimiterAttack,
-		ParameterLimiterRelease,
-		ParameterLimiterHPFilterEnable,
+		ParameterMasterCompressorEnable,
+		ParameterMasterCompressorPreGain,
+		ParameterMasterCompressorThresh,
+		ParameterMasterCompressorRatio,
+		ParameterMasterCompressorAttack,
+		ParameterMasterCompressorRelease,
+		ParameterMasterCompressorHPFilterEnable,
 		ParameterMasterEQLow,
 		ParameterMasterEQMid,
 		ParameterMasterEQHigh,
@@ -419,8 +419,8 @@ private:
 	AudioEffect3BandEQ m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
 
-	Compressor m_Limiter[2];
-	CSpinLock m_LimiterSpinLock;
+	Compressor m_MasterCompressor[2];
+	CSpinLock m_MasterCompressorSpinLock;
 
 	// Network
 	CNetSubSystem* m_pNet;

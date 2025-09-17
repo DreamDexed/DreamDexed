@@ -5,7 +5,7 @@ DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with th
 - [x] Configurable default screen
 - [x] Noiseless performance and volume change
 - [x] Configurable TG compressors
-- [x] Limiter
+- [x] Master Compressor
 - [x] 3-band EQ (per TG and Master)
 - [x] TG-Link
 - [ ] Two Effect Send with Chrous, Delay, Reverb
