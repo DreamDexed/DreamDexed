@@ -112,7 +112,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Reverb",	MenuHandler,		s_ReverbMenu},
 	{"EQ",		MenuHandler,		s_MasterEQMenu},
-	{"Limiter",	MenuHandler,		s_LimiterMenu},
+	{"Compressor",	MenuHandler,		s_MasterCompressorMenu},
 #endif
 	{0}
 };
@@ -194,15 +194,15 @@ const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_LimiterMenu[] =
+const CUIMenu::TMenuItem CUIMenu::s_MasterCompressorMenu[] =
 {
-	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterEnable},
-	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterPreGain},
-	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterThresh},
-	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterRatio},
-	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterAttack},
-	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterRelease},
-	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterLimiterHPFilterEnable},
+	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorEnable},
+	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorPreGain},
+	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorThresh},
+	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRatio},
+	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorAttack},
+	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRelease},
+	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorHPFilterEnable},
 	{0}
 };
 
@@ -288,13 +288,13 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// ParameterPerformanceSelectChannel
 	{0, NUM_PERFORMANCE_BANKS, 1},			// ParameterPerformanceBank
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
-	{0,	1,	1,	ToOnOff},		// ParameterLimiterEnable
-	{-20,	20,	1,	TodB},			// ParameterLimiterPreGain
-	{-60,	0,	1,	TodBFS},		// ParameterLimiterThresh
-	{1,	20,	1,	ToRatio},		// ParameterLimiterRatio
-	{0,	1000,	5,	ToMillisec},		// ParameterLimiterAttack
-	{0,	1000,	5,	ToMillisec},		// ParameterLimiterRelease
-	{0,	1,	1,	ToOnOff},		// ParameterLimiterHPFilterEnable
+	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorEnable
+	{-20,	20,	1,	TodB},			// ParameterMasterCompressorPreGain
+	{-60,	0,	1,	TodBFS},		// ParameterMasterCompressorThresh
+	{1,	20,	1,	ToRatio},		// ParameterMasterCompressorRatio
+	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorAttack
+	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorRelease
+	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorHPFilterEnable
 	{-24,	24,	1,	TodB},			// ParameterMasterEQLow
 	{-24,	24,	1,	TodB},			// ParameterMasterEQMid
 	{-24,	24,	1,	TodB},			// ParameterMasterEQHigh
@@ -1468,7 +1468,7 @@ void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
 #ifdef ARM_ALLOW_MULTI_CORE
 	if (m_pParentMenu == s_ReverbMenu ||
 		m_pParentMenu == s_MasterEQMenu ||
-		m_pParentMenu == s_LimiterMenu ||
+		m_pParentMenu == s_MasterCompressorMenu ||
 		m_pCurrentMenu == s_TGMenu)
 	{
 		bool bSaveCurrentSelection = m_pCurrentMenu == s_TGMenu;
