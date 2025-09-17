@@ -7,3 +7,6 @@
 [submodule "CMSIS_5"]
 	path = CMSIS_5
 	url = https://github.com/ARM-software/CMSIS_5
+[submodule "CloudSeedCore"]
+	path = CloudSeedCore
+	url = https://github.com/DreamDexed/CloudSeedCore
