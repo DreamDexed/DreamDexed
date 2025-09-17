@@ -85,6 +85,8 @@ const int16_t AudioWaveformSine[257] = {
 
 AudioEffectPlateReverb::AudioEffectPlateReverb(float32_t samplerate)
 {
+    set_mix(0.0f);
+
     input_attn = 0.5f;
     in_allp_k = INP_ALLP_COEFF;
 
@@ -152,8 +154,6 @@ AudioEffectPlateReverb::AudioEffectPlateReverb(float32_t samplerate)
     lfo1_adder = (UINT32_MAX + 1)/(samplerate * LFO1_FREQ_HZ);
     lfo2_phase_acc = 0;
     lfo2_adder = (UINT32_MAX + 1)/(samplerate * LFO2_FREQ_HZ);  
-
-    reverb_level = 0.0f;
 }
 
 // #define sat16(n, rshift) signed_saturate_rshift((n), 16, (rshift))
@@ -215,7 +215,7 @@ void AudioEffectPlateReverb::reset()
     lfo2_phase_acc = 0;
 }
 
-void AudioEffectPlateReverb::doReverb(const float32_t* inblockL, const float32_t* inblockR, float32_t* rvbblockL, float32_t* rvbblockR, uint16_t len)
+void AudioEffectPlateReverb::process(const float32_t *inblockL, const float32_t *inblockR, float32_t *outblockL, float32_t *outblockR, uint16_t len)
 {
     float32_t input, acc, temp1, temp2;
     uint16_t temp16;
@@ -227,10 +227,7 @@ void AudioEffectPlateReverb::doReverb(const float32_t* inblockL, const float32_t
     int64_t y;
     uint32_t idx;
 
-    if (bypass)
-    {
-        return;
-    }
+    if (wet == 0.0f) return;
 
     rv_time = rv_time_k;
 
@@ -437,7 +434,7 @@ void AudioEffectPlateReverb::doReverb(const float32_t* inblockL, const float32_t
         temp1 = acc - master_lowpass_l;
         master_lowpass_l += temp1 * master_lowpass_f;
 
-	rvbblockL[i] = master_lowpass_l;
+	outblockL[i] = dry * inblockL[i] + wet * master_lowpass_l;
 
         // Channel R
         #ifdef TAP1_MODULATED
@@ -481,6 +478,6 @@ void AudioEffectPlateReverb::doReverb(const float32_t* inblockL, const float32_t
         temp1 = acc - master_lowpass_r;
         master_lowpass_r += temp1 * master_lowpass_f;
 
-	rvbblockR[i] = master_lowpass_r;
+	outblockR[i] = dry * inblockR[i] + wet * master_lowpass_r;
     }
 }
