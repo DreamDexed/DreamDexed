@@ -169,7 +169,7 @@ private:
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ReverbMenu[];
 	static const TMenuItem s_MasterEQMenu[];
-	static const TMenuItem s_LimiterMenu[];
+	static const TMenuItem s_MasterCompressorMenu[];
 	static const TMenuItem s_EditCompressorMenu[];
 	static const TMenuItem s_EditVoiceMenu[];
 	static const TMenuItem s_OperatorMenu[];

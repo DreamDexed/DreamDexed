@@ -164,21 +164,21 @@ public:
 	void SetMasterEQLowMidFreq (unsigned nValue);
 	void SetMasterEQMidHighFreq (unsigned nValue);
 
-	bool GetLimiterEnable () const;
-	int GetLimiterPreGain () const;
-	int GetLimiterThresh () const;
-	unsigned GetLimiterRatio () const;
-	unsigned GetLimiterAttack () const;
-	unsigned GetLimiterRelease () const;
-	bool GetLimiterHPFilterEnable () const;
+	bool GetMasterCompressorEnable () const;
+	int GetMasterCompressorPreGain () const;
+	int GetMasterCompressorThresh () const;
+	unsigned GetMasterCompressorRatio () const;
+	unsigned GetMasterCompressorAttack () const;
+	unsigned GetMasterCompressorRelease () const;
+	bool GetMasterCompressorHPFilterEnable () const;
 
-	void SetLimiterEnable (bool nValue);
-	void SetLimiterPreGain (int nValue);
-	void SetLimiterThresh (int nValue);
-	void SetLimiterRatio (unsigned nValue);
-	void SetLimiterAttack (unsigned nValue);
-	void SetLimiterRelease (unsigned nValue);	
-	void SetLimiterHPFilterEnable (bool nValue);
+	void SetMasterCompressorEnable (bool nValue);
+	void SetMasterCompressorPreGain (int nValue);
+	void SetMasterCompressorThresh (int nValue);
+	void SetMasterCompressorRatio (unsigned nValue);
+	void SetMasterCompressorAttack (unsigned nValue);
+	void SetMasterCompressorRelease (unsigned nValue);	
+	void SetMasterCompressorHPFilterEnable (bool nValue);
 
 	bool VoiceDataFilled(unsigned nTG);
 	bool ListPerformances(); 
@@ -287,13 +287,13 @@ private:
 	unsigned m_nMasterEQLowMidFreq;
 	unsigned m_nMasterEQMidHighFreq;
 
-	bool m_bLimiterEnable;
-	int m_nLimiterPreGain;
-	int m_nLimiterThresh;
-	unsigned m_nLimiterRatio;
-	unsigned m_nLimiterAttack;
-	unsigned m_nLimiterRelease;
-	bool m_bLimiterHPFilterEnable;
+	bool m_bMasterCompressorEnable;
+	int m_nMasterCompressorPreGain;
+	int m_nMasterCompressorThresh;
+	unsigned m_nMasterCompressorRatio;
+	unsigned m_nMasterCompressorAttack;
+	unsigned m_nMasterCompressorRelease;
+	bool m_bMasterCompressorHPFilterEnable;
 };
 
 #endif
