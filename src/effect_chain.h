@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "effect_cloudseed2.h"
 #include "effect_dreamdelay.h"
 #include "effect_platervbstereo.h"
@@ -8,11 +10,20 @@
 class AudioFXChain
 {
 public:
+        typedef std::function<void(float *inputL, float *inputR, uint16_t len)> process_t;
+
         AudioFXChain(float samplerate):
         yk_chorus{samplerate},
         dream_delay{samplerate},
         plate_reverb{samplerate},
         cloudseed2{samplerate},
+        funcs{
+                [this](float *inputL, float *inputR, uint16_t len) {},
+                [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { dream_delay.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { plate_reverb.process(inputL, inputR, inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { cloudseed2.process(inputL, inputR, len); },
+        },
         level{}
         {
         }
@@ -22,10 +33,10 @@ public:
 
         void process (float *inputL, float *inputR, uint16_t len)
         {
-                yk_chorus.process(inputL, inputR, len);
-                dream_delay.process(inputL, inputR, len);
-                plate_reverb.process(inputL, inputR, inputL, inputR, len);
-                cloudseed2.process(inputL, inputR, len);
+                for (int i = 0; i < FX::slots_num; ++i)
+                        if (uint8_t id = slots[i])
+                                funcs[id](inputL, inputR, len);
+
                 arm_scale_f32(inputL, level, inputL, len);
                 arm_scale_f32(inputR, level, inputR, len);
         }
@@ -39,11 +50,22 @@ public:
                 cloudseed2.setNeedBufferClear();
         }
 
+        void setSlot(uint8_t slot, uint8_t effect_id)
+        {
+                assert(slot < FX::slots_num);
+                assert(effect_id < FX::effects_num);
+
+                slots[slot] = effect_id;
+        }
+
         AudioEffectYKChorus yk_chorus;
         AudioEffectDreamDelay dream_delay;
         AudioEffectPlateReverb plate_reverb;
         AudioEffectCloudSeed2 cloudseed2;
 
 private:
+        std::atomic<uint8_t> slots[FX::slots_num];
+        const process_t funcs[FX::effects_num];
+
         float level;
 };
