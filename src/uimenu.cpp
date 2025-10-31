@@ -174,7 +174,16 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
 {
+	{"Slot1",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot0, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
+	{"Slot2",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot1, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
+	{"Slot3",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot2, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Return Level",	EditFXParameter2,	0,	FX::FXParameterReturnLevel},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
+{
+	{"None"},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
 	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
@@ -693,7 +702,8 @@ void CUIMenu::EventHandler (TMenuEvent Event)
 		break;
 
 	default:
-		(*m_pParentMenu[m_nCurrentMenuItem].Handler) (this, Event);
+		if (m_pParentMenu[m_nCurrentMenuItem].Handler)
+			(*m_pParentMenu[m_nCurrentMenuItem].Handler) (this, Event);
 		break;
 	}
 }
@@ -724,9 +734,18 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 			pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].MenuItem;
 		pUIMenu->m_nCurrentMenuItem = pUIMenu->m_nCurrentSelection;
 		pUIMenu->m_nCurrentSelection = 0;
+
+		if (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].OnSelect)
+			pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].OnSelect (pUIMenu, Event);
 		break;
 
 	case MenuEventStepDown:
+		if (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].StepDown)
+		{
+			pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].StepDown (pUIMenu, Event);
+			break;
+		}
+
 		if (pUIMenu->m_nCurrentSelection == 0)
 		{
 			// If in main mennu, wrap around
@@ -757,6 +776,12 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 		break;
 
 	case MenuEventStepUp:
+		if (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].StepUp)
+		{
+			pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].StepUp (pUIMenu, Event);
+			break;
+		}
+
 		++pUIMenu->m_nCurrentSelection;
 		if (!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name)  // more entries?
 		{
@@ -2051,6 +2076,104 @@ void CUIMenu::InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event)
 	if (nLastKeyDown >= -24 && nLastKeyDown <= 24)
 		pUIMenu->m_pMiniDexed->SetTGParameter(Param, nLastKeyDown, nTG);
 }
+
+#ifdef ARM_ALLOW_MULTI_CORE
+
+void CUIMenu::SelectCurrentEffect (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	assert (pUIMenu);
+
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX);
+
+	if (!nValue) return;
+
+	assert ((size_t)nValue < sizeof s_FXListMenu / sizeof *s_FXListMenu);
+
+	pUIMenu->m_nCurrentSelection = nValue;
+}
+
+void CUIMenu::StepDownEffect (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	assert (pUIMenu);
+
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	int nValue = pUIMenu->m_nCurrentSelection;
+	int increment = rParam.Increment;
+
+	while (true)
+	{
+		if (nValue - increment < rParam.Minimum)
+		{
+			increment = 0;
+			break;
+		}
+
+		if (!FXSlotFilter(pUIMenu, Event, nValue - increment))
+			break;
+
+		increment += rParam.Increment;
+	}
+
+	pUIMenu->m_nCurrentSelection -= increment;
+
+	pUIMenu->m_pMiniDexed->SetFXParameter (Param, pUIMenu->m_nCurrentSelection, nFX);
+}
+
+void CUIMenu::StepUpEffect (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	assert (pUIMenu);
+
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	int nValue = pUIMenu->m_nCurrentSelection;
+	int increment = rParam.Increment;
+
+	while (true)
+	{
+		if (nValue + increment > rParam.Maximum)
+		{
+			increment = 0;
+			break;
+		}
+
+		if (!FXSlotFilter(pUIMenu, Event, nValue + increment))
+			break;
+
+		increment += rParam.Increment;
+	}
+
+	pUIMenu->m_nCurrentSelection += increment;
+
+	pUIMenu->m_pMiniDexed->SetFXParameter (Param, pUIMenu->m_nCurrentSelection, nFX);
+}
+
+bool CUIMenu::FXSlotFilter (CUIMenu *pUIMenu, TMenuEvent Event, int nValue)
+{
+	assert (pUIMenu);
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+
+	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+
+	if (nValue == 0) return false;
+
+	if (Param != FX::FXParameterSlot0 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot0, nFX))
+		return true;
+
+	if (Param != FX::FXParameterSlot1 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot1, nFX))
+		return true;
+
+	if (Param != FX::FXParameterSlot2 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot2, nFX))
+		return true;
+
+	return false;
+}
+
+#endif
 
 void CUIMenu::PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event)
 {
