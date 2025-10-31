@@ -5,6 +5,9 @@ public:
 
 	enum TFXParameter
 	{
+		FXParameterSlot0,
+		FXParameterSlot1,
+		FXParameterSlot2,
 		FXParameterYKChorusMix,
 		FXParameterYKChorusEnable1,
 		FXParameterYKChorusEnable2,
@@ -88,6 +91,38 @@ public:
 	};
 
 	static FX::FXParameterType s_FXParameter[];
+
+	struct EffectType
+	{
+		const char *Name;
+		const unsigned MinID;
+		const unsigned MaxID;
+	};
+
+        static constexpr const EffectType s_effects[] = {
+                {"None"},
+                {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusLFORate2},
+                {"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayHighCut},
+                {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbDiffusion},
+                {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2SeedPostDiffusion},
+        };
+        static constexpr uint8_t effects_num = sizeof s_effects / sizeof *s_effects;
+        static constexpr uint8_t slots_num = 3;
+
+        static std::string getEffectName (int nValue, int nWidth)
+        {
+                assert (nValue >= 0 && nValue < effects_num);
+                return s_effects[nValue].Name;
+        }
+
+        static uint8_t getIDFromEffectName(const char* name)
+        {
+                for(uint8_t i = 0; i < effects_num; ++i)
+                        if (strcmp(s_effects[i].Name, name) == 0)
+                                return i;
+
+                return 0;
+        }
 
 	static constexpr const char *s_CS2PresetNames[] = {
 		"Init",

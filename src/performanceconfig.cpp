@@ -277,7 +277,9 @@ bool CPerformanceConfig::Load (void)
 
 			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
 
-			if (nParam == FX::FXParameterCloudSeed2Preset)
+			if (nParam >= FX::FXParameterSlot0 && nParam <= FX::FXParameterSlot2)
+				m_nFXParameter[nFX][nParam] = FX::getIDFromEffectName(m_Properties.GetString (PropertyName, ""));
+			else if (nParam == FX::FXParameterCloudSeed2Preset)
 				m_nFXParameter[nFX][nParam] = FX::getIDFromCS2PresetName(m_Properties.GetString (PropertyName, ""));
 			else
 				m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber (PropertyName, p.Default);
@@ -313,6 +315,7 @@ bool CPerformanceConfig::Load (void)
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
+		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromEffectName("PlateReverb");
 		m_nFXParameter[0][FX::FXParameterPlateReverbMix] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
 		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
 		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
@@ -479,17 +482,37 @@ bool CPerformanceConfig::Save (void)
 	{
 		CString PropertyName;
 
-		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
 		{
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
+			unsigned nSlotParam = FX::FXParameterSlot0 + nSlot;
+			unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
+			const FX::EffectType &effect = FX::s_effects[nEffectID];
 
-			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
-
-			if (nParam == FX::FXParameterCloudSeed2Preset)
-				m_Properties.SetString (PropertyName, FX::getCS2PresetName(m_nFXParameter[nFX][nParam], 0).c_str());
-			else
-				m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
+			PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[nSlotParam].Name);
+			m_Properties.SetString (PropertyName, effect.Name);
 		}
+
+		for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
+		{
+			unsigned nSlotParam = FX::FXParameterSlot0 + nSlot;
+			unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
+			const FX::EffectType &effect = FX::s_effects[nEffectID];
+
+			if (nEffectID == 0) continue;
+		
+			for (unsigned nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
+			{
+				PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[nParam].Name);
+
+				if (nParam == FX::FXParameterCloudSeed2Preset)
+					m_Properties.SetString (PropertyName, FX::getCS2PresetName(m_nFXParameter[nFX][nParam], 0).c_str());
+				else
+					m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
+			}
+		}
+
+		PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[FX::FXParameterOutputLevel].Name);
+		m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterOutputLevel]);
 	}
 
 	m_Properties.SetSignedNumber ("MasterEQLow", m_nMasterEQLow);

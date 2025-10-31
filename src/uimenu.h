@@ -33,7 +33,7 @@ class CUserInterface;
 class CUIMenu
 {
 private:
-	static const unsigned MaxMenuDepth = 5;
+	static const unsigned MaxMenuDepth = 6;
 
 public:
 	enum TMenuEvent
@@ -71,6 +71,8 @@ private:
 		const TMenuItem *MenuItem;
 		unsigned Parameter;
 		TMenuHandler* OnSelect;
+		TMenuHandler* StepDown;
+		TMenuHandler* StepUp;
 	};
 
 	typedef std::string TToString (int nValue, int nWidth);
@@ -145,6 +147,12 @@ private:
 
 	static void InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
+
+	static void SelectCurrentEffect (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepDownEffect (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepUpEffect (CUIMenu *pUIMenu, TMenuEvent Event);
+	static bool FXSlotFilter (CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
+
 private:
 	CUserInterface *m_pUI;
 	CMiniDexed *m_pMiniDexed;
@@ -169,6 +177,7 @@ private:
 	static const TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_FXMenu[];
+	static const TMenuItem s_FXListMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_TGMixerMenu[];
 	static const TMenuItem s_EQMenu[];
