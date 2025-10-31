@@ -1216,6 +1216,12 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 
 	switch (Parameter)
 	{
+	case FX::FXParameterSlot0:
+	case FX::FXParameterSlot1:
+	case FX::FXParameterSlot2:
+		fx_chain[nFX]->setSlot(Parameter - FX::FXParameterSlot0, nValue);
+		break;
+
 	case FX::FXParameterYKChorusMix:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->yk_chorus.setMix (nValue / 100.0f);
@@ -3279,10 +3285,14 @@ std::string ToDryWet (int nValue, int nWidth)
 	return std::to_string (dry) + ":" + std::to_string(wet) + (wet == 0 ? " Off" : "");
 }
 
+constexpr const FX::EffectType FX::s_effects[];
 constexpr const char *FX::s_CS2PresetNames[];
 
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
+	{0,	FX::effects_num - 1,	0,	1,	"Slot1",	FX::getEffectName},
+	{0,	FX::effects_num - 1,	0,	1,	"Slot2",	FX::getEffectName},
+	{0,	FX::effects_num - 1,	0,	1,	"Slot3",	FX::getEffectName},
 	{0,	100,	0,	1,	"YKChorusMix",	ToDryWet},
 	{0,	1,	1,	1,	"YKChorusEnable1",	ToOnOff},
 	{0,	1,	1,	1,	"YKChorusEnable2",	ToOnOff},
