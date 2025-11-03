@@ -73,6 +73,7 @@ private:
 		TMenuHandler* OnSelect;
 		TMenuHandler* StepDown;
 		TMenuHandler* StepUp;
+		unsigned Parameter2;
 	};
 
 	typedef std::string TToString (int nValue, int nWidth);
@@ -92,6 +93,7 @@ private:
 	static void EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditOPParameter (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformance (CUIMenu *pUIMenu, TMenuEvent Event);
@@ -177,6 +179,7 @@ private:
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_FXListMenu[];
+	static const TMenuItem s_MixerMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_YKChorusMenu[];
