@@ -62,10 +62,10 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 	{"TG16",	MenuHandler,	s_TGMenu, 15},
 #endif
 #endif
+	{"Mixer",	MenuHandler,	s_MixerMenu},
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Effects",	MenuHandler,	s_EffectsMenu},
 #endif
-	{"Master Volume", EditGlobalParameter, 0, CMiniDexed::ParameterMasterVolume},
 	{"Performance",	MenuHandler, s_PerformanceMenu}, 
 	{0}
 };
@@ -160,11 +160,21 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 	{0}
 };
 
+const CUIMenu::TMenuItem CUIMenu::s_MixerMenu[] =
+{
+	{"Master Volume",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterVolume},
+#ifdef ARM_ALLOW_MULTI_CORE
+	{"Dry Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMixerDryLevel},
+	{"FX1 Return",		EditFXParameterG,	0,	FX::FXParameterReturnLevel,	.Parameter2=0},
+	{"FX2 Return",		EditFXParameterG,	0,	FX::FXParameterReturnLevel,	.Parameter2=1},
+#endif
+	{0}
+};
+
 #ifdef ARM_ALLOW_MULTI_CORE
 
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
-	{"Dry Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMixerDryLevel},
 	{"SendFX1",		MenuHandler,		s_FXMenu, 	0},
 	{"SendFX2",		MenuHandler,		s_FXMenu, 	1},
 	{"EQ",			MenuHandler,		s_MasterEQMenu},
@@ -1172,6 +1182,54 @@ void CUIMenu::EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event)
 	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
 	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
 	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+
+	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX);
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	case MenuEventStepDown:
+		nValue -= rParam.Increment;
+		if (nValue < rParam.Minimum)
+		{
+			nValue = rParam.Minimum;
+		}
+		pUIMenu->m_pMiniDexed->SetFXParameter (Param, nValue, nFX);
+		break;
+
+	case MenuEventStepUp:
+		nValue += rParam.Increment;
+		if (nValue > rParam.Maximum)
+		{
+			nValue = rParam.Maximum;
+		}
+		pUIMenu->m_pMiniDexed->SetFXParameter (Param, nValue, nFX);
+		break;
+
+	default:
+		return;
+	}
+
+	std::string FX = std::string("FX") + std::to_string (nFX+1);
+
+	std::string Value = GetFXValueString (Param,
+		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
+		pUIMenu->m_pConfig->GetLCDColumns() - 2);
+
+	pUIMenu->m_pUI->DisplayWrite (FX.c_str (),
+				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      Value.c_str (),
+				      nValue > rParam.Minimum, nValue < rParam.Maximum);
+}
+
+void CUIMenu::EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	FX::TFXParameter Param = (FX::TFXParameter) pUIMenu->m_nCurrentParameter;
+	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	unsigned nFX = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Parameter2;
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX);
 
