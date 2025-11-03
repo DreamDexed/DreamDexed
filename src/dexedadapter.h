@@ -40,7 +40,7 @@ public:
 	Dexed (maxnotes, samplerate),
 	EQ {samplerate},
 	Compr {(float)samplerate},
-	m_bCompressorEnable {true}
+	m_bCompressorEnable {}
 	{
 	}
 

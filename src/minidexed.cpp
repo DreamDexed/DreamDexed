@@ -135,7 +135,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 			m_nFXSend[i][nFX] = 25;
 		}
 
-		m_bCompressorEnable[i] = 1;
+		m_bCompressorEnable[i] = 0;
 		m_nCompressorPreGain[i] = 0;
 		m_nCompressorThresh[i] = -20;
 		m_nCompressorRatio[i] = 5;

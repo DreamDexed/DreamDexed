@@ -228,7 +228,7 @@ bool CPerformanceConfig::Load (void)
 		m_nAftertouchTarget[nTG] = m_Properties.GetNumber (PropertyName, 0);
 
 		PropertyName.Format ("CompressorEnable%u", nTG+1);
-		m_bCompressorEnable[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		m_bCompressorEnable[nTG] = m_Properties.GetNumber (PropertyName, 0);
 		
 		PropertyName.Format ("CompressorPreGain%u", nTG+1);
 		m_nCompressorPreGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
@@ -304,11 +304,21 @@ bool CPerformanceConfig::Load (void)
 	m_nMixerDryLevel = m_Properties.GetNumber ("MixerDryLevel", 99);
 
 	// Compatibility
-	if (m_Properties.IsSet ("CompressorEnable") && m_Properties.GetNumber ("CompressorEnable", 1) == 0)
+	if (m_Properties.IsSet ("CompressorEnable"))
 	{
-		for (unsigned nTG = 0; nTG < CConfig::AllToneGenerators; nTG++)
+		if (m_Properties.GetNumber ("CompressorEnable", 1))
 		{
-			m_bCompressorEnable[nTG] = 0;
+			m_bMasterCompressorEnable = 1;
+			m_nMasterCompressorPreGain = 0;
+			m_nMasterCompressorThresh = -20;
+			m_nMasterCompressorRatio = 5;
+			m_nMasterCompressorAttack = 5;
+			m_nMasterCompressorRelease = 200;
+			m_bMasterCompressorHPFilterEnable = 1;
+		}
+		else
+		{
+			m_bMasterCompressorEnable = 0;
 		}
 	}
 
