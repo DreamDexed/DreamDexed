@@ -163,11 +163,11 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_nNoteShift[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
-		{
-			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
-			m_nFXSend[nTG][nFX] = m_Properties.GetNumber (PropertyName, 25);
-		}
+		PropertyName.Format ("FX1Send%u", nTG+1);
+		m_nFXSend[nTG][0] = m_Properties.GetNumber (PropertyName, 25);
+
+		PropertyName.Format ("FX2Send%u", nTG+1);
+		m_nFXSend[nTG][1] = m_Properties.GetNumber (PropertyName, 0);
 
 		// compatibility ReverbSend[n] => FX1Send[n]
 		PropertyName.Format ("ReverbSend%u", nTG+1);
