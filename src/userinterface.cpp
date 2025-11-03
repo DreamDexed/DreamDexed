@@ -240,52 +240,64 @@ void CUserInterface::DisplayWrite (const char *pMenu, const char *pParam, const 
 	assert (pParam);
 	assert (pValue);
 
-	CString Msg ("\x1B[H\E[?25l");		// cursor home and off
+	size_t nLineMaxLen = m_pConfig->GetLCDColumns ();
 
-	// first line
-	Msg.Append (pParam);
+	const char* pHdr = "\x1B[H\E[?25l"; // cursor home and off
+	size_t nHdrLen = strlen(pHdr);
 
-	size_t nLen = strlen (pParam) + strlen (pMenu);
-	if (nLen < m_pConfig->GetLCDColumns ())
-	{
-		for (unsigned i = m_pConfig->GetLCDColumns ()-nLen; i > 0; i--)
-		{
-			Msg.Append (" ");
-		}
-	}
+	const char* pClear = "\x1B[K"; // clear end of line
+	size_t nClearLen = strlen(pClear);
 
-	Msg.Append (pMenu);
+	size_t nParamLen = std::min (nLineMaxLen, strlen (pParam));
+	size_t nMenuLen = strlen (pMenu);
+	size_t nFill1Len = nLineMaxLen > nParamLen + nMenuLen ?
+		nLineMaxLen - nParamLen - nMenuLen : 1;
 
-	// second line
-	CString Value (" ");
-	if (bArrowDown)
-	{
-		Value = "<";			// arrow left character
-	}
+	nFill1Len = std:: min (nLineMaxLen - nParamLen, nFill1Len);
+	nMenuLen = std::min (nLineMaxLen - nParamLen - nFill1Len, nMenuLen);
 
-	Value.Append (pValue);
+	size_t nLine1Len = nParamLen + nFill1Len + nMenuLen;
 
-	if (bArrowUp)
-	{
-		if (Value.GetLength () < m_pConfig->GetLCDColumns ()-1)
-		{
-			for (unsigned i = m_pConfig->GetLCDColumns ()-Value.GetLength ()-1; i > 0; i--)
-			{
-				Value.Append (" ");
-			}
-		}
+	size_t nArrowsLen = 2;
+	size_t nValueLen = std::min (nLineMaxLen - nArrowsLen, strlen (pValue));
+	size_t nFill2Len = bArrowUp ? nLineMaxLen - nArrowsLen - nValueLen : 0;
+	size_t nLine2Len = nValueLen + nFill2Len + nArrowsLen;
 
-		Value.Append (">");		// arrow right character
-	}
+	if (nLine2Len >= nLineMaxLen)
+		nClearLen = 0;
 
-	Msg.Append (Value);
+	size_t nOffset = 0;
 
-	if (Value.GetLength () < m_pConfig->GetLCDColumns ())
-	{
-		Msg.Append ("\x1B[K");		// clear end of line
-	}
+	char pLines[nHdrLen + nLine1Len  + nLine2Len + nClearLen + 1];
 
-	LCDWrite (Msg);
+	memcpy (pLines, pHdr, nHdrLen);
+	nOffset += nHdrLen;
+
+	memcpy (pLines + nOffset, pParam, nParamLen);
+	nOffset += nParamLen;
+
+	memset (pLines + nOffset, ' ', nFill1Len);
+	nOffset += nFill1Len;
+
+	memcpy (pLines + nOffset, pMenu, nMenuLen);
+	nOffset += nMenuLen;
+
+	pLines[nOffset++] = bArrowDown ? '<' : ' ';
+
+	memcpy (pLines + nOffset, pValue, nValueLen);
+	nOffset += nValueLen;
+
+	memset (pLines + nOffset, ' ', nFill2Len);
+	nOffset += nFill2Len;
+
+	pLines[nOffset++] = bArrowUp ? '>' : ' ';
+
+	memcpy (pLines + nOffset, pClear, nClearLen);
+	nOffset += nClearLen;
+
+	pLines[nOffset++] = 0;
+
+	LCDWrite ((const char *)pLines);
 }
 
 void CUserInterface::LCDWrite (const char *pString)
