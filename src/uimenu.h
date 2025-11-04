@@ -102,6 +102,8 @@ private:
 	static void PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformanceNewFile (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditPerformanceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event);
 	
 	static std::string GetGlobalValueString (unsigned nParameter, int nValue, int nWidth);
 	static std::string GetTGValueString (unsigned nTGParameter, int nValue, int nWidth);
@@ -142,6 +144,7 @@ private:
 	void TGUpDownHandler (TMenuEvent Event);
 
 	static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void TimerHandlerUpdate (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 	static void InputTxt (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void *pContext);
@@ -204,6 +207,7 @@ private:
 	static const TMenuItem s_EditPortamentoMenu[];
 	static const TMenuItem s_EditNoteLimitMenu[];
 	static const TMenuItem s_PerformanceMenu[];
+	static const TMenuItem s_StatusMenu[];
 	
 	static const TMenuItem s_ModulationMenu[];
 	static const TMenuItem s_ModulationMenuParameters[];
