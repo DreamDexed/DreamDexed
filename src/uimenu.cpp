@@ -28,6 +28,7 @@
 #include "config.h"
 #include <cmath>
 #include <circle/sysconfig.h>
+#include <circle/cputhrottle.h>
 #include <assert.h>
 #include <cstddef>
 
@@ -62,6 +63,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 	{"TG16",	MenuHandler,	s_TGMenu, 15},
 #endif
 #endif
+	{"Status",	MenuHandler,	s_StatusMenu},
 	{"Mixer",	MenuHandler,	s_MixerMenu},
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Effects",	MenuHandler,	s_EffectsMenu},
@@ -606,6 +608,70 @@ const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 	{0}
 };
 
+const CUIMenu::TMenuItem CUIMenu::s_StatusMenu[] =
+{
+	{"CPU Temp",		ShowCPUTemp,	0,	0},
+	{"CPU Speed",		ShowCPUSpeed,	0,	0},
+	{0}
+};
+
+void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	default:
+		return;
+	}
+
+	CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+
+	char info[17];
+  	snprintf(info, sizeof(info), "%d/%d C", pCPUT->GetTemperature (), pCPUT->GetMaxTemperature ());
+
+	const char *pMenuName = 
+		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
+			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
+
+	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      info,
+				      false, false);
+
+	CTimer::Get ()->StartKernelTimer (MSEC2HZ (1000), TimerHandlerUpdate, 0, pUIMenu);
+}
+
+void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	default:
+		return;
+	}
+
+	CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+
+	char info[17];
+  	snprintf(info, sizeof(info), "%d/%d MHz", pCPUT->GetClockRate () / 1000000, pCPUT->GetMaxClockRate() / 1000000);
+
+	const char *pMenuName = 
+		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
+			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
+
+	pUIMenu->m_pUI->DisplayWrite (pMenuName,
+				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      info,
+				      false, false);
+
+	CTimer::Get ()->StartKernelTimer (MSEC2HZ (1000), TimerHandlerUpdate, 0, pUIMenu);
+}
 
 CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
 :	m_pUI (pUI),
@@ -2102,6 +2168,14 @@ void CUIMenu::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pCont
 	assert (pThis);
 
 	pThis->EventHandler (MenuEventBack);
+}
+
+void CUIMenu::TimerHandlerUpdate (TKernelTimerHandle hTimer, void *pParam, void *pContext)
+{
+	CUIMenu *pThis = static_cast<CUIMenu *> (pContext);
+	assert (pThis);
+
+	pThis->EventHandler (MenuEventUpdate);
 }
 
 void CUIMenu::TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void *pContext)
