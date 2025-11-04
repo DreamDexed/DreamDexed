@@ -8,7 +8,7 @@ DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with th
 - [x] Master Compressor
 - [x] 3-band EQ (per TG and Master)
 - [x] TG-Link
-- [ ] Two Effect Send with Chrous, Delay, Reverb
+- [x] Two Effect Sends with YKChrous, DreamDelay, PlateReverb, CloudSeed2
 - [ ] 8 channel mixer (Rpi4+)
 - [ ] Multiple parts (RPi4+)
 - [ ] Overlay Menu for easier parameter changes
