@@ -1121,7 +1121,7 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		break;
 
 	case ParameterMasterCompressorRelease:
-		nValue=constrain(nValue,0,1000);
+		nValue=constrain(nValue,0,2000);
 		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
 			m_MasterCompressor[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
@@ -2117,7 +2117,7 @@ void CMiniDexed::SetCompressorAttack (unsigned attack, unsigned nTG)
 
 void CMiniDexed::SetCompressorRelease (unsigned release, unsigned nTG)
 {
-	release = constrain (release, 0u, 1000u);
+	release = constrain (release, 0u, 2000u);
 	assert (nTG < CConfig::AllToneGenerators);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
