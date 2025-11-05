@@ -1105,10 +1105,10 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		break;
 
 	case ParameterMasterCompressorRatio:
-		nValue=constrain(nValue,1,20);
+		nValue=constrain(nValue,1,(int)CompressorRatioInf);
 		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setCompressionRatio(nValue);
+			m_MasterCompressor[i].setCompressionRatio(nValue == CompressorRatioInf ? INFINITY : nValue);
 		m_MasterCompressorSpinLock.Release ();
 		break;
 
@@ -2093,13 +2093,13 @@ void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
 
 void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
 {
-	ratio = constrain (ratio, 1u, 20u);
+	ratio = constrain (ratio, 1u, CMiniDexed::CompressorRatioInf);
 	assert (nTG < CConfig::AllToneGenerators);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	assert (m_pTG[nTG]);
 	m_nCompressorRatio[nTG] = ratio;
-	m_pTG[nTG]->Compr.setCompressionRatio (ratio);
+	m_pTG[nTG]->Compr.setCompressionRatio (ratio == CompressorRatioInf ? INFINITY : ratio);
 	m_UI.ParameterChanged ();
 }
 
