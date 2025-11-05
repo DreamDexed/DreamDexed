@@ -1116,7 +1116,7 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		nValue=constrain(nValue,0,1000);
 		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setAttack_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
+			m_MasterCompressor[i].setAttack_sec((nValue ?: 1) / 1000.0f, m_pConfig->GetSampleRate());
 		m_MasterCompressorSpinLock.Release ();
 		break;
 
@@ -1124,7 +1124,7 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		nValue=constrain(nValue,0,2000);
 		m_MasterCompressorSpinLock.Acquire ();
 		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setRelease_sec(nValue / 1000.0f, m_pConfig->GetSampleRate());
+			m_MasterCompressor[i].setRelease_sec((nValue ?: 1) / 1000.0f, m_pConfig->GetSampleRate());
 		m_MasterCompressorSpinLock.Release ();
 		break;
 
@@ -2111,7 +2111,7 @@ void CMiniDexed::SetCompressorAttack (unsigned attack, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorAttack[nTG] = attack;
-	m_pTG[nTG]->Compr.setAttack_sec (attack / 1000.0, m_pConfig->GetSampleRate ());
+	m_pTG[nTG]->Compr.setAttack_sec ((attack ?: 1) / 1000.0f, m_pConfig->GetSampleRate ());
 	m_UI.ParameterChanged ();
 }
 
@@ -2123,7 +2123,7 @@ void CMiniDexed::SetCompressorRelease (unsigned release, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_nCompressorRelease[nTG] = release;
-	m_pTG[nTG]->Compr.setRelease_sec (release / 1000.0, m_pConfig->GetSampleRate ());
+	m_pTG[nTG]->Compr.setRelease_sec ((release ?: 1) / 1000.0, m_pConfig->GetSampleRate ());
 	m_UI.ParameterChanged ();
 }
 
