@@ -437,7 +437,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{-60,	0,	1,	TodBFS},		// ParameterMasterCompressorThresh
 	{1,	CMiniDexed::CompressorRatioInf,	1,	ToRatio},		// ParameterMasterCompressorRatio
 	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorAttack
-	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorRelease
+	{0,	2000,	5,	ToMillisec},		// ParameterMasterCompressorRelease
 	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorHPFilterEnable
 	{-24,	24,	1,	TodB},			// ParameterMasterEQLow
 	{-24,	24,	1,	TodB},			// ParameterMasterEQMid
@@ -494,7 +494,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{-60,	0,	1,	TodBFS},	// TGParameterCompressorThresh
 	{1,	CMiniDexed::CompressorRatioInf,	1,	ToRatio},	// TGParameterCompressorRatio
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorAttack
-	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
+	{0,	2000,	5,	ToMillisec},	// TGParameterCompressorRelease
 	{-20,	20,	1,	TodB},		// TGParameterCompressorMakeupGain
 	{-24,	24,	1,	TodB},		// TGParameterEQLow
 	{-24,	24,	1,	TodB},		// TGParameterEQMid
