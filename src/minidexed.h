@@ -204,6 +204,8 @@ public:
 		ParameterUnknown
 	};
 
+	static const unsigned CompressorRatioInf = 31;
+
 	void SetParameter (TParameter Parameter, int nValue);
 	int GetParameter (TParameter Parameter);
 

@@ -435,7 +435,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorEnable
 	{-20,	20,	1,	TodB},			// ParameterMasterCompressorPreGain
 	{-60,	0,	1,	TodBFS},		// ParameterMasterCompressorThresh
-	{1,	20,	1,	ToRatio},		// ParameterMasterCompressorRatio
+	{1,	CMiniDexed::CompressorRatioInf,	1,	ToRatio},		// ParameterMasterCompressorRatio
 	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorAttack
 	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorRelease
 	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorHPFilterEnable
@@ -492,7 +492,7 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	1,	1,	ToOnOff},	// TGParameterCompressorEnable
 	{-20,	20,	1,	TodB},		// TGParameterCompressorPreGain
 	{-60,	0,	1,	TodBFS},	// TGParameterCompressorThresh
-	{1,	20,	1,	ToRatio},	// TGParameterCompressorRatio
+	{1,	CMiniDexed::CompressorRatioInf,	1,	ToRatio},	// TGParameterCompressorRatio
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorAttack
 	{0,	1000,	5,	ToMillisec},	// TGParameterCompressorRelease
 	{-20,	20,	1,	TodB},		// TGParameterCompressorMakeupGain
@@ -1725,6 +1725,9 @@ std::string CUIMenu::ToMillisec (int nValue, int nWidth)
 
 std::string CUIMenu::ToRatio (int nValue, int nWidth)
 {
+	if (nValue == CMiniDexed::CompressorRatioInf)
+		return "INF:1";
+
 	return std::to_string (nValue) + ":1";
 }
 
