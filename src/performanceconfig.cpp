@@ -308,9 +308,9 @@ bool CPerformanceConfig::Load (void)
 	{
 		m_bMasterCompressorEnable = m_Properties.GetNumber ("CompressorEnable", 1);
 		m_nMasterCompressorPreGain = 0;
-		m_nMasterCompressorThresh = -20;
+		m_nMasterCompressorThresh = -7;
 		m_nMasterCompressorRatio = 5;
-		m_nMasterCompressorAttack = 5;
+		m_nMasterCompressorAttack = 0;
 		m_nMasterCompressorRelease = 200;
 		m_bMasterCompressorHPFilterEnable = 1;
 	}
