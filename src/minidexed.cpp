@@ -523,6 +523,9 @@ void CMiniDexed::Process (bool bPlugAndPlayUpdated)
 		m_GetChunkTimer.Dump ();
 		pScheduler->Yield();
 	}
+
+	m_Status.Update();
+
 	if (m_pNet) {
 		UpdateNetwork();
 	}
@@ -3284,6 +3287,8 @@ std::string ToDryWet (int nValue, int nWidth)
 
 	return std::to_string (dry) + ":" + std::to_string(wet) + (wet == 0 ? " Off" : "");
 }
+
+CStatus *CStatus::s_pThis = 0;
 
 constexpr const FX::EffectType FX::s_effects[];
 constexpr const char *FX::s_CS2PresetNames[];

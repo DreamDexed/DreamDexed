@@ -47,6 +47,7 @@
 #include "net/mdnspublisher.h"
 #include <circle/spinlock.h>
 #include "common.h"
+#include "status.h"
 #include "effect_mixer.hpp"
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
@@ -422,6 +423,8 @@ private:
 
 	Compressor m_MasterCompressor[2];
 	CSpinLock m_MasterCompressorSpinLock;
+
+	CStatus m_Status;
 
 	// Network
 	CNetSubSystem* m_pNet;

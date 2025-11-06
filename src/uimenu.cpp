@@ -627,10 +627,10 @@ void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
 		return;
 	}
 
-	CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+	CStatus *pStatus = CStatus::Get ();
 
 	char info[17];
-  	snprintf(info, sizeof(info), "%d/%d C", pCPUT->GetTemperature (), pCPUT->GetMaxTemperature ());
+  	snprintf(info, sizeof(info), "%d/%d C", pStatus->nCPUTemp.load(), pStatus->nCPUMaxTemp);
 
 	const char *pMenuName = 
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
@@ -641,7 +641,9 @@ void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
 				      info,
 				      false, false);
 
-	CTimer::Get ()->StartKernelTimer (MSEC2HZ (1000), TimerHandlerUpdate, 0, pUIMenu);
+	static TKernelTimerHandle timer = 0;
+	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
+	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
 }
 
 void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
@@ -656,10 +658,10 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 		return;
 	}
 
-	CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+	CStatus *pStatus = CStatus::Get ();
 
 	char info[17];
-  	snprintf(info, sizeof(info), "%d/%d MHz", pCPUT->GetClockRate () / 1000000, pCPUT->GetMaxClockRate() / 1000000);
+  	snprintf(info, sizeof(info), "%d/%d MHz", pStatus->nCPUClockRate.load() / 1000000, pStatus->nCPUMaxClockRate / 1000000);
 
 	const char *pMenuName = 
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
@@ -670,7 +672,9 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 				      info,
 				      false, false);
 
-	CTimer::Get ()->StartKernelTimer (MSEC2HZ (1000), TimerHandlerUpdate, 0, pUIMenu);
+	static TKernelTimerHandle timer = 0;
+	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
+	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
 }
 
 CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
