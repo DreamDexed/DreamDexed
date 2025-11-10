@@ -1036,6 +1036,7 @@ void CUIMenu::EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 	unsigned nTG = pUIMenu->m_nMenuStackParameter[pUIMenu->m_nCurrentMenuDepth-1];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterProgram, nTG);
+	int nTGLink = pUIMenu->m_pMiniDexed->GetTGParameter (CMiniDexed::TGParameterTGLink, nTG);
 
 	switch (Event)
 	{
@@ -1093,26 +1094,22 @@ void CUIMenu::EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event)
 	} else {
 		// Format: 000:000      TG1 (bank:voice padded, TGx right-aligned)
 		int nBank = pUIMenu->m_pMiniDexed->GetTGParameter(CMiniDexed::TGParameterVoiceBank, nTG);
-		std::string left = "000";
-		left += std::to_string(nBank+1);
-		left = left.substr(left.length()-3,3);
-		left += ":";
+		std::string voice = "000";
+		voice += std::to_string(nBank+1);
+		voice = voice.substr(voice.length()-3,3);
+		voice += ":";
 		std::string voiceNum = "000";
 		voiceNum += std::to_string(nValue+1);
 		voiceNum = voiceNum.substr(voiceNum.length()-3,3);
-		left += voiceNum;
+		voice += voiceNum;
 
-		std::string tgLabel = "TG" + std::to_string(nTG+1);
-		unsigned lcdCols = pUIMenu->m_pConfig->GetLCDColumns();
-		unsigned pad = 0;
-		if (lcdCols > left.length() + tgLabel.length())
-			pad = lcdCols - (unsigned)(left.length() + tgLabel.length());
-		std::string topLine = left + std::string(pad, ' ') + tgLabel;
+		std::string TG = "TG" + std::to_string(nTG+1);
+		if (nTGLink) TG += ToTGLinkName(nTGLink, 0);
 
 		std::string Value = pUIMenu->m_pMiniDexed->GetVoiceName (nTG);
 
-		pUIMenu->m_pUI->DisplayWrite (topLine.c_str(),
-					  "",
+		pUIMenu->m_pUI->DisplayWrite (TG.c_str(),
+					  voice.c_str(),
 					  Value.c_str(),
 					  nValue > 0, nValue < (int) CSysExFileLoader::VoicesPerBank);
 	}
