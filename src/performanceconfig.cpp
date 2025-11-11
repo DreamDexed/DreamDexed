@@ -163,15 +163,15 @@ bool CPerformanceConfig::Load (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_nNoteShift[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
-		PropertyName.Format ("FX1Send%u", nTG+1);
-		m_nFXSend[nTG][0] = m_Properties.GetNumber (PropertyName, 25);
-
-		PropertyName.Format ("FX2Send%u", nTG+1);
-		m_nFXSend[nTG][1] = m_Properties.GetNumber (PropertyName, 0);
+		for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
+		{
+			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
+			m_nFXSend[nTG][nFX] = m_Properties.GetNumber (PropertyName, nFX == 0 ? 25 : 0);
+		}
 
 		// compatibility ReverbSend[n] => FX1Send[n]
 		PropertyName.Format ("ReverbSend%u", nTG+1);
-		if (m_Properties.IsSet (PropertyName) && CConfig::FXChains)
+		if (m_Properties.IsSet (PropertyName))
 		{
 			// the volume calculated by x^4, but FxSend uses x^2
 			float32_t reverbSend = m_Properties.GetNumber (PropertyName, 50);
@@ -267,7 +267,7 @@ bool CPerformanceConfig::Load (void)
 		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber (PropertyName, 44);
 	}
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
 	{
 		CString PropertyName;
 
@@ -315,7 +315,7 @@ bool CPerformanceConfig::Load (void)
 		m_bMasterCompressorHPFilterEnable = 1;
 	}
 
-	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
+	if (m_Properties.IsSet ("ReverbEnable"))
 	{
 		// setup Reverb to FX1
 		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromEffectName("PlateReverb");
@@ -385,7 +385,7 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nNoteShift[nTG]);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
 		{
 			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
 			m_Properties.SetNumber (PropertyName, m_nFXSend[nTG][nFX]);
@@ -481,7 +481,7 @@ bool CPerformanceConfig::Save (void)
 
 	}
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
 	{
 		CString PropertyName;
 
@@ -607,7 +607,7 @@ int CPerformanceConfig::GetNoteShift (unsigned nTG) const
 unsigned CPerformanceConfig::GetFXSend (unsigned nTG, unsigned nFX) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	return m_nFXSend[nTG][nFX];
 }
 
@@ -680,7 +680,7 @@ void CPerformanceConfig::SetNoteShift (int nValue, unsigned nTG)
 void CPerformanceConfig::SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX)
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	m_nFXSend[nTG][nFX] = nValue;
 }
 
@@ -758,14 +758,14 @@ void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
 
 int CPerformanceConfig::GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const
 {
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	assert (nParameter < FX::FXParameterUnknown);
 	return m_nFXParameter[nFX][nParameter];
 }
 
 void CPerformanceConfig::SetFXParameter (FX::TFXParameter nParameter, int nValue, unsigned nFX)
 {
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	assert (nParameter < FX::FXParameterUnknown);
 	m_nFXParameter[nFX][nParameter] = nValue;
 }

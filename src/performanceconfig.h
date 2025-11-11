@@ -216,7 +216,7 @@ private:
 	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
-	int m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
+	int m_nFXSend[CConfig::AllToneGenerators][CConfig::MaxFXChains];
 	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
@@ -263,7 +263,7 @@ private:
 
 	std::string NewPerformanceName="";
 
-	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
+	int m_nFXParameter[CConfig::MaxFXChains][FX::FXParameterUnknown];
 
 	int m_nMasterEQLow;
 	int m_nMasterEQMid;

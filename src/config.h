@@ -69,6 +69,8 @@ public:
 #endif
 #endif
 	
+static const unsigned MaxFXChains = 2;
+
 // Set maximum polyphony, depending on PI version.  This can be changed via config settings
 #if RASPPI == 1
 	static const unsigned MaxNotes = 8;
