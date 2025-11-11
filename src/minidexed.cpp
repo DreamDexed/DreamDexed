@@ -130,9 +130,9 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nAftertouchRange[i]=99;	
 		m_nAftertouchTarget[i]=0;
 		
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
 		{
-			m_nFXSend[i][nFX] = 25;
+			m_nFXSend[i][nFX] = nFX == 0 ? 25 : 0;
 		}
 
 		m_bCompressorEnable[i] = 0;
@@ -149,6 +149,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nEQGain[i] = 0;
 		m_nEQLowMidFreq[i] = 24;
 		m_nEQMidHighFreq[i] = 44;
+
+		m_bEnabled[i] = 1;
 
 		// Active the required number of active TGs
 		if (i<m_nToneGenerators)
@@ -555,6 +557,7 @@ void CMiniDexed::Run (unsigned nCore)
 		while (m_CoreStatus[nCore] != CoreStatusExit)
 		{
 			ProcessSound ();
+			WaitForEvent ();
 		}
 	}
 	else								// core 2 and 3
@@ -810,8 +813,9 @@ void CMiniDexed::SetFXSend (unsigned nFXSend, unsigned nTG, unsigned nFX)
 	nFXSend=constrain((int)nFXSend,0,99);
 
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	if (nFX >= CConfig::FXChains) return;
 
 	m_nFXSend[nTG][nFX] = nFXSend;
 	sendfx_mixer[nFX]->gain(nTG,mapfloat(nFXSend,0,99,0.0f,1.0f));
@@ -1480,6 +1484,8 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 		case TGParameterMonoMode:		setMonoMode (nValue , i);	break; 
 		case TGParameterTGLink:			setTGLink(nValue, i);		break;
 
+		case TGParameterEnabled:		setEnabled (nValue, i);		break;
+
 		case TGParameterMWRange:					setModController(0, 0, nValue, i); break;
 		case TGParameterMWPitch:					setModController(0, 1, nValue, i); break;
 		case TGParameterMWAmplitude:				setModController(0, 2, nValue, i); break;
@@ -1558,8 +1564,8 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterNoteLimitHigh:		return m_nNoteLimitHigh[nTG];
 	case TGParameterNoteShift:		return m_nNoteShift[nTG];
 	case TGParameterMonoMode:		return m_bMonoMode[nTG] ? 1 : 0; 
-
 	case TGParameterTGLink:			return m_nTGLink[nTG];
+	case TGParameterEnabled:		return m_bEnabled[nTG] ? 1 : 0; 
 	
 	case TGParameterMWRange:					return getModController(0, 0, nTG);
 	case TGParameterMWPitch:					return getModController(0, 1, nTG);
@@ -1642,6 +1648,7 @@ void CMiniDexed::SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigne
 
 		m_pTG[i]->setVoiceDataElement (offset, uchValue);
 	}
+	m_UI.ParameterChanged ();
 }
 
 uint8_t CMiniDexed::GetVoiceParameter (uint8_t uchOffset, unsigned nOP, unsigned nTG)
@@ -2003,7 +2010,7 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetAftertouchRange (m_nAftertouchRange[nTG], nTG);
 		m_PerformanceConfig.SetAftertouchTarget (m_nAftertouchTarget[nTG], nTG);
 		
-		for (unsigned nFX = 0;nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0;nFX < CConfig::MaxFXChains; ++nFX)
 		{
 			m_PerformanceConfig.SetFXSend (m_nFXSend[nTG][nFX], nTG, nFX);
 		}
@@ -2219,6 +2226,17 @@ void CMiniDexed::setTGLink(uint8_t nTGLink, uint8_t nTG)
 
 	assert (m_pTG[nTG]);
 	m_nTGLink[nTG]= constrain(nTGLink, 0, 4);
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::setEnabled (uint8_t enabled, uint8_t nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert (m_pTG[nTG]);
+
+	m_bEnabled[nTG] = enabled != 0;
+	
 	m_UI.ParameterChanged ();
 }
 
@@ -2552,6 +2570,33 @@ void CMiniDexed::setMasterVolume(float32_t vol)
     m_fMasterVolumeW = vol;
 }
 
+void CMiniDexed::DisplayWrite (const char *pMenu, const char *pParam, const char *pValue,
+			       bool bArrowDown, bool bArrowUp)
+{
+	m_UI.DisplayWrite (pMenu, pParam, pValue, bArrowDown, bArrowUp);
+
+	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
+	{
+		m_pMIDIKeyboard[i]->DisplayWrite (pMenu, pParam, pValue, bArrowDown, bArrowUp);
+	}
+}
+
+void CMiniDexed::UpdateDAWState ()
+{
+	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
+	{
+		m_pMIDIKeyboard[i]->UpdateDAWState ();
+	}
+}
+
+void CMiniDexed::UpdateDAWMenu (CUIMenu::TCPageType Type, s8 ucPage, u8 ucOP, u8 ucTG)
+{
+	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
+	{
+		m_pMIDIKeyboard[i]->UpdateDAWMenu (Type, ucPage, ucOP, ucTG);
+	}
+}
+
 std::string CMiniDexed::GetPerformanceFileName(unsigned nID)
 {
 	return m_PerformanceConfig.GetPerformanceFileName(nID);
@@ -2719,6 +2764,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 		setMonoMode(m_PerformanceConfig.GetMonoMode(nTG) ? 1 : 0, nTG); 
 		setTGLink(m_PerformanceConfig.GetTGLink(nTG), nTG);
+		setEnabled(1, nTG);
 
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
