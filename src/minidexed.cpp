@@ -130,9 +130,9 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nAftertouchRange[i]=99;	
 		m_nAftertouchTarget[i]=0;
 		
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0; nFX < CConfig::MaxFXChains; ++nFX)
 		{
-			m_nFXSend[i][nFX] = 25;
+			m_nFXSend[i][nFX] = nFX == 0 ? 25 : 0;
 		}
 
 		m_bCompressorEnable[i] = 0;
@@ -810,8 +810,9 @@ void CMiniDexed::SetFXSend (unsigned nFXSend, unsigned nTG, unsigned nFX)
 	nFXSend=constrain((int)nFXSend,0,99);
 
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
+	assert (nFX < CConfig::MaxFXChains);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	if (nFX >= CConfig::FXChains) return;
 
 	m_nFXSend[nTG][nFX] = nFXSend;
 	sendfx_mixer[nFX]->gain(nTG,mapfloat(nFXSend,0,99,0.0f,1.0f));
@@ -2003,7 +2004,7 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetAftertouchRange (m_nAftertouchRange[nTG], nTG);
 		m_PerformanceConfig.SetAftertouchTarget (m_nAftertouchTarget[nTG], nTG);
 		
-		for (unsigned nFX = 0;nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0;nFX < CConfig::MaxFXChains; ++nFX)
 		{
 			m_PerformanceConfig.SetFXSend (m_nFXSend[nTG][nFX], nTG, nFX);
 		}

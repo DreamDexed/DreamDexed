@@ -364,7 +364,7 @@ private:
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
 
-	unsigned m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
+	unsigned m_nFXSend[CConfig::AllToneGenerators][CConfig::MaxFXChains];
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
