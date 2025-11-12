@@ -1,8 +1,9 @@
 #include <cassert>
 
 #include "effect.h"
-#include "effect_cloudseed2.h"
 #include "midi.h"
+#include "effect_cloudseed2.h"
+#include "effect_compressor.h"
 
 static std::string ToOnOff (int nValue, int nWidth)
 {
@@ -72,6 +73,29 @@ static std::string ToEffectName (int nValue, int nWidth)
 {
 	assert (nValue >= 0 && nValue < FX::effects_num);
 	return FX::s_effects[nValue].Name;
+}
+
+static std::string TodB (int nValue, int nWidth)
+{
+	return std::to_string (nValue) + " dB";
+}
+
+static std::string TodBFS (int nValue, int nWidth)
+{
+	return std::to_string (nValue) + " dBFS";
+}
+
+static std::string ToMillisec (int nValue, int nWidth)
+{
+	return std::to_string (nValue) + " ms";
+}
+
+static std::string ToRatio (int nValue, int nWidth)
+{
+	if (nValue == AudioEffectCompressor::CompressorRatioInf)
+		return "INF:1";
+
+	return std::to_string (nValue) + ":1";
 }
 
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
@@ -144,6 +168,14 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	127,	6,	1,	"CloudSeed2SeedDiffusion"},
 	{0,	127,	12,	1,	"CloudSeed2SeedDelay"},
 	{0,	127,	19,	1,	"CloudSeed2SeedPostDiffusion"},
+	{-20,	20,	0,	1,	"CompressorPreGain",	TodB},
+	{-60,	0,	-20,	1,	"CompressorThresh",	TodBFS},
+	{1,	AudioEffectCompressor::CompressorRatioInf,	5,	1,	"CompressorRatio",	ToRatio},
+	{0,	1000,	5,	5,	"CompressorAttack",	ToMillisec},
+	{0,	2000,	200,	5,	"CompressorRelease",	ToMillisec},
+	{-20,	20,	0,	1,	"CompressorMakeupGain",	TodB},
+	{0,	1,	0,	1,	"CompressorHPFilterEnable",	ToOnOff},
+	{0,	1,	0,	1,	"CompressorBypass",	ToOnOff},
 	{0,	99,	0,	1,	"ReturnLevel"},
 };
 
