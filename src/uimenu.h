@@ -197,6 +197,7 @@ private:
 	static const TMenuItem s_CloudSeed2LowShelfMenu[];
 	static const TMenuItem s_CloudSeed2HighShelfMenu[];
 	static const TMenuItem s_CloudSeed2LowPassMenu[];
+	static const TMenuItem s_CompressorMenu[];
 	static const TMenuItem s_MasterEQMenu[];
 	static const TMenuItem s_MasterCompressorMenu[];
 	static const TMenuItem s_EditCompressorMenu[];

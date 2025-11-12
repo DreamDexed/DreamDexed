@@ -1410,6 +1410,52 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->cloudseed2.setParameter (Parameter - FX::FXParameterCloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
 		break;
 
+	case FX::FXParameterCompressorPreGain:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setPreGain_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorThresh:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setThresh_dBFS (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorRatio:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setCompressionRatio (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorAttack:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setAttack_sec ((nValue ?: 1) / 1000.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorRelease:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setRelease_sec ((nValue ?: 1) / 1000.0f);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorMakeupGain:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.setMakeupGain_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorHPFilterEnable:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->compressor.enableHPFilter (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterCompressorBypass:
+		fx_chain[nFX]->compressor.bypass = nValue;
+		break;
+
 	case FX::FXParameterReturnLevel:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->set_level (nValue / 99.0f);

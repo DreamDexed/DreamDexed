@@ -200,6 +200,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
 	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
 	{"CloudSeed2",		MenuHandler,		s_CloudSeed2Menu},
+	{"Compressor",		MenuHandler,		s_CompressorMenu},
 	{0},
 };
 
@@ -334,6 +335,19 @@ const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowPassMenu[] =
 	{"Enable",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqLowpassEnabled},
 	{"Cutoff",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2EqCutoff},
 	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_CompressorMenu[] =
+{
+	{"Pre Gain",	EditFXParameter2,	0,	FX::FXParameterCompressorPreGain},
+	{"Threshold",	EditFXParameter2,	0,	FX::FXParameterCompressorThresh},
+	{"Ratio",	EditFXParameter2,	0,	FX::FXParameterCompressorRatio},
+	{"Attack",	EditFXParameter2,	0,	FX::FXParameterCompressorAttack},
+	{"Release",	EditFXParameter2,	0,	FX::FXParameterCompressorRelease},
+	{"Makeup Gain",	EditFXParameter2,	0,	FX::FXParameterCompressorMakeupGain},
+	{"HPFilter",	EditFXParameter2,	0,	FX::FXParameterCompressorHPFilterEnable},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterCompressorBypass},
+	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =

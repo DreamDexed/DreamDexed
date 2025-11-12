@@ -79,6 +79,14 @@ public:
 		FXParameterCloudSeed2SeedDiffusion,
 		FXParameterCloudSeed2SeedDelay,
 		FXParameterCloudSeed2SeedPostDiffusion,
+		FXParameterCompressorPreGain,
+		FXParameterCompressorThresh,
+		FXParameterCompressorRatio,
+		FXParameterCompressorAttack,
+		FXParameterCompressorRelease,
+		FXParameterCompressorMakeupGain,
+		FXParameterCompressorHPFilterEnable,
+		FXParameterCompressorBypass,
 		FXParameterReturnLevel,
 		FXParameterUnknown,
 	};
@@ -111,6 +119,7 @@ public:
                 {"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayHighCut},
                 {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbDiffusion},
                 {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2SeedPostDiffusion},
+		{"Compressor", FXParameterCompressorPreGain, FXParameterCompressorBypass},
         };
         static constexpr uint8_t effects_num = sizeof s_effects / sizeof *s_effects;
         static constexpr uint8_t slots_num = 3;
