@@ -25,7 +25,7 @@
 #include <circle/spinlock.h>
 #include <cstdint>
 
-#include "effect_3bandeq.h"
+#include "effect_3bandeqmono.h"
 #include "compressor.h"
 
 #define DEXED_OP_ENABLE (DEXED_OP_OSC_DETUNE + 1)
@@ -108,7 +108,7 @@ public:
 		m_SpinLock.Release ();
 	}
 
-	AudioEffect3BandEQ EQ;
+	AudioEffect3BandEQMono EQ;
 	Compressor Compr;
 
 private:
