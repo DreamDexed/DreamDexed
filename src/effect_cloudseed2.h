@@ -800,6 +800,25 @@ static const float *Presets[] = {
         SSnappyAttack,
 };
 
+static const char *CS2PresetNames[] = {
+    "Init",
+    "FXDivineInspiration",
+    "FXLawsOfPhysics",
+    "FXSlowBraaam",
+    "FXTheUpsideDown",
+    "LBigSoundStage",
+    "LDiffusionCyclone",
+    "LScreamIntoTheVoid",
+    "M90sDigitalReverb",
+    "MAiryAmbience",
+    "MDarkPlate",
+    "MGhostly",
+    "MTappedLines",
+    "SFastAttack",
+    "SSmallPlate",
+    "SSnappyAttack",
+};
+
 class AudioEffectCloudSeed2
 {
 public:
@@ -807,6 +826,30 @@ public:
 	{
 		return nValue ? "Post" : "Pre";
 	}
+
+	static std::string getPresetName (int nValue, int nWidth)
+	{
+		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		return CS2PresetNames[nValue];
+	}
+
+	static const char *getPresetNameChar (int nValue)
+	{
+		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		return CS2PresetNames[nValue];
+	}
+
+	static unsigned getIDFromPresetName(const char *presetName)
+	{
+		for (unsigned i = 0; i < presets_num; ++i)
+		    if (strcmp(CS2PresetNames[i], presetName) == 0)
+			    return i;
+
+		return 0;
+	}
+
+    static constexpr unsigned presets_num = sizeof CS2PresetNames / sizeof *CS2PresetNames;
+
 
     AudioEffectCloudSeed2(float samplerate):
     samplerate{samplerate},
@@ -900,7 +943,8 @@ public:
 
     void loadPreset(unsigned p)
     {
-        preset = constrain(p, 0u, sizeof Presets / sizeof *Presets - 1);
+        assert(p < presets_num);
+        preset = p;
 
         targetVol = 0.0f;
         needBufferClear = true;

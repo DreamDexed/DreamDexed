@@ -277,10 +277,8 @@ bool CPerformanceConfig::Load (void)
 
 			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
 
-			if (nParam >= FX::FXParameterSlot0 && nParam <= FX::FXParameterSlot2)
-				m_nFXParameter[nFX][nParam] = FX::getIDFromEffectName(m_Properties.GetString (PropertyName, ""));
-			else if (nParam == FX::FXParameterCloudSeed2Preset)
-				m_nFXParameter[nFX][nParam] = FX::getIDFromCS2PresetName(m_Properties.GetString (PropertyName, ""));
+			if (p.Flags & FX::FXSaveAsString)
+				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::TFXParameter(nParam), m_Properties.GetString (PropertyName, ""));
 			else
 				m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber (PropertyName, p.Default);
 		}
@@ -318,7 +316,7 @@ bool CPerformanceConfig::Load (void)
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
-		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromEffectName("PlateReverb");
+		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromName(FX::FXParameterSlot0, "PlateReverb");
 		m_nFXParameter[0][FX::FXParameterPlateReverbMix] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
 		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
 		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
@@ -505,10 +503,11 @@ bool CPerformanceConfig::Save (void)
 		
 			for (unsigned nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
 			{
+				const FX::FXParameterType &p = FX::s_FXParameter[nParam];
 				PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[nParam].Name);
 
-				if (nParam == FX::FXParameterCloudSeed2Preset)
-					m_Properties.SetString (PropertyName, FX::getCS2PresetName(m_nFXParameter[nFX][nParam], 0).c_str());
+				if (p.Flags & FX::FXSaveAsString)
+					m_Properties.SetString (PropertyName, FX::getNameFromID(FX::TFXParameter(nParam), m_nFXParameter[nFX][nParam]));
 				else
 					m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
 			}
