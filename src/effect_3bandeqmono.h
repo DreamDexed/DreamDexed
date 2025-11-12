@@ -10,10 +10,10 @@
 
 #include "midi.h"
 
-class AudioEffect3BandEQ
+class AudioEffect3BandEQMono
 {
 public:
-    AudioEffect3BandEQ(unsigned samplerate):
+    AudioEffect3BandEQMono(unsigned samplerate):
     samplerate{samplerate},
     fLow{}, fMid{}, fHigh{}, fGain{}, fLowMidFreq{}, fMidHighFreq{},
     nLowMidFreq{24}, /* 315Hz */

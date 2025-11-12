@@ -52,7 +52,7 @@
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
 #include "compressor.h"
-#include "effect_3bandeq.h"
+#include "effect_3bandeqmono.h"
 #include "effect_chain.h"
 
 class CMiniDexed
@@ -418,7 +418,7 @@ private:
 
 	CSpinLock m_FXSpinLock;
 
-	AudioEffect3BandEQ m_MasterEQ[2];
+	AudioEffect3BandEQMono m_MasterEQ[2];
 	CSpinLock m_EQSpinLock;
 
 	Compressor m_MasterCompressor[2];
