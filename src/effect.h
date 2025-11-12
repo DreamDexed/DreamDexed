@@ -87,6 +87,13 @@ public:
 		FXParameterCompressorMakeupGain,
 		FXParameterCompressorHPFilterEnable,
 		FXParameterCompressorBypass,
+		FXParameterEQLow,
+		FXParameterEQMid,
+		FXParameterEQHigh,
+		FXParameterEQGain,
+		FXParameterEQLowMidFreq,
+		FXParameterEQMidHighFreq,
+		FXParameterEQBypass,
 		FXParameterReturnLevel,
 		FXParameterUnknown,
 	};
@@ -120,6 +127,7 @@ public:
                 {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbDiffusion},
                 {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2SeedPostDiffusion},
 		{"Compressor", FXParameterCompressorPreGain, FXParameterCompressorBypass},
+		{"EQ", FXParameterEQLow, FXParameterEQBypass},
         };
         static constexpr uint8_t effects_num = sizeof s_effects / sizeof *s_effects;
         static constexpr uint8_t slots_num = 3;

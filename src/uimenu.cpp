@@ -201,6 +201,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
 	{"CloudSeed2",		MenuHandler,		s_CloudSeed2Menu},
 	{"Compressor",		MenuHandler,		s_CompressorMenu},
+	{"EQ",			MenuHandler,		s_FXEQMenu},
 	{0},
 };
 
@@ -347,6 +348,18 @@ const CUIMenu::TMenuItem CUIMenu::s_CompressorMenu[] =
 	{"Makeup Gain",	EditFXParameter2,	0,	FX::FXParameterCompressorMakeupGain},
 	{"HPFilter",	EditFXParameter2,	0,	FX::FXParameterCompressorHPFilterEnable},
 	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterCompressorBypass},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_FXEQMenu[] =
+{
+	{"Low Level",		EditFXParameter2,	0,	FX::FXParameterEQLow},
+	{"Mid Level",		EditFXParameter2,	0,	FX::FXParameterEQMid},
+	{"High Level",		EditFXParameter2,	0,	FX::FXParameterEQHigh},
+	{"Gain",		EditFXParameter2,	0,	FX::FXParameterEQGain},
+	{"Low-Mid Freq",	EditFXParameter2,	0,	FX::FXParameterEQLowMidFreq},
+	{"Mid-High Freq",	EditFXParameter2,	0,	FX::FXParameterEQMidHighFreq},
+	{"Bypass",		EditFXParameter2,	0,	FX::FXParameterEQBypass},
 	{0}
 };
 

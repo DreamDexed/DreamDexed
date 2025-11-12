@@ -176,6 +176,13 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{-20,	20,	0,	1,	"CompressorMakeupGain",	TodB},
 	{0,	1,	0,	1,	"CompressorHPFilterEnable",	ToOnOff},
 	{0,	1,	0,	1,	"CompressorBypass",	ToOnOff},
+	{-24,	24,	0,	1,	"EQLow",		TodB},
+	{-24,	24,	0,	1,	"EQMid",		TodB},
+	{-24,	24,	0,	1,	"EQHigh",		TodB},
+	{-24,	24,	0,	1,	"EQGain",		TodB},
+	{0,	46,	24,	1,	"EQLowMidFreq",		ToHz},
+	{28,	59,	44,	1,	"EQMidHighFreq",	ToHz},
+	{0,	1,	0,	1,	"EQBypass",		ToOnOff},
 	{0,	99,	0,	1,	"ReturnLevel"},
 };
 
