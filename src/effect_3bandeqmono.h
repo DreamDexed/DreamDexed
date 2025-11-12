@@ -13,7 +13,7 @@
 class AudioEffect3BandEQMono
 {
 public:
-	AudioEffect3BandEQMono(unsigned samplerate):
+	AudioEffect3BandEQMono(float samplerate):
 	samplerate{samplerate},
 	fLow{}, fMid{}, fHigh{}, fGain{}, fLowMidFreq{}, fMidHighFreq{},
 	nLowMidFreq{24}, /* 315Hz */
@@ -116,7 +116,7 @@ public:
 	}
 
 private:
-	unsigned samplerate;
+	float samplerate;
 
 	float fLow, fMid, fHigh, fGain, fLowMidFreq, fMidHighFreq;
 	unsigned nLowMidFreq, nMidHighFreq;
