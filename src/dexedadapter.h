@@ -38,7 +38,7 @@ class CDexedAdapter : public Dexed
 public:
 	CDexedAdapter (uint8_t maxnotes, unsigned samplerate):
 	Dexed (maxnotes, samplerate),
-	EQ {samplerate},
+	EQ {(float)samplerate},
 	Compr {(float)samplerate},
 	m_bCompressorEnable {}
 	{
