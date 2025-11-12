@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "effect_3bandeq.h"
 #include "effect_compressor.h"
 #include "effect_cloudseed2.h"
 #include "effect_dreamdelay.h"
@@ -19,6 +20,7 @@ public:
         plate_reverb{samplerate},
         cloudseed2{samplerate},
         compressor{samplerate},
+        eq{samplerate},
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
@@ -26,6 +28,7 @@ public:
                 [this](float *inputL, float *inputR, uint16_t len) { plate_reverb.process(inputL, inputR, inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { cloudseed2.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { compressor.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { eq.process(inputL, inputR, len); },
         },
         level{}
         {
@@ -49,6 +52,7 @@ public:
                 dream_delay.resetState();
                 plate_reverb.reset();
                 compressor.resetState();
+                eq.resetState();
 
                 cloudseed2.setRampedDown();
                 cloudseed2.setNeedBufferClear();
@@ -67,6 +71,7 @@ public:
         AudioEffectPlateReverb plate_reverb;
         AudioEffectCloudSeed2 cloudseed2;
         AudioEffectCompressor compressor;
+        AudioEffect3BandEQ eq;
 
 private:
         std::atomic<uint8_t> slots[FX::slots_num];

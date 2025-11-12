@@ -1456,6 +1456,46 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->compressor.bypass = nValue;
 		break;
 
+	case FX::FXParameterEQLow:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setLow_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQMid:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setMid_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQHigh:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setHigh_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQGain:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setGain_dB (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQLowMidFreq:
+		m_FXSpinLock.Acquire ();
+		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setLowMidFreq_n (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQMidHighFreq:
+		m_FXSpinLock.Acquire ();
+		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setMidHighFreq_n (nValue);
+		m_FXSpinLock.Release ();
+		break;
+	
+	case FX::FXParameterEQBypass:
+		fx_chain[nFX]->eq.bypass = nValue;
+		break;
+
 	case FX::FXParameterReturnLevel:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->set_level (nValue / 99.0f);
