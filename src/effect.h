@@ -1,7 +1,13 @@
+#pragma once
+
+#include <string>
+#include <cstdint>
+
 class FX
 {
 public:
-	static const int FXComposite = 1 << 0; // updates multiple controls, it shouldn't update the controls at startup and performance load
+	static constexpr int FXComposite = 1 << 0; // updates multiple controls, it shouldn't update the controls at startup and performance load
+	static constexpr int FXSaveAsString = 1 << 1; // save this parameter as string in the performace file
 
 	enum TFXParameter
 	{
@@ -109,53 +115,6 @@ public:
         static constexpr uint8_t effects_num = sizeof s_effects / sizeof *s_effects;
         static constexpr uint8_t slots_num = 3;
 
-        static std::string getEffectName (int nValue, int nWidth)
-        {
-                assert (nValue >= 0 && nValue < effects_num);
-                return s_effects[nValue].Name;
-        }
-
-        static uint8_t getIDFromEffectName(const char* name)
-        {
-                for(uint8_t i = 0; i < effects_num; ++i)
-                        if (strcmp(s_effects[i].Name, name) == 0)
-                                return i;
-
-                return 0;
-        }
-
-	static constexpr const char *s_CS2PresetNames[] = {
-		"Init",
-		"FXDivineInspiration",
-		"FXLawsOfPhysics",
-		"FXSlowBraaam",
-		"FXTheUpsideDown",
-		"LBigSoundStage",
-		"LDiffusionCyclone",
-		"LScreamIntoTheVoid",
-		"M90sDigitalReverb",
-		"MAiryAmbience",
-		"MDarkPlate",
-		"MGhostly",
-		"MTappedLines",
-		"SFastAttack",
-		"SSmallPlate",
-		"SSnappyAttack",
-	};
-	static constexpr unsigned cs2_preset_num = sizeof s_CS2PresetNames / sizeof *s_CS2PresetNames;
-
-	static std::string getCS2PresetName (int nValue, int nWidth)
-	{
-		assert (nValue >= 0 && (unsigned)nValue < cs2_preset_num);
-		return s_CS2PresetNames[nValue];
-	}
-
-	static unsigned getIDFromCS2PresetName(const char *presetName)
-	{
-		for (unsigned i = 0; i < cs2_preset_num; ++i)
-		if (strcmp(s_CS2PresetNames[i], presetName) == 0)
-			return i;
-
-		return 0;
-	}
+	static const char *getNameFromID(TFXParameter param, int nID);
+	static int getIDFromName(TFXParameter param, const char* name);
 };
