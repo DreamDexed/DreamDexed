@@ -55,7 +55,8 @@ public:
 	unsigned GetNoteLimitLow (unsigned nTG) const;		// 0 .. 127
 	unsigned GetNoteLimitHigh (unsigned nTG) const;		// 0 .. 127
 	int GetNoteShift (unsigned nTG) const;			// -24 .. 24
-	unsigned GetFXSend (unsigned nTG, unsigned nFX) const;	// 0 .. 127
+	unsigned GetFX1Send (unsigned nTG) const;	// 0 .. 99
+	unsigned GetFX2Send (unsigned nTG) const;	// 0 .. 99
 	unsigned GetPitchBendRange (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPitchBendStep (unsigned nTG) const;		// 0 .. 12
 	unsigned GetPortamentoMode (unsigned nTG) const;		// 0 .. 1
@@ -92,7 +93,8 @@ public:
 	void SetNoteLimitLow (unsigned nValue, unsigned nTG);
 	void SetNoteLimitHigh (unsigned nValue, unsigned nTG);
 	void SetNoteShift (int nValue, unsigned nTG);
-	void SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX);
+	void SetFX1Send (unsigned nValue, unsigned nTG);
+	void SetFX2Send (unsigned nValue, unsigned nTG);
 	void SetPitchBendRange (unsigned nValue, unsigned nTG);
 	void SetPitchBendStep (unsigned nValue, unsigned nTG);
 	void SetPortamentoMode (unsigned nValue, unsigned nTG);
@@ -137,36 +139,6 @@ public:
 	// Effects
 	int GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const;
 	void SetFXParameter (FX::TFXParameter nParameter, int nValue, unsigned nFX);
-
-	int GetMasterEQLow () const;
-	int GetMasterEQMid () const;
-	int GetMasterEQHigh () const;
-	int GetMasterEQGain () const;
-	unsigned GetMasterEQLowMidFreq () const;
-	unsigned GetMasterEQMidHighFreq () const;
-
-	void SetMasterEQLow (int nValue);
-	void SetMasterEQMid (int nValue);
-	void SetMasterEQHigh (int nValue);
-	void SetMasterEQGain (int nValue);
-	void SetMasterEQLowMidFreq (unsigned nValue);
-	void SetMasterEQMidHighFreq (unsigned nValue);
-
-	bool GetMasterCompressorEnable () const;
-	int GetMasterCompressorPreGain () const;
-	int GetMasterCompressorThresh () const;
-	unsigned GetMasterCompressorRatio () const;
-	unsigned GetMasterCompressorAttack () const;
-	unsigned GetMasterCompressorRelease () const;
-	bool GetMasterCompressorHPFilterEnable () const;
-
-	void SetMasterCompressorEnable (bool nValue);
-	void SetMasterCompressorPreGain (int nValue);
-	void SetMasterCompressorThresh (int nValue);
-	void SetMasterCompressorRatio (unsigned nValue);
-	void SetMasterCompressorAttack (unsigned nValue);
-	void SetMasterCompressorRelease (unsigned nValue);	
-	void SetMasterCompressorHPFilterEnable (bool nValue);
 
 	unsigned GetMixerDryLevel () const;
 	void SetMixerDryLevel (unsigned nValue);
@@ -216,7 +188,8 @@ private:
 	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
-	int m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
+	int m_nFX1Send[CConfig::AllToneGenerators];
+	int m_nFX2Send[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];
 	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
@@ -264,21 +237,6 @@ private:
 	std::string NewPerformanceName="";
 
 	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
-
-	int m_nMasterEQLow;
-	int m_nMasterEQMid;
-	int m_nMasterEQHigh;
-	int m_nMasterEQGain;
-	unsigned m_nMasterEQLowMidFreq;
-	unsigned m_nMasterEQMidHighFreq;
-
-	bool m_bMasterCompressorEnable;
-	int m_nMasterCompressorPreGain;
-	int m_nMasterCompressorThresh;
-	unsigned m_nMasterCompressorRatio;
-	unsigned m_nMasterCompressorAttack;
-	unsigned m_nMasterCompressorRelease;
-	bool m_bMasterCompressorHPFilterEnable;
 
 	unsigned m_nMixerDryLevel;
 };

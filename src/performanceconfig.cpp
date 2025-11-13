@@ -164,19 +164,19 @@ bool CPerformanceConfig::Load (void)
 		m_nNoteShift[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
 
 		PropertyName.Format ("FX1Send%u", nTG+1);
-		m_nFXSend[nTG][0] = m_Properties.GetNumber (PropertyName, 25);
+		m_nFX1Send[nTG] = m_Properties.GetNumber (PropertyName, 25);
 
 		PropertyName.Format ("FX2Send%u", nTG+1);
-		m_nFXSend[nTG][1] = m_Properties.GetNumber (PropertyName, 0);
+		m_nFX2Send[nTG] = m_Properties.GetNumber (PropertyName, 0);
 
 		// compatibility ReverbSend[n] => FX1Send[n]
 		PropertyName.Format ("ReverbSend%u", nTG+1);
-		if (m_Properties.IsSet (PropertyName) && CConfig::FXChains)
+		if (m_Properties.IsSet (PropertyName))
 		{
-			// the volume calculated by x^4, but FxSend uses x^2
+			// the volume calculated by x^4, but FX1Send uses x^2
 			float32_t reverbSend = m_Properties.GetNumber (PropertyName, 50);
 			reverbSend = pow(mapfloat(reverbSend, 0.0f, 99.0f, 0.0f, 1.0f), 2);
-			m_nFXSend[nTG][0] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
+			m_nFX1Send[nTG] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
 		}
 	
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
@@ -275,7 +275,10 @@ bool CPerformanceConfig::Load (void)
 		{
 			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
 
-			PropertyName.Format ("FX%u%s", nFX+1, p.Name);
+			if (nFX == CConfig::MasterFX)
+				PropertyName.Format ("MasterFX%s", p.Name);
+			else
+				PropertyName.Format ("SendFX%u%s", nFX+1, p.Name);
 
 			if (p.Flags & FX::FXSaveAsString)
 				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::TFXParameter(nParam), m_Properties.GetString (PropertyName, ""));
@@ -284,33 +287,26 @@ bool CPerformanceConfig::Load (void)
 		}
 	}
 
-	m_nMasterEQLow = m_Properties.GetSignedNumber ("MasterEQLow", 0);
-	m_nMasterEQMid = m_Properties.GetSignedNumber ("MasterEQMid", 0);
-	m_nMasterEQHigh = m_Properties.GetSignedNumber ("MasterEQHigh", 0);
-	m_nMasterEQGain = m_Properties.GetSignedNumber ("MasterEQGain", 0);
-	m_nMasterEQLowMidFreq = m_Properties.GetNumber ("MasterEQLowMidFreq", 24);
-	m_nMasterEQMidHighFreq = m_Properties.GetNumber ("MasterEQMidHighFreq", 44);
-
-	m_bMasterCompressorEnable = m_Properties.GetNumber ("MasterCompressorEnable", 1);
-	m_nMasterCompressorPreGain = m_Properties.GetSignedNumber ("MasterCompressorPreGain", 0);
-	m_nMasterCompressorThresh = m_Properties.GetSignedNumber ("MasterCompressorThresh", -3);
-	m_nMasterCompressorRatio = m_Properties.GetNumber ("MasterCompressorRatio", 20);
-	m_nMasterCompressorAttack = m_Properties.GetNumber ("MasterCompressorAttack", 5);
-	m_nMasterCompressorRelease = m_Properties.GetNumber ("MasterCompressorRelease", 5);
-	m_bMasterCompressorHPFilterEnable = m_Properties.GetNumber ("MasterCompressorHPFilterEnable", 0);
+	if (CConfig::FXChains)
+	{
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterReturnLevel] = FX::s_FXParameter[FX::FXParameterReturnLevel].Maximum;
+	}
 
 	m_nMixerDryLevel = m_Properties.GetNumber ("MixerDryLevel", 99);
 
 	// Compatibility
-	if (m_Properties.IsSet ("CompressorEnable"))
+	if (m_Properties.IsSet ("CompressorEnable") && CConfig::FXChains)
 	{
-		m_bMasterCompressorEnable = m_Properties.GetNumber ("CompressorEnable", 1);
-		m_nMasterCompressorPreGain = 0;
-		m_nMasterCompressorThresh = -7;
-		m_nMasterCompressorRatio = 5;
-		m_nMasterCompressorAttack = 0;
-		m_nMasterCompressorRelease = 200;
-		m_bMasterCompressorHPFilterEnable = 1;
+		bool bHasCompressor = m_Properties.GetNumber ("CompressorEnable", 0);
+
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterSlot0] = bHasCompressor ? FX::getIDFromName(FX::FXParameterSlot0, "Compressor") : 0;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorPreGain] = 0;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorThresh] = -7;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRatio] = 5;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorAttack] = 0;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRelease] = 200;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorHPFilterEnable] = 1;
+		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorBypass] = 0;
 	}
 
 	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
@@ -383,11 +379,11 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("NoteShift%u", nTG+1);
 		m_Properties.SetSignedNumber (PropertyName, m_nNoteShift[nTG]);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
-		{
-			PropertyName.Format ("FX%uSend%u", nFX+1, nTG+1);
-			m_Properties.SetNumber (PropertyName, m_nFXSend[nTG][nFX]);
-		}
+		PropertyName.Format ("FX1Send%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nFX1Send[nTG]);
+
+		PropertyName.Format ("FX2Send%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nFX2Send[nTG]);
 
 		PropertyName.Format ("PitchBendRange%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nPitchBendRange[nTG]);
@@ -483,13 +479,19 @@ bool CPerformanceConfig::Save (void)
 	{
 		CString PropertyName;
 
+		CString FXName;
+		if (nFX == CConfig::MasterFX)
+			FXName = "MasterFX";
+		else
+			FXName.Format ("SendFX%u", nFX+1);
+
 		for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
 		{
 			unsigned nSlotParam = FX::FXParameterSlot0 + nSlot;
 			unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
 			const FX::EffectType &effect = FX::s_effects[nEffectID];
 
-			PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[nSlotParam].Name);
+			PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[nSlotParam].Name);
 			m_Properties.SetString (PropertyName, effect.Name);
 		}
 
@@ -504,7 +506,7 @@ bool CPerformanceConfig::Save (void)
 			for (unsigned nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
 			{
 				const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-				PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[nParam].Name);
+				PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[nParam].Name);
 
 				if (p.Flags & FX::FXSaveAsString)
 					m_Properties.SetString (PropertyName, FX::getNameFromID(FX::TFXParameter(nParam), m_nFXParameter[nFX][nParam]));
@@ -513,24 +515,12 @@ bool CPerformanceConfig::Save (void)
 			}
 		}
 
-		PropertyName.Format ("FX%u%s", nFX+1, FX::s_FXParameter[FX::FXParameterReturnLevel].Name);
-		m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterReturnLevel]);
+		if (nFX != CConfig::MasterFX)
+		{
+			PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[FX::FXParameterReturnLevel].Name);
+			m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterReturnLevel]);
+		}
 	}
-
-	m_Properties.SetSignedNumber ("MasterEQLow", m_nMasterEQLow);
-	m_Properties.SetSignedNumber ("MasterEQMid", m_nMasterEQMid);
-	m_Properties.SetSignedNumber ("MasterEQHigh", m_nMasterEQHigh);
-	m_Properties.SetSignedNumber ("MasterEQGain", m_nMasterEQGain);
-	m_Properties.SetNumber ("MasterEQLowMidFreq", m_nMasterEQLowMidFreq);
-	m_Properties.SetNumber ("MasterEQMidHighFreq", m_nMasterEQMidHighFreq);
-
-	m_Properties.SetNumber ("MasterCompressorEnable", m_bMasterCompressorEnable);
-	m_Properties.SetSignedNumber ("MasterCompressorPreGain", m_nMasterCompressorPreGain);
-	m_Properties.SetSignedNumber ("MasterCompressorThresh", m_nMasterCompressorThresh);
-	m_Properties.SetNumber ("MasterCompressorRatio", m_nMasterCompressorRatio);
-	m_Properties.SetNumber ("MasterCompressorAttack", m_nMasterCompressorAttack);
-	m_Properties.SetNumber ("MasterCompressorRelease", m_nMasterCompressorRelease);
-	m_Properties.SetNumber ("MasterCompressorHPFilterEnable", m_bMasterCompressorHPFilterEnable);
 
 	m_Properties.SetNumber ("MixerDryLevel", m_nMixerDryLevel);
 
@@ -603,11 +593,16 @@ int CPerformanceConfig::GetNoteShift (unsigned nTG) const
 	return m_nNoteShift[nTG];
 }
 
-unsigned CPerformanceConfig::GetFXSend (unsigned nTG, unsigned nFX) const
+unsigned CPerformanceConfig::GetFX1Send (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
-	return m_nFXSend[nTG][nFX];
+	return m_nFX1Send[nTG];
+}
+
+unsigned CPerformanceConfig::GetFX2Send (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nFX2Send[nTG];
 }
 
 void CPerformanceConfig::SetBankNumber (unsigned nValue, unsigned nTG)
@@ -676,11 +671,16 @@ void CPerformanceConfig::SetNoteShift (int nValue, unsigned nTG)
 	m_nNoteShift[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetFXSend (unsigned nValue, unsigned nTG, unsigned nFX)
+void CPerformanceConfig::SetFX1Send (unsigned nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
-	m_nFXSend[nTG][nFX] = nValue;
+	m_nFX1Send[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetFX2Send (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nFX2Send[nTG] = nValue;
 }
 
 int CPerformanceConfig::GetEQLow (unsigned nTG) const
@@ -767,136 +767,6 @@ void CPerformanceConfig::SetFXParameter (FX::TFXParameter nParameter, int nValue
 	assert (nFX < CConfig::FXChains);
 	assert (nParameter < FX::FXParameterUnknown);
 	m_nFXParameter[nFX][nParameter] = nValue;
-}
-
-int CPerformanceConfig::GetMasterEQLow () const
-{
-	return m_nMasterEQLow;
-}
-
-int CPerformanceConfig::GetMasterEQMid () const
-{
-	return m_nMasterEQMid;
-}
-
-int CPerformanceConfig::GetMasterEQHigh () const
-{
-	return m_nMasterEQHigh;
-}
-
-int CPerformanceConfig::GetMasterEQGain () const
-{
-	return m_nMasterEQGain;
-}
-
-unsigned CPerformanceConfig::GetMasterEQLowMidFreq () const
-{
-	return m_nMasterEQLowMidFreq;
-}
-
-unsigned CPerformanceConfig::GetMasterEQMidHighFreq () const
-{
-	return m_nMasterEQMidHighFreq;
-}
-
-void CPerformanceConfig::SetMasterEQLow (int nValue)
-{
-	m_nMasterEQLow = nValue;
-}
-
-void CPerformanceConfig::SetMasterEQMid (int nValue)
-{
-	m_nMasterEQMid = nValue;
-}
-
-void CPerformanceConfig::SetMasterEQHigh (int nValue)
-{
-	m_nMasterEQHigh = nValue;
-}
-
-void CPerformanceConfig::SetMasterEQGain (int nValue)
-{
-	m_nMasterEQGain = nValue;
-}
-
-void CPerformanceConfig::SetMasterEQLowMidFreq (unsigned nValue)
-{
-	m_nMasterEQLowMidFreq = nValue;
-}
-
-void CPerformanceConfig::SetMasterEQMidHighFreq (unsigned nValue)
-{
-	m_nMasterEQMidHighFreq = nValue;
-}
-
-bool CPerformanceConfig::GetMasterCompressorEnable () const
-{
-	return m_bMasterCompressorEnable;
-}
-
-int CPerformanceConfig::GetMasterCompressorPreGain () const
-{
-	return m_nMasterCompressorPreGain;
-}
-
-int CPerformanceConfig::GetMasterCompressorThresh () const
-{
-	return m_nMasterCompressorThresh;
-}
-
-unsigned CPerformanceConfig::GetMasterCompressorRatio () const
-{
-	return m_nMasterCompressorRatio;
-}
-
-unsigned CPerformanceConfig::GetMasterCompressorAttack () const
-{
-	return m_nMasterCompressorAttack;
-}
-
-unsigned CPerformanceConfig::GetMasterCompressorRelease () const
-{
-	return m_nMasterCompressorRelease;
-}
-
-bool CPerformanceConfig::GetMasterCompressorHPFilterEnable () const
-{
-	return m_bMasterCompressorHPFilterEnable;
-}
-
-void CPerformanceConfig::SetMasterCompressorEnable (bool nValue)
-{
-	m_bMasterCompressorEnable = nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorPreGain (int nValue)
-{
-	m_nMasterCompressorPreGain= nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorThresh (int nValue)
-{
-	m_nMasterCompressorThresh = nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorRatio (unsigned nValue)
-{
-	m_nMasterCompressorRatio = nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorAttack (unsigned nValue)
-{
-	m_nMasterCompressorAttack = nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorRelease (unsigned nValue)
-{
-	m_nMasterCompressorRelease = nValue;
-}
-
-void CPerformanceConfig::SetMasterCompressorHPFilterEnable (bool nValue)
-{
-	m_bMasterCompressorHPFilterEnable = nValue;
 }
 
 unsigned CPerformanceConfig::GetMixerDryLevel () const
