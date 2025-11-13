@@ -124,6 +124,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	99,	25,	1,	"PlateReverbLowDamp"},
 	{0,	99,	85,	1,	"PlateReverbLowPass"},
 	{0,	99,	65,	1,	"PlateReverbDiffusion"},
+	{0,	1,	0,	1,	"PlateReverbBypass",	ToOnOff},
 	{0,	AudioEffectCloudSeed2::presets_num - 1,	0,	1,	"CloudSeed2Preset",	AudioEffectCloudSeed2::getPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	1,	0,	1,	"CloudSeed2Interpolation", ToOnOff},
 	{0,	1,	0,	1,	"CloudSeed2LowCutEnabled", ToOnOff},
