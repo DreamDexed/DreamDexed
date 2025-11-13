@@ -117,6 +117,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{30,	240,	120,	1,	"DreamDelayTempo",	ToBPM},
 	{0,	100,	60,	1,	"DreamDelayFeedback"},
 	{0,	60,	50,	1,	"DreamDelayHighCut",	ToHz},
+	{0,	1,	0,	1,	"DreamDelayBypass",	ToOnOff},
 	{0,	100,	0,	1,	"PlateReverbMix",	ToDryWet},
 	{0,	99,	50,	1,	"PlateReverbSize"},
 	{0,	99,	25,	1,	"PlateReverbHighDamp"},

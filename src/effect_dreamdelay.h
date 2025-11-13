@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <arm_math.h>
 #include "common.h"
@@ -35,6 +36,8 @@ public:
     void process(float32_t* blockL, float32_t* blockR, uint16_t len);
 
     void resetState();
+
+    std::atomic<bool> bypass;
 
 private:
     float32_t samplerate;
