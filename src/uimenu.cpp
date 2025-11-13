@@ -245,6 +245,7 @@ const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 	{"Low damp",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowDamp},
 	{"Low pass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbLowPass},
 	{"Diffusion",	EditFXParameter2,	0,	FX::FXParameterPlateReverbDiffusion},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterPlateReverbBypass},
 	{0}
 };
 

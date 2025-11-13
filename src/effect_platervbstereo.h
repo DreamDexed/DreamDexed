@@ -44,6 +44,7 @@
 #ifndef _EFFECT_PLATERVBSTEREO_H
 #define _EFFECT_PLATERVBSTEREO_H
 
+#include <atomic>
 #include <cstdint>
 #include <arm_math.h>
 #include "common.h"
@@ -118,6 +119,9 @@ public:
     }
 
     void reset();
+
+    std::atomic<bool> bypass;
+
 private:
     float32_t mix, dry, wet;
     float32_t input_attn;

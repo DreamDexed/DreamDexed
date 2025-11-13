@@ -83,7 +83,8 @@ const int16_t AudioWaveformSine[257] = {
  -4808, -4011, -3212, -2410, -1608,  -804,     0
 };
 
-AudioEffectPlateReverb::AudioEffectPlateReverb(float32_t samplerate)
+AudioEffectPlateReverb::AudioEffectPlateReverb(float32_t samplerate):
+bypass{}
 {
     set_mix(0.0f);
 
@@ -226,6 +227,8 @@ void AudioEffectPlateReverb::process(const float32_t *inblockL, const float32_t 
     int32_t y0, y1;
     int64_t y;
     uint32_t idx;
+
+    if (bypass) return;
 
     if (wet == 0.0f) return;
 
