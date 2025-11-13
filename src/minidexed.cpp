@@ -1326,6 +1326,10 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->cloudseed2.setParameter (Parameter - FX::FXParameterCloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
 		break;
 
+	case FX::FXParameterCloudSeed2Bypass:
+		fx_chain[nFX]->cloudseed2.bypass = nValue;
+		break;
+
 	case FX::FXParameterCompressorPreGain:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->compressor.setPreGain_dB (nValue);

@@ -171,6 +171,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	127,	6,	1,	"CloudSeed2SeedDiffusion"},
 	{0,	127,	12,	1,	"CloudSeed2SeedDelay"},
 	{0,	127,	19,	1,	"CloudSeed2SeedPostDiffusion"},
+	{0,	1,	0,	1,	"CloudSeed2Bypass",	ToOnOff},
 	{-20,	20,	0,	1,	"CompressorPreGain",	TodB},
 	{-60,	0,	-20,	1,	"CompressorThresh",	TodBFS},
 	{1,	AudioEffectCompressor::CompressorRatioInf,	5,	1,	"CompressorRatio",	ToRatio},
