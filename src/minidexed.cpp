@@ -1270,6 +1270,10 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_FXSpinLock.Release ();
 		break;
 
+	case FX::FXParameterPlateReverbBypass:
+		fx_chain[nFX]->plate_reverb.bypass = nValue;
+		break;
+
 	case FX::FXParameterCloudSeed2Preset:
 		fx_chain[nFX]->cloudseed2.loadPreset (nValue);
 		break;
