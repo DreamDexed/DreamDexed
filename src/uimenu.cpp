@@ -233,6 +233,7 @@ const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 	{"Tempo",		EditFXParameter2,	0,	FX::FXParameterDreamDelayTempo},
 	{"Feedback",		EditFXParameter2,	0,	FX::FXParameterDreamDelayFeedback},
 	{"HighCut",		EditFXParameter2,	0,	FX::FXParameterDreamDelayHighCut},
+	{"Bypass",		EditFXParameter2,	0,	FX::FXParameterDreamDelayBypass},
 	{0}
 };
 
