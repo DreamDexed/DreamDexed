@@ -51,8 +51,6 @@
 #include "effect_mixer.hpp"
 #include "udpmididevice.h"
 #include "net/ftpdaemon.h"
-#include "compressor.h"
-#include "effect_3bandeqmono.h"
 #include "effect_chain.h"
 
 class CMiniDexed
@@ -108,7 +106,8 @@ public:
 	void setBreathController (uint8_t value, unsigned nTG);
 	void setAftertouch (uint8_t value, unsigned nTG);
 
-	void SetFXSend (unsigned nFXSend, unsigned nTG, unsigned nFX);		// 0 .. 99
+	void SetFX1Send (unsigned nFXSend, unsigned nTG);		// 0 .. 99
+	void SetFX2Send (unsigned nFXSend, unsigned nTG);		// 0 .. 99
 
 	void SetCompressorEnable (bool compressor, unsigned nTG);	// 0 .. 1 (default 1)
 	void SetCompressorPreGain (int preGain, unsigned nTG);		// -20 .. 20 dB (default 0)
@@ -188,19 +187,6 @@ public:
 		ParameterPerformanceSelectChannel,
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
-		ParameterMasterCompressorEnable,
-		ParameterMasterCompressorPreGain,
-		ParameterMasterCompressorThresh,
-		ParameterMasterCompressorRatio,
-		ParameterMasterCompressorAttack,
-		ParameterMasterCompressorRelease,
-		ParameterMasterCompressorHPFilterEnable,
-		ParameterMasterEQLow,
-		ParameterMasterEQMid,
-		ParameterMasterEQHigh,
-		ParameterMasterEQGain,
-		ParameterMasterEQLowMidFreq,
-		ParameterMasterEQMidHighFreq,
 		ParameterMixerDryLevel,
 		ParameterUnknown
 	};
@@ -364,7 +350,8 @@ private:
 	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
 
-	unsigned m_nFXSend[CConfig::AllToneGenerators][CConfig::FXChains];
+	unsigned m_nFX1Send[CConfig::AllToneGenerators];
+	unsigned m_nFX2Send[CConfig::AllToneGenerators];
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
@@ -414,15 +401,9 @@ private:
 
 	AudioFXChain* fx_chain[CConfig::FXChains];
 	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
-	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXChains];
+	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXMixers];
 
 	CSpinLock m_FXSpinLock;
-
-	AudioEffect3BandEQMono m_MasterEQ[2];
-	CSpinLock m_EQSpinLock;
-
-	Compressor m_MasterCompressor[2];
-	CSpinLock m_MasterCompressorSpinLock;
 
 	CStatus m_Status;
 

@@ -69,8 +69,6 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	fx_chain {},
 	tg_mixer {},
 	sendfx_mixer {},
-	m_MasterEQ {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
-	m_MasterCompressor {pConfig->GetSampleRate(), pConfig->GetSampleRate()},
 	m_pNet(nullptr),
 	m_pNetDevice(nullptr),
 	m_WLAN(nullptr),
@@ -130,10 +128,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nAftertouchRange[i]=99;	
 		m_nAftertouchTarget[i]=0;
 		
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
-		{
-			m_nFXSend[i][nFX] = 25;
-		}
+		m_nFX1Send[i] = 25;
+		m_nFX2Send[i] = 0;
 
 		m_bCompressorEnable[i] = 0;
 		m_nCompressorPreGain[i] = 0;
@@ -269,9 +265,13 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
 	// END setup tgmixer
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
+	for (unsigned nFX = 0; nFX < CConfig::FXMixers; nFX++)
 	{
 		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
+	}
+
+	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
+	{
 		fx_chain[nFX] = new AudioFXChain(pConfig->GetSampleRate());
 
 		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
@@ -281,24 +281,10 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 			SetFXParameter (FX::TFXParameter(nParam), p.Default, nFX, bSaveOnly);
 		}
 	}
+
 	// END setup reverb
 
-	SetParameter (ParameterMasterEQLow, 0);
-	SetParameter (ParameterMasterEQMid, 0);
-	SetParameter (ParameterMasterEQHigh, 0);
-	SetParameter (ParameterMasterEQGain, 0);
-	SetParameter (ParameterMasterEQLowMidFreq, 24);
-	SetParameter (ParameterMasterEQMidHighFreq, 44);
-
 	SetParameter (ParameterMasterVolume, pConfig->GetMasterVolume());
-
-	SetParameter (ParameterMasterCompressorEnable, 1);
-	SetParameter (ParameterMasterCompressorPreGain, 0);
-	SetParameter (ParameterMasterCompressorThresh, -3);
-	SetParameter (ParameterMasterCompressorRatio, 20);
-	SetParameter (ParameterMasterCompressorAttack, 5);
-	SetParameter (ParameterMasterCompressorRelease, 5);
-	SetParameter (ParameterMasterCompressorHPFilterEnable, 0);
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
 		
@@ -368,10 +354,10 @@ bool CMiniDexed::Initialize (void)
 		tg_mixer->pan(i,mapfloat(m_nPan[i],0,127,0.0f,1.0f));
 		tg_mixer->gain(i,1.0f);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+		for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
 		{
 			sendfx_mixer[nFX]->pan(i,mapfloat(m_nPan[i],0,127,0.0f,1.0f));
-			sendfx_mixer[nFX]->gain(i,mapfloat(m_nFXSend[i][nFX],0,99,0.0f,1.0f));
+			sendfx_mixer[nFX]->gain(i,mapfloat(nFX == 0 ? m_nFX1Send[i] : m_nFX2Send[i],0,99,0.0f,1.0f));
 		}
 	}
 
@@ -797,7 +783,7 @@ void CMiniDexed::SetPan (unsigned nPan, unsigned nTG)
 	
 	tg_mixer->pan(nTG,mapfloat(nPan,0,127,0.0f,1.0f));
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
 	{
 		sendfx_mixer[nFX]->pan(nTG,mapfloat(nPan,0,127,0.0f,1.0f));
 	}
@@ -805,17 +791,33 @@ void CMiniDexed::SetPan (unsigned nPan, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
-void CMiniDexed::SetFXSend (unsigned nFXSend, unsigned nTG, unsigned nFX)
+void CMiniDexed::SetFX1Send (unsigned nFX1Send, unsigned nTG)
 {
-	nFXSend=constrain((int)nFXSend,0,99);
+	nFX1Send=constrain((int)nFX1Send,0,99);
 
 	assert (nTG < CConfig::AllToneGenerators);
-	assert (nFX < CConfig::FXChains);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	if (0 >= CConfig::FXMixers) return;
 
-	m_nFXSend[nTG][nFX] = nFXSend;
-	sendfx_mixer[nFX]->gain(nTG,mapfloat(nFXSend,0,99,0.0f,1.0f));
-	
+	m_nFX1Send[nTG] = nFX1Send;
+
+	sendfx_mixer[0]->gain(nTG,mapfloat(nFX1Send,0,99,0.0f,1.0f));
+
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetFX2Send (unsigned nFX2Send, unsigned nTG)
+{
+	nFX2Send=constrain((int)nFX2Send,0,99);
+
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	if (1 >= CConfig::FXMixers) return;
+
+	m_nFX2Send[nTG] = nFX2Send;
+
+	sendfx_mixer[1]->gain(nTG,mapfloat(nFX2Send,0,99,0.0f,1.0f));
+
 	m_UI.ParameterChanged ();
 }
 
@@ -1086,104 +1088,6 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		nValue=constrain((int)nValue,0,127);
 		setMasterVolume (nValue / 127.0f);
 		m_UI.ParameterChanged ();
-		break;
-
-	case ParameterMasterCompressorEnable:
-		break;
-
-	case ParameterMasterCompressorPreGain:
-		nValue=constrain(nValue,-20,20);
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setPreGain_dB(nValue);
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterCompressorThresh:
-		nValue=constrain(nValue,-60,0);
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setThresh_dBFS(nValue);
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterCompressorRatio:
-		nValue=constrain(nValue,1,(int)CompressorRatioInf);
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setCompressionRatio(nValue == CompressorRatioInf ? INFINITY : nValue);
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterCompressorAttack:
-		nValue=constrain(nValue,0,1000);
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setAttack_sec((nValue ?: 1) / 1000.0f, m_pConfig->GetSampleRate());
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterCompressorRelease:
-		nValue=constrain(nValue,0,2000);
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].setRelease_sec((nValue ?: 1) / 1000.0f, m_pConfig->GetSampleRate());
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterCompressorHPFilterEnable:
-		m_MasterCompressorSpinLock.Acquire ();
-		for (int i=0; i<2; ++i)
-			m_MasterCompressor[i].enableHPFilter(nValue);
-		m_MasterCompressorSpinLock.Release ();
-		break;
-
-	case ParameterMasterEQLow:
-		nValue = constrain(nValue, -24, 24);
-		m_EQSpinLock.Acquire();
-		m_MasterEQ[0].setLow_dB(nValue);
-		m_MasterEQ[1].setLow_dB(nValue);
-		m_EQSpinLock.Release();
-		break;
-
-	case ParameterMasterEQMid:
-		nValue = constrain(nValue, -24, 24);
-		m_EQSpinLock.Acquire();
-		m_MasterEQ[0].setMid_dB(nValue);
-		m_MasterEQ[1].setMid_dB(nValue);
-		m_EQSpinLock.Release();
-		break;
-
-	case ParameterMasterEQHigh:
-		nValue = constrain(nValue, -24, 24);
-		m_EQSpinLock.Acquire();
-		m_MasterEQ[0].setHigh_dB(nValue);
-		m_MasterEQ[1].setHigh_dB(nValue);
-		m_EQSpinLock.Release();
-		break;
-
-	case ParameterMasterEQGain:
-		nValue = constrain(nValue, -24, 24);
-		m_EQSpinLock.Acquire();
-		m_MasterEQ[0].setGain_dB(nValue);
-		m_MasterEQ[1].setGain_dB(nValue);
-		m_EQSpinLock.Release();
-		break;
-
-	case ParameterMasterEQLowMidFreq:
-		nValue = constrain(nValue, 0, 46);
-		m_EQSpinLock.Acquire();
-		m_nParameter[ParameterMasterEQLowMidFreq] = m_MasterEQ[0].setLowMidFreq_n(nValue);
-		m_MasterEQ[1].setLowMidFreq_n(nValue);
-		m_EQSpinLock.Release();
-		break;
-
-	case ParameterMasterEQMidHighFreq:
-		nValue = constrain(nValue, 28, 59);
-		m_EQSpinLock.Acquire();
-		m_nParameter[ParameterMasterEQMidHighFreq] = m_MasterEQ[0].setMidHighFreq_n(nValue);
-		m_MasterEQ[1].setMidHighFreq_n(nValue);
-		m_EQSpinLock.Release();
 		break;
 
 	case ParameterMixerDryLevel:
@@ -1592,8 +1496,8 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 			SetMIDIChannel ((uint8_t) nValue, i);
 			break;
 
-		case TGParameterFX1Send:			SetFXSend (nValue, i, 0); break;
-		case TGParameterFX2Send:			SetFXSend (nValue, i, 1); break;
+		case TGParameterFX1Send:			SetFX1Send (nValue, i); break;
+		case TGParameterFX2Send:			SetFX2Send (nValue, i); break;
 
 		case TGParameterCompressorEnable:	SetCompressorEnable (nValue, i); break;
 		case TGParameterCompressorPreGain:	SetCompressorPreGain (nValue, i); break;
@@ -1633,8 +1537,8 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterCutoff:		return m_nCutoff[nTG];
 	case TGParameterResonance:	return m_nResonance[nTG];
 	case TGParameterMIDIChannel:	return m_nMIDIChannel[nTG];
-	case TGParameterFX1Send:	return m_nFXSend[nTG][0];
-	case TGParameterFX2Send:	return m_nFXSend[nTG][1];
+	case TGParameterFX1Send:	return m_nFX1Send[nTG];
+	case TGParameterFX2Send:	return m_nFX2Send[nTG];
 	case TGParameterPitchBendRange:	return m_nPitchBendRange[nTG];
 	case TGParameterPitchBendStep:	return m_nPitchBendStep[nTG];
 	case TGParameterPortamentoMode:		return m_nPortamentoMode[nTG];
@@ -1915,7 +1819,7 @@ void CMiniDexed::ProcessSound (void)
 			// BEGIN adding sendFX
 			float32_t *FXSendBuffer[2];
 
-			for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+			for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
 			{
 				if (fx_chain[nFX]->get_level() == 0.0f) continue;
 
@@ -1934,20 +1838,11 @@ void CMiniDexed::ProcessSound (void)
 				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
 				m_FXSpinLock.Release ();
 			}
-			// END adding reverb
+			// END adding sendFX
 
-			m_EQSpinLock.Acquire();
-			m_MasterEQ[0].process(SampleBuffer[0], nFrames);
-			m_MasterEQ[1].process(SampleBuffer[1], nFrames);
-			m_EQSpinLock.Release();
-
-			if (m_nParameter[ParameterMasterCompressorEnable])
-			{
-				m_MasterCompressorSpinLock.Acquire ();
-				m_MasterCompressor[0].doCompression (SampleBuffer[0], nFrames);
-				m_MasterCompressor[1].doCompression (SampleBuffer[1], nFrames);
-				m_MasterCompressorSpinLock.Release ();
-			}
+			m_FXSpinLock.Acquire ();
+			fx_chain[CConfig::MasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
+			m_FXSpinLock.Release ();
 
 			// swap stereo channels if needed prior to writing back out
 			if (m_bChannelsSwapped)
@@ -2089,10 +1984,8 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetAftertouchRange (m_nAftertouchRange[nTG], nTG);
 		m_PerformanceConfig.SetAftertouchTarget (m_nAftertouchTarget[nTG], nTG);
 		
-		for (unsigned nFX = 0;nFX < CConfig::FXChains; ++nFX)
-		{
-			m_PerformanceConfig.SetFXSend (m_nFXSend[nTG][nFX], nTG, nFX);
-		}
+		m_PerformanceConfig.SetFX1Send (m_nFX1Send[nTG], nTG);
+		m_PerformanceConfig.SetFX2Send (m_nFX2Send[nTG], nTG);
 
 		m_PerformanceConfig.SetCompressorEnable (m_bCompressorEnable[nTG], nTG);
 		m_PerformanceConfig.SetCompressorPreGain (m_nCompressorPreGain[nTG], nTG);
@@ -2118,21 +2011,6 @@ bool CMiniDexed::DoSavePerformance (void)
 			m_PerformanceConfig.SetFXParameter (param, GetFXParameter (param, nFX), nFX);
 		}
 	}
-
-	m_PerformanceConfig.SetMasterEQLow (m_nParameter[ParameterMasterEQLow]);
-	m_PerformanceConfig.SetMasterEQMid (m_nParameter[ParameterMasterEQMid]);
-	m_PerformanceConfig.SetMasterEQHigh (m_nParameter[ParameterMasterEQHigh]);
-	m_PerformanceConfig.SetMasterEQGain (m_nParameter[ParameterMasterEQGain]);
-	m_PerformanceConfig.SetMasterEQLowMidFreq (m_nParameter[ParameterMasterEQLowMidFreq]);
-	m_PerformanceConfig.SetMasterEQMidHighFreq (m_nParameter[ParameterMasterEQMidHighFreq]);
-
-	m_PerformanceConfig.SetMasterCompressorEnable (m_nParameter[ParameterMasterCompressorEnable]);
-	m_PerformanceConfig.SetMasterCompressorPreGain (m_nParameter[ParameterMasterCompressorPreGain]);
-	m_PerformanceConfig.SetMasterCompressorThresh (m_nParameter[ParameterMasterCompressorThresh]);
-	m_PerformanceConfig.SetMasterCompressorRatio (m_nParameter[ParameterMasterCompressorRatio]);
-	m_PerformanceConfig.SetMasterCompressorAttack (m_nParameter[ParameterMasterCompressorAttack]);
-	m_PerformanceConfig.SetMasterCompressorRelease (m_nParameter[ParameterMasterCompressorRelease]);
-	m_PerformanceConfig.SetMasterCompressorHPFilterEnable (m_nParameter[ParameterMasterCompressorHPFilterEnable]);
 
 	m_PerformanceConfig.SetMixerDryLevel (m_nParameter[ParameterMixerDryLevel]);
 
@@ -2806,10 +2684,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		setMonoMode(m_PerformanceConfig.GetMonoMode(nTG) ? 1 : 0, nTG); 
 		setTGLink(m_PerformanceConfig.GetTGLink(nTG), nTG);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
-		{
-			SetFXSend (m_PerformanceConfig.GetFXSend (nTG, nFX), nTG, nFX);
-		}
+		SetFX1Send (m_PerformanceConfig.GetFX1Send (nTG), nTG);
+		SetFX2Send (m_PerformanceConfig.GetFX2Send (nTG), nTG);
 
 		setModWheelRange (m_PerformanceConfig.GetModulationWheelRange (nTG),  nTG);
 		setModWheelTarget (m_PerformanceConfig.GetModulationWheelTarget (nTG),  nTG);
@@ -2846,21 +2722,6 @@ void CMiniDexed::LoadPerformanceParameters(void)
 			SetFXParameter (param, m_PerformanceConfig.GetFXParameter (param, nFX), nFX, bSaveOnly);
 		}
 	}
-
-	SetParameter (ParameterMasterEQLow, m_PerformanceConfig.GetMasterEQLow ());
-	SetParameter (ParameterMasterEQMid, m_PerformanceConfig.GetMasterEQMid ());
-	SetParameter (ParameterMasterEQHigh, m_PerformanceConfig.GetMasterEQHigh ());
-	SetParameter (ParameterMasterEQGain, m_PerformanceConfig.GetMasterEQGain ());
-	SetParameter (ParameterMasterEQLowMidFreq, m_PerformanceConfig.GetMasterEQLowMidFreq ());
-	SetParameter (ParameterMasterEQMidHighFreq, m_PerformanceConfig.GetMasterEQMidHighFreq ());
-
-	SetParameter (ParameterMasterCompressorEnable, m_PerformanceConfig.GetMasterCompressorEnable ());
-	SetParameter (ParameterMasterCompressorPreGain, m_PerformanceConfig.GetMasterCompressorPreGain ());
-	SetParameter (ParameterMasterCompressorThresh, m_PerformanceConfig.GetMasterCompressorThresh ());
-	SetParameter (ParameterMasterCompressorRatio, m_PerformanceConfig.GetMasterCompressorRatio ());
-	SetParameter (ParameterMasterCompressorAttack, m_PerformanceConfig.GetMasterCompressorAttack ());
-	SetParameter (ParameterMasterCompressorRelease, m_PerformanceConfig.GetMasterCompressorRelease ());
-	SetParameter (ParameterMasterCompressorHPFilterEnable, m_PerformanceConfig.GetMasterCompressorHPFilterEnable ());
 
 	SetParameter (ParameterMixerDryLevel, m_PerformanceConfig.GetMixerDryLevel ());
 
