@@ -143,6 +143,9 @@ public:
 	unsigned GetMixerDryLevel () const;
 	void SetMixerDryLevel (unsigned nValue);
 
+	unsigned GetFXBypass () const;
+	void SetFXBypass (unsigned nValue);
+
 	bool VoiceDataFilled(unsigned nTG);
 	bool ListPerformances(); 
 	//std::string m_DirName;
@@ -239,6 +242,7 @@ private:
 	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
 
 	unsigned m_nMixerDryLevel;
+	unsigned m_nFXBypass;
 };
 
 #endif

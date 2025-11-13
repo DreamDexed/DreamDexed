@@ -188,6 +188,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{28,	59,	44,	1,	"EQMidHighFreq",	ToHz},
 	{0,	1,	0,	1,	"EQBypass",		ToOnOff},
 	{0,	99,	0,	1,	"ReturnLevel"},
+	{0,	1,	0,	1,	"Bypass",		ToOnOff},
 };
 
 constexpr const FX::EffectType FX::s_effects[];

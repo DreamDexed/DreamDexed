@@ -180,6 +180,7 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 	{"SendFX1",		MenuHandler,		s_SendFXMenu, 		0},
 	{"SendFX2",		MenuHandler,		s_SendFXMenu, 		1},
 	{"MasterFX",		MenuHandler,		s_MasterFXMenu, 	CConfig::MasterFX},
+	{"Bypass",		EditGlobalParameter,	0,			CMiniDexed::ParameterFXBypass},
 	{0}
 };
 
@@ -189,6 +190,7 @@ const CUIMenu::TMenuItem CUIMenu::s_SendFXMenu[] =
 	{"Slot2",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot1, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Slot3",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot2, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Return Level",	EditFXParameter2,	0,	FX::FXParameterReturnLevel},
+	{"Bypass",		EditFXParameter2,	0,	FX::FXParameterBypass},
 	{0},
 };
 
@@ -197,6 +199,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
 	{"Slot1",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot0, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Slot2",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot1, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Slot3",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot2, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
+	{"Bypass",		EditFXParameter2,	0,	FX::FXParameterBypass},
 	{0},
 };
 
@@ -450,6 +453,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0, NUM_PERFORMANCE_BANKS, 1},			// ParameterPerformanceBank
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
 	{0,	99,	1},				// ParameterMixerDryLevel
+	{0,	1,	1,	ToOnOff},		// ParameterFXBypass
 };
 
 // must match CMiniDexed::TTGParameter
