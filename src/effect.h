@@ -19,6 +19,7 @@ public:
 		FXParameterYKChorusEnable2,
 		FXParameterYKChorusLFORate1,
 		FXParameterYKChorusLFORate2,
+		FXParameterYKChorusBypass,
 		FXParameterDreamDelayMix,
 		FXParameterDreamDelayMode,
 		FXParameterDreamDelayTime,
@@ -122,7 +123,7 @@ public:
 
         static constexpr const EffectType s_effects[] = {
                 {"None"},
-                {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusLFORate2},
+                {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusBypass},
                 {"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayHighCut},
                 {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbDiffusion},
                 {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2SeedPostDiffusion},
