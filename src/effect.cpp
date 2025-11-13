@@ -108,6 +108,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	1,	1,	1,	"YKChorusEnable2",	ToOnOff},
 	{0,	100,	50,	1,	"YKChorusLFORate1"},
 	{0,	100,	83,	1,	"YKChorusLFORate2"},
+	{0,	1,	0,	1,	"YKChorusBypass",	ToOnOff},
 	{0,	100,	0,	1,	"DreamDelayMix",	ToDryWet},
 	{0,	2,	0,	1,	"DreamDelayMode",	ToDelayMode},
 	{0,	112,	36,	1,	"DreamDelayTime",	ToDelayTime, FX::FXComposite},

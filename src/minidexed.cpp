@@ -1159,6 +1159,10 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_FXSpinLock.Release ();
 		break;
 
+	case FX::FXParameterYKChorusBypass:
+		fx_chain[nFX]->yk_chorus.bypass = nValue;
+		break;
+
 	case FX::FXParameterDreamDelayMix:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->dream_delay.setMix (nValue / 100.0f);
