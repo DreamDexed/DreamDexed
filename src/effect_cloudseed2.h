@@ -65,6 +65,7 @@ public:
 	}
 
 	AudioEffectCloudSeed2(float samplerate):
+	bypass{},
 	samplerate{samplerate},
 	ramp_dt{10.0f / samplerate},
 	engine{(int)samplerate},
@@ -149,6 +150,8 @@ public:
 			return;
 		} 
 
+		if (bypass) return;
+
 		if (isDisabled()) return;
 
 		engine.Process(inblockL, inblockR, inblockL, inblockR, len);
@@ -181,6 +184,8 @@ public:
 			params[Cloudseed::Parameter::EarlyOut] == 0.0f &&
 			params[Cloudseed::Parameter::LateOut] == 0.0f;
 	}
+
+	std::atomic<bool> bypass;
 
 private:
 	float samplerate;

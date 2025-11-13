@@ -268,6 +268,7 @@ const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2Menu[] =
 	{"Low Shelf",		MenuHandler,	s_CloudSeed2LowShelfMenu},
 	{"High Shelf",		MenuHandler,	s_CloudSeed2HighShelfMenu},
 	{"Low Pass",		MenuHandler,	s_CloudSeed2LowPassMenu},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterCloudSeed2Bypass},
 	{0}
 };
 

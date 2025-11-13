@@ -82,6 +82,7 @@ public:
 		FXParameterCloudSeed2SeedDiffusion,
 		FXParameterCloudSeed2SeedDelay,
 		FXParameterCloudSeed2SeedPostDiffusion,
+		FXParameterCloudSeed2Bypass,
 		FXParameterCompressorPreGain,
 		FXParameterCompressorThresh,
 		FXParameterCompressorRatio,
@@ -128,7 +129,7 @@ public:
                 {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusBypass},
                 {"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayBypass},
                 {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbBypass},
-                {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2SeedPostDiffusion},
+                {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2Bypass},
 		{"Compressor", FXParameterCompressorPreGain, FXParameterCompressorBypass},
 		{"EQ", FXParameterEQLow, FXParameterEQBypass},
         };
