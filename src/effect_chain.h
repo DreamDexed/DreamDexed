@@ -43,8 +43,11 @@ public:
                         if (uint8_t id = slots[i])
                                 funcs[id](inputL, inputR, len);
 
-                arm_scale_f32(inputL, level, inputL, len);
-                arm_scale_f32(inputR, level, inputR, len);
+                if (level != 1.0f)
+                {
+                        arm_scale_f32(inputL, level, inputL, len);
+                        arm_scale_f32(inputR, level, inputR, len);
+                }
         }
 
         void resetState()
