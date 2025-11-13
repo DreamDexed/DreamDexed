@@ -99,6 +99,7 @@ public:
 		FXParameterEQMidHighFreq,
 		FXParameterEQBypass,
 		FXParameterReturnLevel,
+		FXParameterBypass,
 		FXParameterUnknown,
 	};
 

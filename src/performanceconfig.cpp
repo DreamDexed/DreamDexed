@@ -293,6 +293,7 @@ bool CPerformanceConfig::Load (void)
 	}
 
 	m_nMixerDryLevel = m_Properties.GetNumber ("MixerDryLevel", 99);
+	m_nFXBypass = m_Properties.GetNumber ("FXBypass", 0);
 
 	// Compatibility
 	if (m_Properties.IsSet ("CompressorEnable") && CConfig::FXChains)
@@ -520,9 +521,13 @@ bool CPerformanceConfig::Save (void)
 			PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[FX::FXParameterReturnLevel].Name);
 			m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterReturnLevel]);
 		}
+
+		PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[FX::FXParameterBypass].Name);
+		m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterBypass]);
 	}
 
 	m_Properties.SetNumber ("MixerDryLevel", m_nMixerDryLevel);
+	m_Properties.SetNumber ("FXBypass", m_nFXBypass);
 
 	return m_Properties.Save ();
 }
@@ -777,6 +782,16 @@ unsigned CPerformanceConfig::GetMixerDryLevel () const
 void CPerformanceConfig::SetMixerDryLevel (unsigned nValue)
 {
 	m_nMixerDryLevel = nValue;
+}
+
+unsigned CPerformanceConfig::GetFXBypass () const
+{
+	return m_nFXBypass;
+}
+
+void CPerformanceConfig::SetFXBypass (unsigned nValue)
+{
+	m_nFXBypass = nValue;
 }
 
 // Pitch bender and portamento:
