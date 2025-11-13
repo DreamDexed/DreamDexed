@@ -21,6 +21,7 @@ public:
         cloudseed2{samplerate},
         compressor{samplerate},
         eq{samplerate},
+        bypass{},
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
@@ -39,6 +40,8 @@ public:
 
         void process (float *inputL, float *inputR, uint16_t len)
         {
+                if (bypass) return;
+
                 for (int i = 0; i < FX::slots_num; ++i)
                         if (uint8_t id = slots[i])
                                 funcs[id](inputL, inputR, len);
@@ -75,6 +78,8 @@ public:
         AudioEffectCloudSeed2 cloudseed2;
         AudioEffectCompressor compressor;
         AudioEffect3BandEQ eq;
+
+        std::atomic<bool> bypass;
 
 private:
         std::atomic<uint8_t> slots[FX::slots_num];

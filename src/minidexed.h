@@ -188,6 +188,7 @@ public:
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
 		ParameterMixerDryLevel,
+		ParameterFXBypass,
 		ParameterUnknown
 	};
 

@@ -285,6 +285,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	// END setup reverb
 
 	SetParameter (ParameterMasterVolume, pConfig->GetMasterVolume());
+	SetParameter (ParameterMixerDryLevel, 99);
+	SetParameter (ParameterFXBypass, 0);
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
 		
@@ -1095,6 +1097,9 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		tg_mixer->gain(mapfloat(nValue,0,99,0.0f,1.0f));
 		break;
 
+	case ParameterFXBypass:
+		break;
+
 	default:
 		assert (0);
 		break;
@@ -1420,6 +1425,10 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->set_level (nValue / 99.0f);
 		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterBypass:
+		fx_chain[nFX]->bypass = nValue;
 		break;
 
 	default:
@@ -1847,18 +1856,24 @@ void CMiniDexed::ProcessSound (void)
 					sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
 				}
 
-				m_FXSpinLock.Acquire ();
-				fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+				if (!m_nParameter[ParameterFXBypass])
+				{
+					m_FXSpinLock.Acquire ();
+					fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+					m_FXSpinLock.Release ();
+				}
 
 				arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
 				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
-				m_FXSpinLock.Release ();
 			}
 			// END adding sendFX
 
-			m_FXSpinLock.Acquire ();
-			fx_chain[CConfig::MasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
-			m_FXSpinLock.Release ();
+			if (!m_nParameter[ParameterFXBypass])
+			{
+				m_FXSpinLock.Acquire ();
+				fx_chain[CConfig::MasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
+				m_FXSpinLock.Release ();
+			}
 
 			// swap stereo channels if needed prior to writing back out
 			if (m_bChannelsSwapped)
@@ -2029,6 +2044,7 @@ bool CMiniDexed::DoSavePerformance (void)
 	}
 
 	m_PerformanceConfig.SetMixerDryLevel (m_nParameter[ParameterMixerDryLevel]);
+	m_PerformanceConfig.SetFXBypass (m_nParameter[ParameterFXBypass]);
 
 	if(m_bSaveAsDeault)
 	{
@@ -2740,6 +2756,7 @@ void CMiniDexed::LoadPerformanceParameters(void)
 	}
 
 	SetParameter (ParameterMixerDryLevel, m_PerformanceConfig.GetMixerDryLevel ());
+	SetParameter (ParameterFXBypass, m_PerformanceConfig.GetFXBypass ());
 
 	m_UI.DisplayChanged ();
 }
