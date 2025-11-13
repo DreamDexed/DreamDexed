@@ -6,12 +6,16 @@
 
 #pragma once
 
+#include <atomic>
+
 #include "ykchorus/ChorusEngine.h"
 
 class AudioEffectYKChorus
 {
 public:
-    AudioEffectYKChorus(float samplerate) : engine {samplerate}
+    AudioEffectYKChorus(float samplerate):
+    bypass{},
+    engine{samplerate}
     {
         setChorus1(true);
         setChorus2(true);
@@ -52,6 +56,8 @@ public:
 
     void process(float32_t* inblockL, float32_t* inblockR, uint16_t len)
     {
+        if (bypass) return;
+
         if (wet == 0.0f) return;
 
         if (!engine.isChorus1Enabled && !engine.isChorus2Enabled) return;
@@ -61,6 +67,8 @@ public:
                 engine.process(dry, wet, inblockL++, inblockR++);
         }
     }
+
+    std::atomic<bool> bypass;
 
 private:
     ChorusEngine engine;

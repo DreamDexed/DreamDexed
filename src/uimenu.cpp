@@ -219,6 +219,7 @@ const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 	{"Enable II",	EditFXParameter2,	0,	FX::FXParameterYKChorusEnable2},
 	{"LFO Rate I",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate1},
 	{"LFO Rate II",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate2},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterYKChorusBypass},
 	{0}
 };
 
