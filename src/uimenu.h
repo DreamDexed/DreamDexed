@@ -180,7 +180,8 @@ private:
 	static const TMenuItem s_MenuRoot[];
 	static const TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
-	static const TMenuItem s_FXMenu[];
+	static const TMenuItem s_SendFXMenu[];
+	static const TMenuItem s_MasterFXMenu[];
 	static const TMenuItem s_FXListMenu[];
 	static const TMenuItem s_MixerMenu[];
 	static const TMenuItem s_EffectsMenu[];
@@ -199,8 +200,6 @@ private:
 	static const TMenuItem s_CloudSeed2LowPassMenu[];
 	static const TMenuItem s_CompressorMenu[];
 	static const TMenuItem s_FXEQMenu[];
-	static const TMenuItem s_MasterEQMenu[];
-	static const TMenuItem s_MasterCompressorMenu[];
 	static const TMenuItem s_EditCompressorMenu[];
 	static const TMenuItem s_EditVoiceMenu[];
 	static const TMenuItem s_OperatorMenu[];

@@ -177,19 +177,26 @@ const CUIMenu::TMenuItem CUIMenu::s_MixerMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 {
-	{"SendFX1",		MenuHandler,		s_FXMenu, 	0},
-	{"SendFX2",		MenuHandler,		s_FXMenu, 	1},
-	{"EQ",			MenuHandler,		s_MasterEQMenu},
-	{"Compressor",		MenuHandler,		s_MasterCompressorMenu},
+	{"SendFX1",		MenuHandler,		s_SendFXMenu, 		0},
+	{"SendFX2",		MenuHandler,		s_SendFXMenu, 		1},
+	{"MasterFX",		MenuHandler,		s_MasterFXMenu, 	CConfig::MasterFX},
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
+const CUIMenu::TMenuItem CUIMenu::s_SendFXMenu[] =
 {
 	{"Slot1",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot0, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Slot2",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot1, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Slot3",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot2, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{"Return Level",	EditFXParameter2,	0,	FX::FXParameterReturnLevel},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
+{
+	{"Slot1",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot0, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
+	{"Slot2",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot1, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
+	{"Slot3",		MenuHandler,		s_FXListMenu,	FX::FXParameterSlot2, .OnSelect=SelectCurrentEffect, .StepDown=StepDownEffect, .StepUp=StepUpEffect},
 	{0},
 };
 
@@ -363,29 +370,6 @@ const CUIMenu::TMenuItem CUIMenu::s_FXEQMenu[] =
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_MasterEQMenu[] =
-{
-	{"Low Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLow},
-	{"Mid Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMid},
-	{"High Level",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQHigh},
-	{"Gain",		EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQGain},
-	{"Low-Mid Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQLowMidFreq},
-	{"Mid-High Freq",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterEQMidHighFreq},
-	{0}
-};
-
-const CUIMenu::TMenuItem CUIMenu::s_MasterCompressorMenu[] =
-{
-	{"Enable",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorEnable},
-	{"Pre Gain",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorPreGain},
-	{"Threshold",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorThresh},
-	{"Ratio",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRatio},
-	{"Attack",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorAttack},
-	{"Release",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorRelease},
-	{"HPFilter",	EditGlobalParameter,	0,	CMiniDexed::ParameterMasterCompressorHPFilterEnable},
-	{0}
-};
-
 #endif
 
 // inserting menu items before "OP1" affect OPShortcutHandler()
@@ -461,19 +445,6 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// ParameterPerformanceSelectChannel
 	{0, NUM_PERFORMANCE_BANKS, 1},			// ParameterPerformanceBank
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
-	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorEnable
-	{-20,	20,	1,	TodB},			// ParameterMasterCompressorPreGain
-	{-60,	0,	1,	TodBFS},		// ParameterMasterCompressorThresh
-	{1,	CMiniDexed::CompressorRatioInf,	1,	ToRatio},		// ParameterMasterCompressorRatio
-	{0,	1000,	5,	ToMillisec},		// ParameterMasterCompressorAttack
-	{0,	2000,	5,	ToMillisec},		// ParameterMasterCompressorRelease
-	{0,	1,	1,	ToOnOff},		// ParameterMasterCompressorHPFilterEnable
-	{-24,	24,	1,	TodB},			// ParameterMasterEQLow
-	{-24,	24,	1,	TodB},			// ParameterMasterEQMid
-	{-24,	24,	1,	TodB},			// ParameterMasterEQHigh
-	{-24,	24,	1,	TodB},			// ParameterMasterEQGain
-	{0,	46,	1,	ToHz},			// ParameterMasterEQLowMidFreq
-	{28,	59,	1,	ToHz},			// ParameterMasterEQMidHighFreq
 	{0,	99,	1},				// ParameterMixerDryLevel
 };
 
@@ -1307,7 +1278,9 @@ void CUIMenu::EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event)
 		return;
 	}
 
-	std::string FX = std::string("FX") + std::to_string (nFX+1);
+	std::string FX;
+	if (nFX == CConfig::MasterFX) FX = "MFX";
+	else FX = std::string("FX") + std::to_string (nFX+1);
 
 	std::string Value = GetFXValueString (Param,
 		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
@@ -1355,7 +1328,9 @@ void CUIMenu::EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event)
 		return;
 	}
 
-	std::string FX = std::string("FX") + std::to_string (nFX+1);
+	std::string FX;
+	if (nFX == CConfig::MasterFX) FX = "MFX";
+	else FX = std::string("FX") + std::to_string (nFX+1);
 
 	std::string Value = GetFXValueString (Param,
 		pUIMenu->m_pMiniDexed->GetFXParameter (Param, nFX),
@@ -1841,8 +1816,12 @@ void CUIMenu::GlobalShortcutHandler (TMenuEvent Event)
 {
 #ifdef ARM_ALLOW_MULTI_CORE
 	if (m_pParentMenu == s_PlateReverbMenu ||
-		m_pParentMenu == s_MasterEQMenu ||
-		m_pParentMenu == s_MasterCompressorMenu ||
+		m_pParentMenu == s_YKChorusMenu ||
+		m_pParentMenu == s_DreamDelayMenu ||
+		m_pParentMenu == s_FXEQMenu ||
+		m_pParentMenu == s_CompressorMenu ||
+		m_pParentMenu == s_EditCompressorMenu ||
+		m_pParentMenu == s_EQMenu ||
 		m_pCurrentMenu == s_TGMenu)
 	{
 		bool bSaveCurrentSelection = m_pCurrentMenu == s_TGMenu;
