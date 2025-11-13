@@ -5,6 +5,7 @@
 constexpr float32_t MAX_DELAY_TIME = 2.0f;
 
 AudioEffectDreamDelay::AudioEffectDreamDelay(float32_t samplerate):
+bypass{},
 samplerate{samplerate},
 mode{DUAL},
 bufferSize{(size_t)(samplerate * MAX_DELAY_TIME)},
@@ -93,6 +94,8 @@ void AudioEffectDreamDelay::setMix(float32_t value)
 
 void AudioEffectDreamDelay::process(float32_t* blockL, float32_t* blockR, uint16_t len)
 {
+    if (bypass) return;
+
     if (wet == 0.0f) return;
 
     switch(mode)
