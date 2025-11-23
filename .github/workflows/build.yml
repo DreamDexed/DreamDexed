@@ -77,7 +77,7 @@ jobs:
           git clone https://github.com/Banana71/Soundplantage --depth 1
           cp -r ./Soundplantage/performance ./Soundplantage/*.pdf ./sdcard/
           cp -r ./performance/004_Mirage ./sdcard/performance/
-          cp "./performance/DreamDexed Bank 004_Mirage.pdf" ./sdcard/performance/
+          cp ./performance/*.pdf ./sdcard/
           # Hardware configuration
           cd hwconfig
           sh -ex ./customize.sh
