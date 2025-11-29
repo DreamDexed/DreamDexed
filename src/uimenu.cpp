@@ -32,6 +32,14 @@
 #include <assert.h>
 #include <cstddef>
 
+static const char *s_StatusTitles[] =
+{
+	"CPU Temp:",
+	"CPU Speed:",
+	"IP-Addr:", 
+	"Version:"     // later
+};
+
 LOGMODULE ("uimenu");
 
 const CUIMenu::TMenuItem CUIMenu::s_MenuRoot[] =
@@ -63,7 +71,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 	{"TG16",	MenuHandler,	s_TGMenu, 15},
 #endif
 #endif
-	{"Status",	MenuHandler,	s_StatusMenu},
+	{"Status",	ShowStatusDirectly,	0},
 	{"Mixer",	MenuHandler,	s_MixerMenu},
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Effects",	MenuHandler,	s_EffectsMenu},
@@ -614,74 +622,75 @@ const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 	{0}
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_StatusMenu[] =
+void CUIMenu::ShowStatusDirectly (CUIMenu *pUIMenu, TMenuEvent Event)
 {
-	{"CPU Temp",		ShowCPUTemp,	0,	0},
-	{"CPU Speed",		ShowCPUSpeed,	0,	0},
-	{0}
-};
+   
+    const unsigned MaxIndex = 2;
 
-void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
-{
-	switch (Event)
+	if (Event == MenuEventStepDown) // Encoder rechts/runter
 	{
-	case MenuEventUpdate:
-	case MenuEventUpdateParameter:
-		break;
-
-	default:
+		// Zyklisches Wechseln: 0 -> 1 -> 0 ...
+		pUIMenu->m_nStatusIndex = (pUIMenu->m_nStatusIndex + 1) % (MaxIndex + 1); 
+	}
+	else if (Event == MenuEventStepUp) // Encoder links/hoch
+	{
+		if (pUIMenu->m_nStatusIndex == 0)
+		{
+			pUIMenu->m_nStatusIndex = MaxIndex; // 0 -> 1
+		}
+		else
+		{
+			pUIMenu->m_nStatusIndex--; // 1 -> 0
+		}
+	}
+	else if (Event != MenuEventUpdate && Event != MenuEventUpdateParameter)
+	{
 		return;
 	}
+	
 
-	CStatus *pStatus = CStatus::Get ();
+    CStatus *pStatus = CStatus::Get();
+    std::string Value;
+    std::string MenuName = "Status";
+    
+    switch (pUIMenu->m_nStatusIndex)
+    {
+        case 0: // CPU Temp
+            Value = std::to_string (pStatus->nCPUTemp.load()) + " C";
+            break;
+            
+        case 1: // CPU Speed
+            // nCPUClockRate ist in kHz, Ausgabe in MHz
+            Value = std::to_string (pStatus->nCPUClockRate.load() / 1000000) + " MHz";
+            break;
+		
+		case 2: // NEU: IP-Adresse
+        {
+            const CIPAddress& IPAddr = pUIMenu->m_pMiniDexed->GetConfig()->GetNetworkIPAddress();
+            CString IPString;
+            IPAddr.Format(&IPString);
+            Value = (const char*)IPString; 
+            break;
+		
+        default:
+            Value = "---"; 
+            break;
+    }
+    
 
-	char info[17];
-  	snprintf(info, sizeof(info), "%d/%d C", pStatus->nCPUTemp.load(), pStatus->nCPUMaxTemp);
-
-	const char *pMenuName = 
-		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
-			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
-
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
-				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
-				      info,
-				      false, false);
-
+    pUIMenu->m_pUI->DisplayWrite (
+        MenuName.c_str(),
+        s_StatusTitles[pUIMenu->m_nStatusIndex],
+        Value.c_str(),
+        true, // Pfeil links/unten (immer, da zyklisch)
+        true  // Pfeil rechts/oben (immer, da zyklisch)
+    );
+    
 	static TKernelTimerHandle timer = 0;
 	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
 	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
 }
 
-void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
-{
-	switch (Event)
-	{
-	case MenuEventUpdate:
-	case MenuEventUpdateParameter:
-		break;
-
-	default:
-		return;
-	}
-
-	CStatus *pStatus = CStatus::Get ();
-
-	char info[17];
-  	snprintf(info, sizeof(info), "%d/%d MHz", pStatus->nCPUClockRate.load() / 1000000, pStatus->nCPUMaxClockRate / 1000000);
-
-	const char *pMenuName = 
-		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
-			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
-
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
-				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
-				      info,
-				      false, false);
-
-	static TKernelTimerHandle timer = 0;
-	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
-	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
-}
 
 CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
 :	m_pUI (pUI),
