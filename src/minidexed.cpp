@@ -3018,9 +3018,6 @@ void CMiniDexed::UpdateNetwork()
 			LOGNOTE("FTP daemon not started (NetworkFTPEnabled=0)");
 		}
 
-		m_UI.DisplayWrite (IPString, "", "Network ready", 0, 1);
-		CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), UpdateScreen, 0, &m_UI);
-
 		m_pmDNSPublisher = new CmDNSPublisher (m_pNet);
 		assert (m_pmDNSPublisher);
 		
