@@ -625,7 +625,7 @@ const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 void CUIMenu::ShowStatusDirectly (CUIMenu *pUIMenu, TMenuEvent Event)
 {
    
-    const unsigned MaxIndex = 1;
+    const unsigned MaxIndex = 2;
 
 	if (Event == MenuEventStepDown) // Encoder rechts/runter
 	{
@@ -663,7 +663,15 @@ void CUIMenu::ShowStatusDirectly (CUIMenu *pUIMenu, TMenuEvent Event)
             // nCPUClockRate ist in kHz, Ausgabe in MHz
             Value = std::to_string (pStatus->nCPUClockRate.load() / 1000000) + " MHz";
             break;
-            
+		
+		case 2: // NEU: IP-Adresse
+        {
+            const CIPAddress& IPAddr = pUIMenu->m_pMiniDexed->GetConfig()->GetNetworkIPAddress();
+            CString IPString;
+            IPAddr.Format(&IPString);
+            Value = (const char*)IPString; 
+            break;
+		
         default:
             Value = "---"; 
             break;
