@@ -7,7 +7,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-
+  workflow_dispatch:
 jobs:
   build64:
     name: Build 64-bit kernels
