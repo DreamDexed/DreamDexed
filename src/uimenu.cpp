@@ -36,7 +36,7 @@ static const char *s_StatusTitles[] =
 {
 	"CPU Temp:",
 	"CPU Speed:",
-	"IP-Adresse:", 
+	"IP-Addr:", 
 	"Version:"     // later
 };
 
