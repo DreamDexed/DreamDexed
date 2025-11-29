@@ -661,7 +661,7 @@ void CUIMenu::ShowStatusDirectly (CUIMenu *pUIMenu, TMenuEvent Event)
             
         case 1: // CPU Speed
             // nCPUClockRate ist in kHz, Ausgabe in MHz
-            Value = std::to_string (pStatus->nCPUClockRate.load() / 1000) + " MHz";
+            Value = std::to_string (pStatus->nCPUClockRate.load() / 1000000) + " MHz";
             break;
             
         default:
