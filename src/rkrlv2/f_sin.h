@@ -7,8 +7,7 @@ The author makes no guarantee of its suitability for any purpose.
 */
 
 
-#ifndef FSIN_H
-#define FSIN_H
+#pragma once
 
 #include <math.h>
 #include "global.h"
@@ -48,5 +47,3 @@ f_cos(float x_)
 {
     return f_sin(p2 + x_);
 }
-
-#endif

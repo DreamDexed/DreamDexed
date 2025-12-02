@@ -24,49 +24,39 @@
 
 #include <math.h>
 #include "Phaser.h"
-#include <stdio.h>
-#include "FPreset.h"
 #define PHASER_LFO_SHAPE 2
 
-Phaser::Phaser (float * efxoutl_, float * efxoutr_, double sample_rate)
+Phaser::Phaser(float samplerate):
+    bypass{},
+    lfo{samplerate},
+    Ppreset{},
+    dry{1.0f},
+    wet{}
 {
-    efxoutl = efxoutl_;
-    efxoutr = efxoutr_;
-
-    oldl = (float *) malloc(sizeof(float)* MAX_PHASER_STAGES * 2);
-    oldr = (float *) malloc(sizeof(float)* MAX_PHASER_STAGES * 2);
-
-    lfo = new EffectLFO(sample_rate);
-
-    Ppreset = 0;
-    PERIOD = 256; //best guess until the effect starts running;
-    setpreset (Ppreset);
-    cleanup ();
+    loadpreset(Ppreset);
+    cleanup();
 };
 
-Phaser::~Phaser ()
+std::string Phaser::ToPresetName(int nValue, int nWidth)
 {
-	delete lfo;
-};
+    return nValue == 0 ? "INIT" : std::to_string(nValue);
+}
 
-
-/*
- * Effect output
- */
-void
-Phaser::out (float * smpsl, float * smpsr, uint32_t period)
+void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 {
-    unsigned int i;
-    int j;
-    float lfol, lfor, lgain, rgain, tmp;
+    if (bypass) return;
 
-    lfo->effectlfoout (&lfol, &lfor);
-    lgain = lfol;
-    rgain = lfor;
+    if (wet == 0.0f) return;
+
+    if (lfo.nPeriod != period) lfo.updateparams(period);
+
+    float lgain, rgain;
+    lfo.effectlfoout(&lgain, &rgain);
+
     lgain =
-        (expf (lgain * PHASER_LFO_SHAPE) - 1.0f) / (expf (PHASER_LFO_SHAPE) - 1.0f);
+        (expf(lgain * PHASER_LFO_SHAPE) - 1.0f) / (expf(PHASER_LFO_SHAPE) - 1.0f);
     rgain =
-        (expf (rgain * PHASER_LFO_SHAPE) - 1.0f) / (expf (PHASER_LFO_SHAPE) - 1.0f);
+        (expf(rgain * PHASER_LFO_SHAPE) - 1.0f) / (expf(PHASER_LFO_SHAPE) - 1.0f);
 
 
     lgain = 1.0f - phase * (1.0f - depth) - (1.0f - phase) * lgain * depth;
@@ -81,7 +71,7 @@ Phaser::out (float * smpsl, float * smpsr, uint32_t period)
     else if (rgain < 0.0)
         rgain = 0.0f;
 
-    for (i = 0; i < period; i++) {
+    for (unsigned int i = 0; i < period; i++) {
         float x = (float) i / ((float)period);
         float x1 = 1.0f - x;
         float gl = lgain * x + oldlgain * x1;
@@ -90,16 +80,16 @@ Phaser::out (float * smpsl, float * smpsr, uint32_t period)
         float inr = smpsr[i] * (1.0f - panning) + fbr;
 
         //Left channel
-        for (j = 0; j < Pstages * 2; j++) {
+        for (int j = 0; j < Pstages * 2; j++) {
             //Phasing routine
-            tmp = oldl[j] + DENORMAL_GUARD;
+            float tmp = oldl[j] + DENORMAL_GUARD;
             oldl[j] = gl * tmp + inl;
             inl = tmp - gl * oldl[j];
         };
         //Right channel
-        for (j = 0; j < Pstages * 2; j++) {
+        for (int j = 0; j < Pstages * 2; j++) {
             //Phasing routine
-            tmp = oldr[j] + DENORMAL_GUARD;
+            float tmp = oldr[j] + DENORMAL_GUARD;
             oldr[j] = (gr * tmp) + inr;
             inr = tmp - (gr * oldr[j]);
         };
@@ -111,79 +101,70 @@ Phaser::out (float * smpsl, float * smpsr, uint32_t period)
 
         fbl = inl * fb;
         fbr = inr * fb;
-        efxoutl[i] = inl;
-        efxoutr[i] = inr;
 
+        if (Psubtractive != 0) {
+            inl *= -1.0f;
+            inr *= -1.0f;
+        }
+
+        smpsl[i] = smpsl[i] * dry + inl * wet;
+        smpsr[i] = smpsr[i] * dry + inr * wet;
     };
 
     oldlgain = lgain;
     oldrgain = rgain;
-
-    if (Poutsub != 0)
-        for (i = 0; i < period; i++) {
-            efxoutl[i] *= -1.0f;
-            efxoutr[i] *= -1.0f;
-        };
-
 };
 
-/*
- * Cleanup the effect
- */
-void
-Phaser::cleanup ()
+void Phaser::cleanup()
 {
-    fbl = 0.0;
-    fbr = 0.0;
-    oldlgain = 0.0;
-    oldrgain = 0.0;
-    for (int i = 0; i < Pstages * 2; i++) {
-        oldl[i] = 0.0;
-        oldr[i] = 0.0;
-    };
+    fbl = fbr = 0.0f;
+    oldlgain = oldrgain = 0.0f;
+    memset(oldl, 0, sizeof oldl);
+    memset(oldr, 0, sizeof oldr);
 };
 
-/*
- * Parameter control
- */
-void
-Phaser::setdepth (int Pdepth)
+void Phaser::setdepth(int Pdepth)
 {
     this->Pdepth = Pdepth;
     depth = ((float)Pdepth / 127.0f);
 };
 
-
-void
-Phaser::setfb (int Pfb)
+void Phaser::setfb(int Pfb)
 {
     this->Pfb = Pfb;
     fb = ((float)Pfb - 64.0f) / 64.1f;
 };
 
-void
-Phaser::setvolume (int Pvolume)
+void Phaser::setmix(int Pmix)
 {
-    this->Pvolume = Pvolume;
-    outvolume = (float)Pvolume / 127.0f;
+    this->Pmix = Pmix;
+
+    float mix = (float)Pmix / 100.0f;
+    if (mix < 0.5f)
+    {
+        dry = 1.0f;
+        wet = mix * 2.0f;
+    }
+    else
+    {
+        dry = (1.0f - mix) * 2.0f;
+        wet = 1.0f;
+    }
 };
 
-void
-Phaser::setpanning (int Ppanning)
+void Phaser::setpanning(int Ppanning)
 {
     this->Ppanning = Ppanning;
-    panning = ((float)Ppanning + .5f)/ 127.0f;
+    panning = ((float)Ppanning - .5f)/ 127.0f;
 };
 
-void
-Phaser::setlrcross (int Plrcross)
+void Phaser::setlrcross(int Plrcross)
 {
     this->Plrcross = Plrcross;
     lrcross = (float)Plrcross / 127.0f;
 };
 
-void
-Phaser::setstages (int Pstages)
+void Phaser::setstages(int Pstages)
 {
     if (Pstages > MAX_PHASER_STAGES)
         Pstages = MAX_PHASER_STAGES;
@@ -191,138 +172,97 @@ Phaser::setstages (int Pstages)
     cleanup ();
 };
 
-void
-Phaser::setphase (int Pphase)
+void Phaser::setphase(int Pphase)
 {
     this->Pphase = Pphase;
     phase = ((float)Pphase / 127.0f);
 };
 
-
-void
-Phaser::setpreset (int npreset)
+void Phaser::loadpreset(unsigned npreset)
 {
     const int PRESET_SIZE = 12;
-    const int NUM_PRESETS = 6;
-    int pdata[PRESET_SIZE];
-    int presets[NUM_PRESETS][PRESET_SIZE] = {
-        //Phaser1
-        {64, 64, 11, 0, 0, 64, 110, 64, 1, 0, 0, 20},
-        //Phaser2
-        {64, 64, 10, 0, 0, 88, 40, 64, 3, 0, 0, 20},
-        //Phaser3
-        {64, 64, 8, 0, 0, 66, 68, 107, 2, 0, 0, 20},
-        //Phaser4
-        {39, 64, 1, 0, 0, 66, 67, 10, 5, 0, 1, 20},
-        //Phaser5
-        {64, 64, 1, 0, 1, 110, 67, 78, 10, 0, 0, 20},
-        //Phaser6
-        {64, 64, 31, 100, 0, 58, 37, 78, 3, 0, 0, 20}
+    const int presets[presets_num][PRESET_SIZE] = {
+        {0, 64, 11, 0, 0, 64, 110, 64, 1, 0, 0, 20},
+        {50, 64, 11, 0, 0, 64, 110, 64, 1, 0, 0, 20},
+        {50, 64, 10, 0, 0, 88, 40, 64, 3, 0, 0, 20},
+        {50, 64, 8, 0, 0, 66, 68, 107, 2, 0, 0, 20},
+        {31, 64, 1, 0, 0, 66, 67, 10, 5, 0, 1, 20},
+        {50, 64, 1, 0, 1, 110, 67, 78, 10, 0, 0, 20},
+        {50, 64, 31, 100, 0, 58, 37, 78, 3, 0, 0, 20}
     };
 
-    if(npreset>NUM_PRESETS-1) {
+    if (npreset >= presets_num)
+        npreset = presets_num;
 
-        Fpre->ReadPreset(6,npreset-NUM_PRESETS+1,pdata);
-        for (int n = 0; n < PRESET_SIZE; n++)
-            changepar (n, pdata[n]);
-    } else {
-        for (int n = 0; n < PRESET_SIZE; n++)
-            changepar (n, presets[npreset][n]);
-    }
+    for (int n = 0; n < PRESET_SIZE; n++)
+        changepar(n, presets[npreset][n]);
+
     Ppreset = npreset;
 };
 
-
-void
-Phaser::changepar (int npar, int value)
+void Phaser::changepar(unsigned npar, int value)
 {
     switch (npar) {
-    case 0:
-        setvolume (value);
+    case ParameterMix:
+        setmix(value);
         break;
-    case 1:
-        setpanning (value);
+    case ParameterPanning:
+        setpanning(value);
         break;
-    case 2:
-        lfo->Pfreq = value;
-        lfo->updateparams (PERIOD);
+    case ParameterLFOFreq:
+        lfo.Pfreq = value;
+        lfo.updateparams(lfo.nPeriod);
         break;
-    case 3:
-        lfo->Prandomness = value;
-        lfo->updateparams (PERIOD);
+    case ParameterLFORandomness:
+        lfo.Prandomness = value;
+        lfo.updateparams(lfo.nPeriod);
         break;
-    case 4:
-        lfo->PLFOtype = value;
-        lfo->updateparams (PERIOD);
+    case ParameterLFOType:
+        lfo.PLFOtype = value;
+        lfo.updateparams(lfo.nPeriod);
         break;
-    case 5:
-        lfo->Pstereo = value;
-        lfo->updateparams (PERIOD);
+    case ParameterLFOLRDelay:
+        lfo.Pstereo = value;
+        lfo.updateparams(lfo.nPeriod);
         break;
-    case 6:
-        setdepth (value);
+    case ParameterDepth:
+        setdepth(value);
         break;
-    case 7:
-        setfb (value);
+    case ParameterFeedback:
+        setfb(value);
         break;
-    case 8:
-        setstages (value);
+    case ParameterStages:
+        setstages(value);
         break;
-    case 9:
-        setlrcross (value);
+    case ParameterLRCross:
+        setlrcross(value);
         break;
-    case 10:
+    case ParameterSubtractive:
         if (value > 1)
             value = 1;
-        Poutsub = value;
+        Psubtractive = value;
         break;
-    case 11:
-        setphase (value);
+    case ParameterPhase:
+        setphase(value);
         break;
     }
 };
 
-int
-Phaser::getpar (int npar)
+int Phaser::getpar(unsigned npar)
 {
     switch (npar) {
-    case 0:
-        return (Pvolume);
-        break;
-    case 1:
-        return (Ppanning);
-        break;
-    case 2:
-        return (lfo->Pfreq);	// tempo
-        break;
-    case 3:
-        return (lfo->Prandomness);
-        break;
-    case 4:
-        return (lfo->PLFOtype);
-        break;
-    case 5:
-        return (lfo->Pstereo);	// STDL
-        break;
-    case 6:
-        return (Pdepth);
-        break;
-    case 7:
-        return (Pfb);			// pfb feedback
-        break;
-    case 8:
-        return (Pstages);
-        break;
-    case 9:
-        return (Plrcross);
-        break;
-    case 10:
-        return (Poutsub);
-        break;
-    case 11:
-        return (Pphase);
-        break;
-    default:
-        return (0);
+    case ParameterMix: return Pmix;
+    case ParameterPanning: return Ppanning;
+    case ParameterLFOFreq: return lfo.Pfreq;
+    case ParameterLFORandomness: return lfo.Prandomness;
+    case ParameterLFOType: return lfo.PLFOtype;
+    case ParameterLFOLRDelay: return lfo.Pstereo;
+    case ParameterDepth: return Pdepth;
+    case ParameterFeedback: return Pfb;
+    case ParameterStages: return Pstages;
+    case ParameterLRCross: return Plrcross;
+    case ParameterSubtractive: return Psubtractive;
+    case ParameterPhase: return Pphase;
+    default: return 0;
     }
 };
