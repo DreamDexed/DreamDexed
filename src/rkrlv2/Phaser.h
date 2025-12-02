@@ -22,59 +22,70 @@
 
 */
 
-#ifndef PHASER_H
-#define PHASER_H
+#pragma once
+
+#include <atomic>
+
 #include "global.h"
 #include "EffectLFO.h"
 
 class Phaser
 {
 public:
-    Phaser (float * efxoutl_, float * efxoutr_, double sample_rate);
-    ~Phaser ();
-    void out (float * smpsl, float * smpsr, uint32_t period);
-    void setpreset (int npreset);
-    void changepar (int npar, int value);
-    int getpar (int npar);
-    void cleanup ();
-    int Ppreset;
-    float outvolume;
+    Phaser(float samplerate);
+    void process(float *smpsl, float *smpsr, uint16_t period);
+    void loadpreset(unsigned npreset);
+    void changepar(unsigned npar, int value);
+    int getpar(unsigned npar);
+    void cleanup();
 
-    float *efxoutl;
-    float *efxoutr;
+    std::atomic<bool> bypass;
 
-    uint32_t PERIOD;
-    EffectLFO *lfo;     //Phaser modulator
+    static constexpr unsigned presets_num = 7;
+    enum Parameter {
+		  ParameterMix,
+		  ParameterPanning,
+		  ParameterLFOFreq,
+		  ParameterLFORandomness,
+		  ParameterLFOType,
+		  ParameterLFOLRDelay,
+		  ParameterDepth,
+		  ParameterFeedback,
+		  ParameterStages,
+		  ParameterLRCross,
+		  ParameterSubtractive,
+		  ParameterPhase,
+      ParameterCount
+    };
+    static std::string ToPresetName(int nValue, int nWidth);
 
 private:
-    void setvolume (int Pvolume);
-    void setpanning (int Ppanning);
-    void setdepth (int Pdepth);
-    void setfb (int Pfb);
-    void setlrcross (int Plrcross);
-    void setstages (int Pstages);
-    void setphase (int Pphase);
+    EffectLFO lfo;     //Phaser modulator
 
+    unsigned Ppreset;
 
     //Parametrii Phaser
-    int Pvolume;
+    int Pmix;
     int Ppanning;
     int Pdepth;		//the depth of the Phaser
     int Pfb;		//feedback
     int Plrcross;	//feedback
     int Pstages;
-    int Poutsub;	//if I wish to substract the output instead of the adding it
+    int Psubtractive;	//if I wish to substract the output instead of the adding it
     int Pphase;
 
-    //Control Parametrii
+    void setmix(int Pmix);
+    void setpanning(int Ppanning);
+    void setdepth(int Pdepth);
+    void setfb(int Pfb);
+    void setlrcross(int Plrcross);
+    void setstages(int Pstages);
+    void setphase(int Pphase);
 
     //Valorile interne
-    float panning, fb, depth, lrcross, fbl, fbr, phase;
-    float *oldl, *oldr;
+    float dry, wet, panning, fb, depth, lrcross, fbl, fbr, phase;
+    float oldl[MAX_PHASER_STAGES*2];
+    float oldr[MAX_PHASER_STAGES*2];
     float oldlgain, oldrgain;
 
-    class FPreset *Fpre;
-
 };
-
-#endif

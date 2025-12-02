@@ -25,15 +25,15 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
+#include <arm_math.h>
 
 #include "global.h"
 #include "EffectLFO.h"
 #include "f_sin.h"
 
-EffectLFO::EffectLFO (double sample_rate)
+EffectLFO::EffectLFO(float sample_rate):
+nPeriod{256} //this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
 {
-    float fPERIOD = 256;//this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
     fSAMPLE_RATE = sample_rate;
     xl = 0.0;
     xr = 0.0;
@@ -42,7 +42,7 @@ EffectLFO::EffectLFO (double sample_rate)
     PLFOtype = 0;
     Pstereo = 96;
 
-    iperiod = fPERIOD/fSAMPLE_RATE;
+    iperiod = nPeriod / fSAMPLE_RATE;
     h = iperiod;
     a = 10.0f;
     b = 28.0f;
@@ -53,27 +53,38 @@ EffectLFO::EffectLFO (double sample_rate)
     tca = iperiod/(iperiod + 0.02);  //20ms default
     tcb = 1.0f - tca;
     rreg = lreg = oldrreg = oldlreg = 0.0f;
-    updateparams ((uint32_t)fPERIOD);
+    xlreg = xrreg = 0.0f;
+    updateparams(nPeriod);
 
     ampl1 = (1.0f - lfornd) + lfornd * (float)RND;
     ampl2 = (1.0f - lfornd) + lfornd * (float)RND;
     ampr1 = (1.0f - lfornd) + lfornd * (float)RND;
     ampr2 = (1.0f - lfornd) + lfornd * (float)RND;
-
-
 };
 
-EffectLFO::~EffectLFO ()
+std::string EffectLFO::ToLFOType(int nValue, int nWidth)
 {
-};
+    switch(nValue)
+    {
+        case 0: return "Sine";
+        case 1: return "Triangle";
+        case 2: return "Ramp Up";
+        case 3: return "Ramp Down";
+        case 4: return "ZigZag";
+        case 5: return "Modulated Square";
+        case 6: return "Modulated Saw";
+        case 7: return "Lorenz Fractal";
+        case 8: return "Lorenz Frac XY";
+        case 9: return "Rnd Smple Hold";
+        case 10: return "3angle Top Sine";
+        case 11: return "3angle Btm Sine";
+        default: return "Invalid";
+    }
+}
 
-
-/*
- * Update the changed parameters
- */
-void
-EffectLFO::updateparams (uint32_t period)
+void EffectLFO::updateparams(uint16_t period)
 {
+    nPeriod = period;
     float fPERIOD = period;
     //must update several parameters once we actually know the period
     iperiod = fPERIOD/fSAMPLE_RATE;
@@ -97,7 +108,7 @@ EffectLFO::updateparams (uint32_t period)
         PLFOtype = 0;		
     lfotype = PLFOtype;
 
-    xr = fmodf (xl + ((float)Pstereo - 64.0f) / 127.0f + 1.0f, 1.0f);
+    xr = fmodf(xl + ((float)Pstereo - 64.0f) / 127.0f + 1.0f, 1.0f);
 
     if ((h = incx*ratediv) > 0.02) h = 0.02;  //keeps it stable
 
@@ -117,11 +128,7 @@ EffectLFO::updateparams (uint32_t period)
     maxrate = 4.0f*iperiod;
 };
 
-
-/*
- * Compute the shape of the LFO
- */
-float EffectLFO::getlfoshape (float x)
+float EffectLFO::getlfoshape(float x)
 {
     float tmpv;
     float out=0.0;
@@ -176,7 +183,6 @@ float EffectLFO::getlfoshape (float x)
         if(fmod(x,0.5f)<=(2.0f*incx)) {          //this function is called by left, then right...so must toggle each time called
             rreg = lreg;
             lreg = RND1;
-
         }
 
         if(xlreg<lreg) xlreg += maxrate;
@@ -192,9 +198,7 @@ float EffectLFO::getlfoshape (float x)
         } else {
             out = 2.0f*oldrreg - 1.0f;
         }
-
-
-        break;
+	break;
     case 10:   //Tri-top
         if(x<=0.5f) out = -f_sin(x*D_PI);
         else if ((x > 0.5f) && (x < 0.75f))
@@ -220,15 +224,11 @@ float EffectLFO::getlfoshape (float x)
     return (out);
 };
 
-/*
- * LFO output
- */
-void
-EffectLFO::effectlfoout (float * outl, float * outr)
+void EffectLFO::effectlfoout(float * outl, float * outr)
 {
     float out;
 
-    out = getlfoshape (xl);
+    out = getlfoshape(xl);
     //if ((lfotype == 0) || (lfotype == 1))         //What was that for?
     out *= (ampl1 + xl * (ampl2 - ampl1));
     xl += incx;
@@ -242,7 +242,7 @@ EffectLFO::effectlfoout (float * outl, float * outr)
 
 
     if(lfotype==8) out = scale*y0;  //fractal parameter
-    else out = getlfoshape (xr);
+    else out = getlfoshape(xr);
 
     //if ((lfotype == 0) || (lfotype == 1))
     out *= (ampr1 + xr * (ampr2 - ampr1));
@@ -254,4 +254,3 @@ EffectLFO::effectlfoout (float * outl, float * outr)
     };
     *outr = (out + 1.0f) * 0.5f;
 };
-
