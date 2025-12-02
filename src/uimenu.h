@@ -105,7 +105,9 @@ private:
 	static void EditPerformanceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event);
-	
+	static void ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event);
+
+
 	static std::string GetGlobalValueString (unsigned nParameter, int nValue, int nWidth);
 	static std::string GetTGValueString (unsigned nTGParameter, int nValue, int nWidth);
 	static std::string GetFXValueString (unsigned nFXParameter, int nValue, int nWidth);

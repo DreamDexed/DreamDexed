@@ -618,6 +618,7 @@ const CUIMenu::TMenuItem CUIMenu::s_StatusMenu[] =
 {
 	{"CPU Temp",		ShowCPUTemp,	0,	0,	.ShowDirect=true},
 	{"CPU Speed",		ShowCPUSpeed,	0,	0,	.ShowDirect=true},
+	{"Net IP",		ShowIPAddr,	0,	0,	.ShowDirect=true},
 	{0}
 };
 
@@ -668,6 +669,36 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				      pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
 				      info,
+				      pUIMenu->m_nCurrentSelection > 0, !!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name);
+
+	static TKernelTimerHandle timer = 0;
+	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
+	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
+}
+
+void CUIMenu::ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	default:
+		return;
+	}
+
+	CString IPString("-");
+	const CIPAddress& IPAddr = pUIMenu->m_pConfig->GetNetworkIPAddress();
+	
+	if (IPAddr.IsSet())
+	{
+		IPAddr.Format(&IPString);
+	}
+
+	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
+				      (const char*)IPString,
 				      pUIMenu->m_nCurrentSelection > 0, !!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name);
 
 	static TKernelTimerHandle timer = 0;
