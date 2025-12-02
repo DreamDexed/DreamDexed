@@ -616,8 +616,8 @@ const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_StatusMenu[] =
 {
-	{"CPU Temp",		ShowCPUTemp,	0,	0},
-	{"CPU Speed",		ShowCPUSpeed,	0,	0},
+	{"CPU Temp",		ShowCPUTemp,	0,	0,	.ShowDirect=true},
+	{"CPU Speed",		ShowCPUSpeed,	0,	0,	.ShowDirect=true},
 	{0}
 };
 
@@ -638,14 +638,10 @@ void CUIMenu::ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event)
 	char info[17];
   	snprintf(info, sizeof(info), "%d/%d C", pStatus->nCPUTemp.load(), pStatus->nCPUMaxTemp);
 
-	const char *pMenuName = 
-		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
-			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
-
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
-				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
 				      info,
-				      false, false);
+				      pUIMenu->m_nCurrentSelection > 0, !!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name);
 
 	static TKernelTimerHandle timer = 0;
 	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
@@ -669,14 +665,10 @@ void CUIMenu::ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event)
 	char info[17];
   	snprintf(info, sizeof(info), "%d/%d MHz", pStatus->nCPUClockRate.load() / 1000000, pStatus->nCPUMaxClockRate / 1000000);
 
-	const char *pMenuName = 
-		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth-1]
-			[pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth-1]].Name;
-
-	pUIMenu->m_pUI->DisplayWrite (pMenuName,
-				      pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
 				      info,
-				      false, false);
+				      pUIMenu->m_nCurrentSelection > 0, !!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name);
 
 	static TKernelTimerHandle timer = 0;
 	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
@@ -803,6 +795,10 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	case MenuEventSelect:				// push menu
 		assert (pUIMenu->m_nCurrentMenuDepth < MaxMenuDepth);
+
+		if (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].ShowDirect)
+			break;
+
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth] = pUIMenu->m_pParentMenu;
 		pUIMenu->m_MenuStackMenu[pUIMenu->m_nCurrentMenuDepth] = pUIMenu->m_pCurrentMenu;
 		pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth]
@@ -906,6 +902,12 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 
 	if (pUIMenu->m_pCurrentMenu)				// if this is another menu?
 	{
+		if (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].ShowDirect)
+		{
+			pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Handler(pUIMenu, MenuEventUpdate);
+			return;
+		}
+
 		bool bIsMainMenu = pUIMenu->m_pCurrentMenu == s_MainMenu;
 		bool bIsTGMenu = pUIMenu->m_pCurrentMenu == s_TGMenu;
 
