@@ -23,25 +23,27 @@
 
 */
 
-#ifndef EFFECT_LFO_H
-#define EFFECT_LFO_H
+#pragma once
+
+#include <string>
 
 #include "global.h"
-
 
 class EffectLFO
 {
 public:
-    EffectLFO (double sample_rate);
-    ~EffectLFO ();
-    void effectlfoout (float * outl, float * outr);
-    void updateparams (uint32_t period);
+    EffectLFO(float sample_rate);
+    void effectlfoout(float * outl, float * outr);
+    void updateparams(uint16_t period);
+    uint16_t nPeriod;
     int Pfreq;
     int Prandomness;
     int PLFOtype;
     int Pstereo;	//"64"=0
+
+    static std::string ToLFOType(int nValue, int nWidth);
 private:
-    float getlfoshape (float x);
+    float getlfoshape(float x);
 
     float xl, xr;
     float incx;
@@ -67,6 +69,3 @@ private:
 
     float fSAMPLE_RATE;
 };
-
-
-#endif
