@@ -74,6 +74,7 @@ private:
 		TMenuHandler* StepDown;
 		TMenuHandler* StepUp;
 		unsigned Parameter2;
+		bool ShowDirect;
 	};
 
 	typedef std::string TToString (int nValue, int nWidth);
