@@ -40,7 +40,8 @@ CUIButton::CUIButton (void)
 	m_decEvent(BtnEventNone),
 	m_incEvent(BtnEventNone),
 	m_doubleClickTimeout(0),
-	m_longPressTimeout(0)
+	m_longPressTimeout(0),
+	m_MIDIRelativeDebounceTime(0)
 {
 }
 
@@ -62,7 +63,7 @@ void CUIButton::reset (void)
 	m_numClicks = 0;
 }
 
-boolean CUIButton::Initialize (unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout)
+boolean CUIButton::Initialize (unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout, unsigned MIDIRelativeDebounceTime)
 {
 	assert (!m_pin);
 	assert(longPressTimeout >= doubleClickTimeout);
@@ -70,6 +71,7 @@ boolean CUIButton::Initialize (unsigned pinNumber, unsigned doubleClickTimeout, 
 	m_pinNumber = pinNumber;
 	m_doubleClickTimeout = doubleClickTimeout;
 	m_longPressTimeout = longPressTimeout;
+	m_MIDIRelativeDebounceTime = MIDIRelativeDebounceTime;
 	
 	// Initialise timing values
 	m_timer = m_longPressTimeout;
@@ -135,11 +137,14 @@ CUIButton::BtnTrigger CUIButton::ReadTrigger (void)
 		{
 			value = m_midipin->Read();
 
-			if (value == MIDIPIN_CENTER)
-				return BtnTriggerNone;
-
 			// reset value to trigger only once
 			m_midipin->Write(MIDIPIN_CENTER);
+			m_debounceTimer++;
+
+			if (value == MIDIPIN_CENTER || m_debounceTimer < m_MIDIRelativeDebounceTime)
+				return BtnTriggerNone;
+
+			m_debounceTimer = 0;
 			return value < MIDIPIN_CENTER ? BtnTriggerDec : BtnTriggerInc;
 		}
 		else
@@ -365,12 +370,13 @@ boolean CUIButtons::Initialize (void)
 	// are in milliseconds
 	unsigned doubleClickTimeout = m_pConfig->GetDoubleClickTimeout () * 10;
 	unsigned longPressTimeout = m_pConfig->GetLongPressTimeout () * 10;
+	unsigned MIDIRelativeDebounceTime = m_pConfig->GetMIDIRelativeDebounceTime () * 10;
 
 	if (longPressTimeout < doubleClickTimeout) {
 		// This is invalid - long press must be longest timeout
 		LOGERR("LongPressTimeout (%u) should not be shorter than DoubleClickTimeout (%u)",
-				m_longPressTimeout,
-				m_doubleClickTimeout);
+				longPressTimeout / 10,
+				doubleClickTimeout / 10);
 
 		// Just make long press as long as double click
 		longPressTimeout = doubleClickTimeout;
@@ -436,7 +442,7 @@ boolean CUIButtons::Initialize (void)
 			}
 			else if (m_buttons[j].getPinNumber() == 0) {
 				// This is un-initialised so can be assigned
-				m_buttons[j].Initialize(pins[i], doubleClickTimeout, longPressTimeout);
+				m_buttons[j].Initialize(pins[i], doubleClickTimeout, longPressTimeout, MIDIRelativeDebounceTime);
 				break;
 			}
 		}
@@ -455,7 +461,7 @@ boolean CUIButtons::Initialize (void)
 			if (m_buttons[j].getPinNumber() == 0) {
 				// This is un-initialised so can be assigned
 				// doubleClickTimeout and longPressTimeout are ignored for MIDI buttons at present
-				m_buttons[j].Initialize(pins[i], doubleClickTimeout, longPressTimeout);
+				m_buttons[j].Initialize(pins[i], doubleClickTimeout, longPressTimeout, MIDIRelativeDebounceTime);
 				break;
 			}
 		}
