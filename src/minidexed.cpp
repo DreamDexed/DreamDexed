@@ -1625,6 +1625,11 @@ void CMiniDexed::SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigne
 	assert (m_pTG[nTG]);
 	assert (nOP <= 6);
 
+	if (nOP < 6)
+	{
+		nOP = 5 - nOP;		// OPs are in reverse order
+	}
+
 	unsigned nTGLink = m_nTGLink[nTG];
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
@@ -1634,8 +1639,6 @@ void CMiniDexed::SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigne
 
 		if (nOP < 6)
 		{
-			nOP = 5 - nOP;		// OPs are in reverse order
-
 			if (uchOffset == DEXED_OP_ENABLE)
 			{
 				if (uchValue)
