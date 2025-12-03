@@ -314,9 +314,6 @@ boolean CUIButtons::Initialize (void)
 {
 	assert (m_pConfig);
 
-	// Read the button configuration
-	m_doubleClickTimeout = m_pConfig->GetDoubleClickTimeout ();
-	m_longPressTimeout = m_pConfig->GetLongPressTimeout ();
 	m_prevPin = m_pConfig->GetButtonPinPrev ();
 	m_prevAction = CUIButton::triggerTypeFromString( m_pConfig->GetButtonActionPrev ());
 	m_nextPin = m_pConfig->GetButtonPinNext ();
@@ -366,8 +363,8 @@ boolean CUIButtons::Initialize (void)
 	// First sanity check and convert the timeouts:
 	// Internally values are in tenths of a millisecond, but config values
 	// are in milliseconds
-	unsigned doubleClickTimeout = m_doubleClickTimeout * 10;
-	unsigned longPressTimeout = m_longPressTimeout * 10;
+	unsigned doubleClickTimeout = m_pConfig->GetDoubleClickTimeout () * 10;
+	unsigned longPressTimeout = m_pConfig->GetLongPressTimeout () * 10;
 
 	if (longPressTimeout < doubleClickTimeout) {
 		// This is invalid - long press must be longest timeout
