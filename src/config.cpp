@@ -162,6 +162,7 @@ void CConfig::Load (void)
 
 	m_nDoubleClickTimeout = m_Properties.GetNumber ("DoubleClickTimeout", 400);
 	m_nLongPressTimeout = m_Properties.GetNumber ("LongPressTimeout", 600);
+	m_nMIDIRelativeDebounceTime = m_Properties.GetNumber ("MIDIRelativeDebounceTime", 0);
 
 	m_nButtonPinPgmUp = m_Properties.GetNumber ("ButtonPinPgmUp", 0);
 	m_nButtonPinPgmDown = m_Properties.GetNumber ("ButtonPinPgmDown", 0);
@@ -595,6 +596,11 @@ unsigned CConfig::GetDoubleClickTimeout (void) const
 unsigned CConfig::GetLongPressTimeout (void) const
 {
 	return m_nLongPressTimeout;
+}
+
+unsigned CConfig::GetMIDIRelativeDebounceTime(void) const
+{
+	return m_nMIDIRelativeDebounceTime;
 }
 
 unsigned CConfig::GetButtonPinPgmUp (void) const
