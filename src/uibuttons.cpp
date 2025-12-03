@@ -117,7 +117,8 @@ CUIButton::BtnTrigger CUIButton::ReadTrigger (void)
 			// Always return "not pressed" if not configured
 			return BtnTriggerNone;
 		}
-		value = m_midipin->Read();
+		// Simulates a PULLUP IO pin, so "true" is LOW (0)
+		value = m_midipin->Read() < MIDIPIN_CENTER ? HIGH : LOW;
 	}
 	else
 	{

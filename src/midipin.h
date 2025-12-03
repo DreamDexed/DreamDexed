@@ -32,19 +32,17 @@
 #define MidiPinToCC(p) (((p)>=MIDI_PINS)?((p)-MIDI_PINS):0)
 #define isMidiPin(p)   (((p)>=MIDI_PINS)?1:0)
 
+#define MIDIPIN_CENTER 64
+
 class CMIDIPin
 {
 public:
 	CMIDIPin (unsigned nPinNumber);  // pinNumber = ccToMidiPin (MIDI CC number)
 	~CMIDIPin (void);
 
-	// Will return MP_HIGH or MP_LOW.
-	// Should be treated as a PULLED UP IO pin
-	// i.e. treated as "active low" (LOW) when pressed.
+	// Will return the value written to
 	unsigned Read (void);
-	
-	// MIDI CC values >=64 will set the MIDI pin to LOW ("on")
-	// MIDI CC values <= 63 will set the MIDI pin to HIGH ("off")
+
 	void Write (unsigned nValue);
 
 private:
