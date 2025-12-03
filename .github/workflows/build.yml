@@ -16,7 +16,9 @@ jobs:
       artifact-path: ${{ steps.upload64.outputs.artifact-path }}
       git_info: ${{ steps.gitinfo.outputs.git_info }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Compute Git Info for Artifact Name
         id: gitinfo
@@ -100,7 +102,9 @@ jobs:
     outputs:
       artifact-path: ${{ steps.upload32.outputs.artifact-path }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Compute Git Info for Artifact Name
         run: echo "GIT_INFO=$(git log -1 --format=%cd --date=format:%Y%m%d)-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
