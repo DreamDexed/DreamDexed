@@ -287,6 +287,7 @@ public:
 
 	bool InitNetwork();
 	void UpdateNetwork();
+	const CIPAddress& GetNetworkIPAddress();
 
 private:
 	int16_t ApplyNoteLimits (int16_t pitch, unsigned nTG);	// returns < 0 to ignore note
