@@ -18,7 +18,7 @@ EXTRACLEAN = $(OBJS) $(OBJS:.o=.d)
 
 OPTIMIZE = -O3
 
-DATE := $(shell git log -1 --format=%cd --date=format:"%Y%m%d")
+DATE := $(shell git log -1 --format=%cd --date=format:%y%m%d)
 COMMIT := $(shell git rev-parse --short HEAD)
 VERSION := $(DATE)-$(COMMIT)
 DEFINE += -DVERSION=\"$(VERSION)\"
