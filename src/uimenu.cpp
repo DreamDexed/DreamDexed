@@ -689,7 +689,7 @@ void CUIMenu::ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event)
 	}
 
 	CString IPString("-");
-	const CIPAddress& IPAddr = pUIMenu->m_pConfig->GetNetworkIPAddress();
+	const CIPAddress& IPAddr = pUIMenu->m_pMiniDexed->GetNetworkIPAddress();
 	
 	if (IPAddr.IsSet())
 	{

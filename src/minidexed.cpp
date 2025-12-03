@@ -3193,4 +3193,12 @@ bool CMiniDexed::InitNetwork()
 	}
 }
 
+const CIPAddress& CMiniDexed::GetNetworkIPAddress()
+{
+	if (m_pNet)
+		return *m_pNet->GetConfig()->GetIPAddress();
+	else
+		return m_pConfig->GetNetworkIPAddress();
+}
+
 CStatus *CStatus::s_pThis = 0;
