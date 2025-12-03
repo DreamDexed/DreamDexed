@@ -18,5 +18,10 @@ EXTRACLEAN = $(OBJS) $(OBJS:.o=.d)
 
 OPTIMIZE = -O3
 
+DATE := $(shell git log -1 --format=%cd --date=format:"%Y%m%d")
+COMMIT := $(shell git rev-parse --short HEAD)
+VERSION := $(DATE)-$(COMMIT)
+DEFINE += -DVERSION=\"$(VERSION)\"
+
 include ./Synth_Dexed.mk
 include ./Rules.mk

@@ -619,6 +619,7 @@ const CUIMenu::TMenuItem CUIMenu::s_StatusMenu[] =
 	{"CPU Temp",		ShowCPUTemp,	0,	0,	.ShowDirect=true},
 	{"CPU Speed",		ShowCPUSpeed,	0,	0,	.ShowDirect=true},
 	{"Net IP",		ShowIPAddr,	0,	0,	.ShowDirect=true},
+	{"Version",		ShowVersion,	0,	0,	.ShowDirect=true},
 	{0}
 };
 
@@ -704,6 +705,24 @@ void CUIMenu::ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event)
 	static TKernelTimerHandle timer = 0;
 	if (timer) CTimer::Get ()->CancelKernelTimer(timer);
 	timer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (3000), TimerHandlerUpdate, 0, pUIMenu);
+}
+
+void CUIMenu::ShowVersion (CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	default:
+		return;
+	}
+
+	pUIMenu->m_pUI->DisplayWrite (pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				      pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name,
+				      VERSION,
+				      pUIMenu->m_nCurrentSelection > 0, !!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection+1].Name);
 }
 
 CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
