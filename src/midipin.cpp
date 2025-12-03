@@ -24,7 +24,7 @@ LOGMODULE ("midipin");
 
 CMIDIPin::CMIDIPin (unsigned nPinNumber)
 :	m_nPinNumber (nPinNumber),
-	m_nValue (HIGH)
+	m_nValue (0)
 {
 }
 
@@ -39,16 +39,6 @@ unsigned CMIDIPin::Read (void)
 
 void CMIDIPin::Write (unsigned nValue)
 {
-	// Takes values in the MIDI controller range 0 to 127
-	// and OFF < 64 < ON.
-	// Simulates a PULLUP IO pin, so "true" is LOW (0)
-	if (nValue >= 64) {
-		// "on"
-		m_nValue = LOW;
-	} else {
-		// "off"
-		m_nValue = HIGH;
-	}
-	return;
+	m_nValue = nValue;
 }
 
