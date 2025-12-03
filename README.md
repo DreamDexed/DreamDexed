@@ -3,6 +3,7 @@
 DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with the following additional features:
 
 - [x] Configurable default screen
+- [x] Support for MIDI controller encoders with relative mode
 - [x] Noiseless performance and volume change
 - [x] Configurable TG compressors
 - [x] Master Compressor
