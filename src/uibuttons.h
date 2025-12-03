@@ -67,7 +67,7 @@ public:
 	~CUIButton (void);
 	
 	void reset (void);
-	boolean Initialize (unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout);
+	boolean Initialize (unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout, unsigned MIDIRelativeDebounceTime);
 
 	void setClickEvent(BtnEvent clickEvent);
 	void setDoubleClickEvent(BtnEvent doubleClickEvent);
@@ -113,6 +113,8 @@ private:
 	unsigned m_doubleClickTimeout;
 	// Timeout for long press in tenths of a millisecond
 	unsigned m_longPressTimeout;
+	// Debounce time for MIDI Relative messages in tenths of a millisecond
+	unsigned m_MIDIRelativeDebounceTime;
 };
 
 class CUIButtons
