@@ -199,6 +199,7 @@ public:
 	// Timeouts for button events in milliseconds
 	unsigned GetDoubleClickTimeout (void) const;
 	unsigned GetLongPressTimeout (void) const;
+	unsigned GetMIDIRelativeDebounceTime (void) const;
 
 	// GPIO Button Program and TG Selection
 	// GPIO pin numbers are chip numbers, not header positions
@@ -220,11 +221,19 @@ public:
 	// MIDI Button Navigation
 	unsigned GetMIDIButtonCh   (void) const;
 	unsigned GetMIDIButtonNotes (void) const;
+
 	unsigned GetMIDIButtonPrev (void) const;
 	unsigned GetMIDIButtonNext (void) const;
 	unsigned GetMIDIButtonBack (void) const;
 	unsigned GetMIDIButtonSelect (void) const;
 	unsigned GetMIDIButtonHome (void) const;
+
+	// Action type for Midi buttons: "click", "doubleclick", "longpress", "dec", "inc", ""
+	const char *GetMIDIButtonActionPrev (void) const;
+	const char *GetMIDIButtonActionNext (void) const;
+	const char *GetMIDIButtonActionBack (void) const;
+	const char *GetMIDIButtonActionSelect (void) const;
+	const char *GetMIDIButtonActionHome (void) const;
 
 	// MIDI Button Program and TG Selection
 	unsigned GetMIDIButtonPgmUp (void) const;
@@ -234,6 +243,16 @@ public:
 	unsigned GetMIDIButtonTGUp (void) const;
 	unsigned GetMIDIButtonTGDown (void) const;
 	
+	// Action type for buttons: "click", "doubleclick", "longpress", "dec", "inc", ""
+	const char *GetMIDIButtonActionPgmUp (void) const;
+	const char *GetMIDIButtonActionPgmDown (void) const;
+	const char *GetMIDIButtonActionBankUp (void) const;
+	const char *GetMIDIButtonActionBankDown (void) const;
+	const char *GetMIDIButtonActionTGUp (void) const;
+	const char *GetMIDIButtonActionTGDown (void) const;
+
+	bool GetDAWControllerEnabled (void) const;
+
 	// KY-040 Rotary Encoder
 	// GPIO pin numbers are chip numbers, not header positions
 	bool GetEncoderEnabled (void) const;
@@ -355,8 +374,21 @@ private:
 	std::string m_ButtonActionTGUp;
 	std::string m_ButtonActionTGDown;
 	
+	std::string m_MIDIButtonActionPrev;
+	std::string m_MIDIButtonActionNext;
+	std::string m_MIDIButtonActionBack;
+	std::string m_MIDIButtonActionSelect;
+	std::string m_MIDIButtonActionHome;
+	std::string m_MIDIButtonActionPgmUp;
+	std::string m_MIDIButtonActionPgmDown;
+	std::string m_MIDIButtonActionBankUp;
+	std::string m_MIDIButtonActionBankDown;
+	std::string m_MIDIButtonActionTGUp;
+	std::string m_MIDIButtonActionTGDown;
+
 	unsigned m_nDoubleClickTimeout;
 	unsigned m_nLongPressTimeout;
+	unsigned m_nMIDIRelativeDebounceTime;
 
 	unsigned m_nMIDIButtonCh;
 	unsigned m_nMIDIButtonNotes;
@@ -371,6 +403,8 @@ private:
 	unsigned m_nMIDIButtonBankDown;
 	unsigned m_nMIDIButtonTGUp;
 	unsigned m_nMIDIButtonTGDown;
+
+	bool m_bDAWControllerEnabled;
 
 	bool m_bEncoderEnabled;
 	unsigned m_nEncoderPinClock;
