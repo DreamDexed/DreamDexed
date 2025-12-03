@@ -140,11 +140,6 @@ private:
 	// Array of normal GPIO buttons and "MIDI buttons"
 	CUIButton m_buttons[MAX_BUTTONS];
 	
-	// Timeout for double click in tenths of a millisecond
-	unsigned m_doubleClickTimeout;
-	// Timeout for long press in tenths of a millisecond
-	unsigned m_longPressTimeout;
-	
 	// Configuration for buttons
 	unsigned m_prevPin;
 	CUIButton::BtnTrigger m_prevAction;
