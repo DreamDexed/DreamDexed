@@ -98,7 +98,7 @@ public:
 	static const unsigned MaxUSBMIDIDevices = 4;
 #endif
 
-	static const unsigned MinLCDColumns = 16;		// HD44780 LCD
+	static const unsigned MinLCDColumns = 15;		// ST7789 240px wide LCD
 	static const unsigned MinLCDRows = 2;
 
 public:
