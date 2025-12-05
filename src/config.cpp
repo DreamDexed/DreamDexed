@@ -165,7 +165,7 @@ void CConfig::Load (void)
 	m_nST7789Width = m_Properties.GetNumber ("ST7789Width", 240);
 	m_nST7789Height = m_Properties.GetNumber ("ST7789Height", 240);
 	m_nST7789Rotation = m_Properties.GetNumber ("ST7789Rotation", 0);
-	m_bST7789SmallFont = m_Properties.GetNumber ("ST7789SmallFont", 0) != 0;
+	m_nST7789FontSize = m_Properties.GetNumber ("ST7789FontSize", 16);
 
 	m_nLCDColumns = std::max(MinLCDColumns, m_Properties.GetNumber ("LCDColumns", 16));
 	m_nLCDRows = std::max(MinLCDRows, m_Properties.GetNumber ("LCDRows", 2));
@@ -568,10 +568,11 @@ unsigned CConfig::GetST7789Rotation (void) const
 	return m_nST7789Rotation;
 }
 
-bool CConfig::GetST7789SmallFont (void) const
+unsigned CConfig::GetST7789FontSize (void) const
 {
-	return m_bST7789SmallFont;
+	return m_nST7789FontSize;
 }
+
 unsigned CConfig::GetLCDColumns (void) const
 {
 	return m_nLCDColumns;
