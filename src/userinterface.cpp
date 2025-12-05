@@ -95,11 +95,12 @@ bool CUserInterface::Initialize (void)
 			if (m_pST7789Display->Initialize())
 			{
 				extern const TFont DDFont8x16;
+				extern const TFont DDFont12x22;
 
 				m_pST7789Display->SetRotation (m_pConfig->GetST7789Rotation());
 
 				bool bDoubleFont = m_pConfig->GetST7789FontSize() == 16 ? true : false;
-				const TFont& font = m_pConfig->GetST7789FontSize() == 12 ? Font12x22 : DDFont8x16;
+				const TFont& font = m_pConfig->GetST7789FontSize() == 12 ? DDFont12x22 : DDFont8x16;
 
 				m_pST7789 = new CST7789Device (m_pSPIMaster, m_pST7789Display, m_pConfig->GetLCDColumns (), m_pConfig->GetLCDRows (), font, bDoubleFont, bDoubleFont);
 				if (m_pST7789->Initialize())
