@@ -849,6 +849,9 @@ void CUIMenu::MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event)
 		if (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].ShowDirect)
 			break;
 
+		if (!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Handler)
+			break;
+
 		pUIMenu->m_MenuStackParent[pUIMenu->m_nCurrentMenuDepth] = pUIMenu->m_pParentMenu;
 		pUIMenu->m_MenuStackMenu[pUIMenu->m_nCurrentMenuDepth] = pUIMenu->m_pCurrentMenu;
 		pUIMenu->m_nMenuStackItem[pUIMenu->m_nCurrentMenuDepth]
