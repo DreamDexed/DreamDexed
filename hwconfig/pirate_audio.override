@@ -14,7 +14,7 @@ ST7789Width=240
 ST7789Height=240
 ST7789Rotation=90
 
-LCDColumns=15
+LCDColumns=20
 LCDRows=2
 
 ButtonPinPrev=5
