@@ -1168,6 +1168,63 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->yk_chorus.bypass = nValue;
 		break;
 
+	case FX::FXParameterZynAPhaserPreset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_aphaser.loadpreset (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynAPhaserMix:
+	case FX::FXParameterZynAPhaserPanning:
+	case FX::FXParameterZynAPhaserLFOFreq:
+	case FX::FXParameterZynAPhaserLFORandomness:
+	case FX::FXParameterZynAPhaserLFOType:
+	case FX::FXParameterZynAPhaserLFOLRDelay:
+	case FX::FXParameterZynAPhaserDepth:
+	case FX::FXParameterZynAPhaserFeedback:
+	case FX::FXParameterZynAPhaserStages:
+	case FX::FXParameterZynAPhaserLRCross:
+	case FX::FXParameterZynAPhaserSubtractive:
+	case FX::FXParameterZynAPhaserWidth:
+	case FX::FXParameterZynAPhaserDistortion:
+	case FX::FXParameterZynAPhaserMismatch:
+	case FX::FXParameterZynAPhaserHyper:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_aphaser.changepar(Parameter - FX::FXParameterZynAPhaserMix, nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynAPhaserBypass:
+		fx_chain[nFX]->zyn_aphaser.bypass = nValue;
+		break;
+
+	case FX::FXParameterZynPhaserPreset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_phaser.loadpreset (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynPhaserMix:
+	case FX::FXParameterZynPhaserPanning:
+	case FX::FXParameterZynPhaserLFOFreq:
+	case FX::FXParameterZynPhaserLFORandomness:
+	case FX::FXParameterZynPhaserLFOType:
+	case FX::FXParameterZynPhaserLFOLRDelay:
+	case FX::FXParameterZynPhaserDepth:
+	case FX::FXParameterZynPhaserFeedback:
+	case FX::FXParameterZynPhaserStages:
+	case FX::FXParameterZynPhaserLRCross:
+	case FX::FXParameterZynPhaserSubtractive:
+	case FX::FXParameterZynPhaserPhase:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_phaser.changepar(Parameter - FX::FXParameterZynPhaserMix, nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynPhaserBypass:
+		fx_chain[nFX]->zyn_phaser.bypass = nValue;
+		break;
+
 	case FX::FXParameterDreamDelayMix:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->dream_delay.setMix (nValue / 100.0f);
@@ -1441,6 +1498,17 @@ int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
 {
 	assert (nFX < CConfig::FXChains);
 	assert (Parameter < FX::FXParameterUnknown);
+
+
+	if (Parameter >= FX::FXParameterZynAPhaserMix && Parameter <= FX::FXParameterZynAPhaserHyper)
+	{
+		return fx_chain[nFX]->zyn_aphaser.getpar (Parameter - FX::FXParameterZynAPhaserMix);
+	}
+
+	if (Parameter >= FX::FXParameterZynPhaserMix && Parameter <= FX::FXParameterZynPhaserPhase)
+	{
+		return fx_chain[nFX]->zyn_phaser.getpar (Parameter - FX::FXParameterZynPhaserMix);
+	}
 
 	if (Parameter >= FX::FXParameterCloudSeed2Interpolation && Parameter <= FX::FXParameterCloudSeed2SeedPostDiffusion)
 	{

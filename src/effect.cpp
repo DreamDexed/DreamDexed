@@ -4,6 +4,9 @@
 #include "midi.h"
 #include "effect_cloudseed2.h"
 #include "effect_compressor.h"
+#include "zyn/APhaser.h"
+#include "zyn/Phaser.h"
+#include "zyn/EffectLFO.h"
 
 static std::string ToOnOff (int nValue, int nWidth)
 {
@@ -109,6 +112,37 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	100,	50,	1,	"YKChorusLFORate1"},
 	{0,	100,	83,	1,	"YKChorusLFORate2"},
 	{0,	1,	0,	1,	"YKChorusBypass",	ToOnOff},
+	{0,	zyn::APhaser::presets_num - 1,	0,	1,	"ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0,	100,	0,	1,	"ZynAPhaserMix",	ToDryWet},
+	{0,	127,	64,	1,	"ZynAPhaserPanning"},
+	{1,	600,	14,	1,	"ZynAPhaserLFOFreq"},
+	{0,	127,	0,	1,	"ZynAPhaserLFORandomness"},
+	{0,	11,	1,	1,	"ZynAPhaserLFOType",	zyn::EffectLFO::ToLFOType},
+	{0,	127,	64,	1,	"ZynAPhaserLFOLRDelay"},
+	{0,	127,	64,	1,	"ZynAPhaserDepth"},
+	{0,	127,	40,	1,	"ZynAPhaserFeedback"},
+	{1,	12,	4,	1,	"ZynAPhaserStages"},
+	{0,	127,	0,	1,	"ZynAPhaserLRCross"},
+	{0,	1,	0,	1,	"ZynAPhaserSubtractive",ToOnOff},
+	{0,	127,	110,	1,	"ZynAPhaserWidth"},
+	{0,	100,	20,	1,	"ZynAPhaserDistortion"},
+	{0,	127,	10,	1,	"ZynAPhaserMismatch"},
+	{0,	1,	1,	1,	"ZynAPhaserHyper",	ToOnOff},
+	{0,	1,	0,	1,	"ZynAPhaserBypass",	ToOnOff},
+	{0,	zyn::Phaser::presets_num - 1,	0,	1,	"ZynPhaserPreset", zyn::Phaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0,	100,	0,	1,	"ZynPhaserMix",		ToDryWet},
+	{0,	127,	64,	1,	"ZynPhaserPanning"},
+	{1,	600,	11,	1,	"ZynPhaserLFOFreq"},
+	{0,	127,	0,	1,	"ZynPhaserLFORandomness"},
+	{0,	11,	0,	1,	"ZynPhaserLFOType",	zyn::EffectLFO::ToLFOType},
+	{0,	127,	64,	1,	"ZynPhaserLFOLRDelay"},
+	{0,	127,	110,	1,	"ZynPhaserDepth"},
+	{0,	127,	64,	1,	"ZynPhaserFeedback"},
+	{1,	12,	1,	1,	"ZynPhaserStages"},
+	{0,	127,	0,	1,	"ZynPhaserLRCross"},
+	{0,	1,	0,	1,	"ZynPhaserSubtractive",	ToOnOff},
+	{0,	127,	20,	1,	"ZynPhaserPhase"},
+	{0,	1,	0,	1,	"ZynPhaserBypass",	ToOnOff},
 	{0,	100,	0,	1,	"DreamDelayMix",	ToDryWet},
 	{0,	2,	0,	1,	"DreamDelayMode",	ToDelayMode},
 	{0,	112,	36,	1,	"DreamDelayTime",	ToDelayTime, FX::FXComposite},
@@ -210,6 +244,10 @@ int FX::getIDFromName(TFXParameter param, const char* name)
 		case FX::FXParameterSlot1:
 		case FX::FXParameterSlot2:
 			return getIDFromEffectName(name);
+		case FX::FXParameterZynAPhaserPreset:
+			return zyn::APhaser::ToIDFromPreset(name);
+		case FX::FXParameterZynPhaserPreset:
+			return zyn::Phaser::ToIDFromPreset(name);
 		case FX::FXParameterCloudSeed2Preset:
 			return AudioEffectCloudSeed2::getIDFromPresetName(name);
 		default:
@@ -227,6 +265,10 @@ const char *FX::getNameFromID(TFXParameter param, int nID)
 		case FX::FXParameterSlot2:
 			assert (nID < FX::effects_num);
 			return FX::s_effects[nID].Name;
+		case FX::FXParameterZynAPhaserPreset:
+			return zyn::APhaser::ToPresetNameChar(nID);
+		case FX::FXParameterZynPhaserPreset:
+			return zyn::Phaser::ToPresetNameChar(nID);
 		case FX::FXParameterCloudSeed2Preset:
 			return AudioEffectCloudSeed2::getPresetNameChar(nID);
 		default:
