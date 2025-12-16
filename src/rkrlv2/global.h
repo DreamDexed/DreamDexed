@@ -87,27 +87,27 @@
 #define TEMPBUFSIZE 1024
 
 typedef union {
-    float f;
-    long i;
+	float f;
+	long i;
 } ls_pcast32;
 
 /*
 static inline float f_pow2(float x)
 {
-        ls_pcast32 *px, tx, lx;
-        float dx;
+		ls_pcast32 *px, tx, lx;
+		float dx;
 
-        px = (ls_pcast32 *)&x; // store address of float as long pointer
-        tx.f = (x-0.5f) + (3<<22); // temporary value for truncation
-        lx.i = tx.i - 0x4b400000; // integer power of 2
-        dx = x - (float)lx.i; // float remainder of power of 2
+		px = (ls_pcast32 *)&x; // store address of float as long pointer
+		tx.f = (x-0.5f) + (3<<22); // temporary value for truncation
+		lx.i = tx.i - 0x4b400000; // integer power of 2
+		dx = x - (float)lx.i; // float remainder of power of 2
 
-        x = 1.0f + dx * (0.6960656421638072f + // cubic apporoximation of 2^x
-                   dx * (0.224494337302845f +  // for x in the range [0, 1]
-                   dx * (0.07944023841053369f)));
-        (*px).i += (lx.i << 23); // add integer power of 2 to exponent
+		x = 1.0f + dx * (0.6960656421638072f + // cubic apporoximation of 2^x
+			dx * (0.224494337302845f +  // for x in the range [0, 1]
+			dx * (0.07944023841053369f)));
+		(*px).i += (lx.i << 23); // add integer power of 2 to exponent
 
-        return (*px).f;
+		return (*px).f;
 }
 */
 /*
@@ -144,35 +144,33 @@ static const float ipw2[25] = {1.0, 5.0e-01, 2.5e-01, 1.25e-01, 6.25e-02, 3.125e
 
 static inline float f_pow2(float x)
 {
-    float y = 0.0f;
+	float y = 0.0f;
 
-    if(x >=24) return pw2[24];
-    else if (x <= -24.0f) return ipw2[24];
-    else {
-        float whole =  ceilf(x);
-        int xint = (int) whole;
-        x = x - whole;
+	if(x >=24) return pw2[24];
+	else if (x <= -24.0f) return ipw2[24];
+	else {
+		float whole =  ceilf(x);
+		int xint = (int) whole;
+		x = x - whole;
 
-        if (xint>=0) {
-            y = pw2[xint]*(x*(x*(x*(x*a[4] + a[3]) + a[2]) + a[1]) + a[0]);
+		if (xint>=0) {
+			y = pw2[xint]*(x*(x*(x*(x*a[4] + a[3]) + a[2]) + a[1]) + a[0]);
 
-        } else  {
+		} else  {
 
-            y = ipw2[-xint]*(x*(x*(x*(x*a[4] + a[3]) + a[2]) + a[1]) + a[0]);
+			y = ipw2[-xint]*(x*(x*(x*(x*a[4] + a[3]) + a[2]) + a[1]) + a[0]);
 
-        }
+		}
 
-        return y;
-    }
+		return y;
+	}
 
 }
 
 #define f_exp(x) f_pow2(x * LN2R)
 
-//#include "config.h"
 #include <sys/time.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include "FPreset.h"
