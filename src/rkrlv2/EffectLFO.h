@@ -32,40 +32,40 @@
 class EffectLFO
 {
 public:
-    EffectLFO(float sample_rate);
-    void effectlfoout(float * outl, float * outr);
-    void updateparams(uint16_t period);
-    uint16_t nPeriod;
-    int Pfreq;
-    int Prandomness;
-    int PLFOtype;
-    int Pstereo;	//"64"=0
+	EffectLFO(float sample_rate);
+	void effectlfoout(float * outl, float * outr);
+	void updateparams(uint16_t period);
+	uint16_t nPeriod;
+	int Pfreq;
+	int Prandomness;
+	int PLFOtype;
+	int Pstereo;	//"64"=0
 
-    static std::string ToLFOType(int nValue, int nWidth);
+	static std::string ToLFOType(int nValue, int nWidth);
 private:
-    float getlfoshape(float x);
+	float getlfoshape(float x);
 
-    float xl, xr;
-    float incx;
-    float ampl1, ampl2, ampr1, ampr2;	//necesar pentru "randomness"
-    float lfointensity;
-    float lfornd;
-    int lfotype;
+	float xl, xr;
+	float incx;
+	float ampl1, ampl2, ampr1, ampr2;	//necesar pentru "randomness"
+	float lfointensity;
+	float lfornd;
+	int lfotype;
 
-    //Lorenz Fractal parameters
-    float x0,y0,z0,x1,y1,z1,radius;
-    float h;
-    float a;
-    float b;
-    float c;
-    float scale;
-    float iperiod;
-    float ratediv;
+	//Lorenz Fractal parameters
+	float x0,y0,z0,x1,y1,z1,radius;
+	float h;
+	float a;
+	float b;
+	float c;
+	float scale;
+	float iperiod;
+	float ratediv;
 
-    //Sample/Hold
-    int holdflag;  //toggle left/right channel changes
-    float tca, tcb, maxrate;
-    float rreg, lreg, xlreg,xrreg, oldrreg, oldlreg;
+	//Sample/Hold
+	int holdflag;  //toggle left/right channel changes
+	float tca, tcb, maxrate;
+	float rreg, lreg, xlreg,xrreg, oldrreg, oldlreg;
 
-    float fSAMPLE_RATE;
+	float fSAMPLE_RATE;
 };
