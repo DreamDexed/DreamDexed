@@ -36,7 +36,7 @@ LOGMODULE ("uimenu");
 
 const CUIMenu::TMenuItem CUIMenu::s_MenuRoot[] =
 {
-	{"MiniDexed", MenuHandler, s_MainMenu},
+	{"DreamDexed", MenuHandler, s_MainMenu},
 	{0}
 };
 
