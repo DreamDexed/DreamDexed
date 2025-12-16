@@ -207,6 +207,8 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 {
 	{"None"},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
+	{"ZynAPhaser",		MenuHandler,		s_ZynAPhaserMenu},
+	{"ZynPhaser",		MenuHandler,		s_ZynPhaserMenu},
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
 	{"PlateReverb",		MenuHandler,		s_PlateReverbMenu},
 	{"CloudSeed2",		MenuHandler,		s_CloudSeed2Menu},
@@ -223,6 +225,47 @@ const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 	{"LFO Rate I",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate1},
 	{"LFO Rate II",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate2},
 	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterYKChorusBypass},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ZynAPhaserMenu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserPreset},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserMix},
+	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserPanning},
+	{"LFO Freq",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserLFOFreq},
+	{"LFO Rndness",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserLFORandomness},
+	{"LFO Type",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserLFOType},
+	{"LFO LR Delay",EditFXParameter2,	0,	FX::FXParameterZynAPhaserLFOLRDelay},
+	{"Depth",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserDepth},
+	{"Feedback",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserFeedback},
+	{"Stages",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserStages},
+	{"LR Cross",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserLRCross},
+	{"Subtractive",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserSubtractive},
+	{"Width",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserWidth},
+	{"Distortion",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserDistortion},
+	{"Mismatch",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserMismatch},
+	{"Hyper",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserHyper},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynAPhaserBypass},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ZynPhaserMenu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynPhaserPreset},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterZynPhaserMix},
+	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynPhaserPanning},
+	{"LFO Freq",	EditFXParameter2,	0,	FX::FXParameterZynPhaserLFOFreq},
+	{"LFO Rndness",	EditFXParameter2,	0,	FX::FXParameterZynPhaserLFORandomness},
+	{"LFO Type",	EditFXParameter2,	0,	FX::FXParameterZynPhaserLFOType},
+	{"LFO LR Delay",EditFXParameter2,	0,	FX::FXParameterZynPhaserLFOLRDelay},
+	{"Depth",	EditFXParameter2,	0,	FX::FXParameterZynPhaserDepth},
+	{"Feedback",	EditFXParameter2,	0,	FX::FXParameterZynPhaserFeedback},
+	{"Stages",	EditFXParameter2,	0,	FX::FXParameterZynPhaserStages},
+	{"LR Cross",	EditFXParameter2,	0,	FX::FXParameterZynPhaserLRCross},
+	{"Subtractive",	EditFXParameter2,	0,	FX::FXParameterZynPhaserSubtractive},
+	{"Phase",	EditFXParameter2,	0,	FX::FXParameterZynPhaserPhase},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynPhaserBypass},
 	{0}
 };
 

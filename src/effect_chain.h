@@ -2,6 +2,9 @@
 
 #include <functional>
 
+#include "zyn/APhaser.h"
+#include "zyn/Phaser.h"
+
 #include "effect_3bandeq.h"
 #include "effect_compressor.h"
 #include "effect_cloudseed2.h"
@@ -16,6 +19,8 @@ public:
 
         AudioFXChain(float samplerate):
         yk_chorus{samplerate},
+        zyn_aphaser{samplerate},
+        zyn_phaser{samplerate},
         dream_delay{samplerate},
         plate_reverb{samplerate},
         cloudseed2{samplerate},
@@ -25,6 +30,8 @@ public:
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { zyn_phaser.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { dream_delay.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { plate_reverb.process(inputL, inputR, inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { cloudseed2.process(inputL, inputR, len); },
@@ -55,6 +62,8 @@ public:
 
         void resetState()
         {
+                zyn_aphaser.cleanup();
+                zyn_phaser.cleanup();
                 dream_delay.resetState();
                 plate_reverb.reset();
                 compressor.resetState();
@@ -73,6 +82,8 @@ public:
         }
 
         AudioEffectYKChorus yk_chorus;
+        zyn::APhaser zyn_aphaser;
+        zyn::Phaser zyn_phaser;
         AudioEffectDreamDelay dream_delay;
         AudioEffectPlateReverb plate_reverb;
         AudioEffectCloudSeed2 cloudseed2;
