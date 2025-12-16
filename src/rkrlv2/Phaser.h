@@ -32,60 +32,59 @@
 class Phaser
 {
 public:
-    Phaser(float samplerate);
-    void process(float *smpsl, float *smpsr, uint16_t period);
-    void loadpreset(unsigned npreset);
-    void changepar(unsigned npar, int value);
-    int getpar(unsigned npar);
-    void cleanup();
+	Phaser(float samplerate);
+	void process(float *smpsl, float *smpsr, uint16_t period);
+	void loadpreset(unsigned npreset);
+	void changepar(unsigned npar, int value);
+	int getpar(unsigned npar);
+	void cleanup();
 
-    std::atomic<bool> bypass;
+	std::atomic<bool> bypass;
 
-    static constexpr unsigned presets_num = 7;
-    enum Parameter {
-		  ParameterMix,
-		  ParameterPanning,
-		  ParameterLFOFreq,
-		  ParameterLFORandomness,
-		  ParameterLFOType,
-		  ParameterLFOLRDelay,
-		  ParameterDepth,
-		  ParameterFeedback,
-		  ParameterStages,
-		  ParameterLRCross,
-		  ParameterSubtractive,
-		  ParameterPhase,
-      ParameterCount
-    };
-    static std::string ToPresetName(int nValue, int nWidth);
+	static constexpr unsigned presets_num = 7;
+	enum Parameter {
+		ParameterMix,
+		ParameterPanning,
+		ParameterLFOFreq,
+		ParameterLFORandomness,
+		ParameterLFOType,
+		ParameterLFOLRDelay,
+		ParameterDepth,
+		ParameterFeedback,
+		ParameterStages,
+		ParameterLRCross,
+		ParameterSubtractive,
+		ParameterPhase,
+		ParameterCount
+	};
+	static std::string ToPresetName(int nValue, int nWidth);
 
 private:
-    EffectLFO lfo;     //Phaser modulator
+	EffectLFO lfo; 		//Phaser modulator
 
-    unsigned Ppreset;
+	unsigned Ppreset;
 
-    //Parametrii Phaser
-    int Pmix;
-    int Ppanning;
-    int Pdepth;		//the depth of the Phaser
-    int Pfb;		//feedback
-    int Plrcross;	//feedback
-    int Pstages;
-    int Psubtractive;	//if I wish to substract the output instead of the adding it
-    int Pphase;
+	//Parametrii Phaser
+	int Pmix;
+	int Ppanning;
+	int Pdepth;		//the depth of the Phaser
+	int Pfb;		//feedback
+	int Plrcross;		//feedback
+	int Pstages;
+	int Psubtractive;		//if I wish to substract the output instead of the adding it
+	int Pphase;
 
-    void setmix(int Pmix);
-    void setpanning(int Ppanning);
-    void setdepth(int Pdepth);
-    void setfb(int Pfb);
-    void setlrcross(int Plrcross);
-    void setstages(int Pstages);
-    void setphase(int Pphase);
+	void setmix(int Pmix);
+	void setpanning(int Ppanning);
+	void setdepth(int Pdepth);
+	void setfb(int Pfb);
+	void setlrcross(int Plrcross);
+	void setstages(int Pstages);
+	void setphase(int Pphase);
 
-    //Valorile interne
-    float dry, wet, panning, fb, depth, lrcross, fbl, fbr, phase;
-    float oldl[MAX_PHASER_STAGES*2];
-    float oldr[MAX_PHASER_STAGES*2];
-    float oldlgain, oldrgain;
-
+	//Valorile interne
+	float dry, wet, panning, fb, depth, lrcross, fbl, fbr, phase;
+	float oldl[MAX_PHASER_STAGES*2];
+	float oldr[MAX_PHASER_STAGES*2];
+	float oldlgain, oldrgain;
 };
