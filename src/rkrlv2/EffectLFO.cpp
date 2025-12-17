@@ -23,13 +23,15 @@
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <arm_math.h>
+#include <math.h>
 
-#include "global.h"
 #include "EffectLFO.h"
 #include "f_sin.h"
+
+namespace zyn {
+
+#define RND (rand()/(RAND_MAX+1.0))
+#define RND1 (((float) rand())/(((float) RAND_MAX)+1.0f))
 
 EffectLFO::EffectLFO(float sample_rate):
 nPeriod{256} //this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
@@ -255,3 +257,5 @@ void EffectLFO::effectlfoout(float * outl, float * outr)
 	};
 	*outr = (out + 1.0f) * 0.5f;
 };
+
+}

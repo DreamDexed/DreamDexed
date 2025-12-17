@@ -26,8 +26,9 @@
 
 #include <atomic>
 
-#include "global.h"
 #include "EffectLFO.h"
+
+namespace zyn {
 
 class Phaser
 {
@@ -41,6 +42,7 @@ public:
 
 	std::atomic<bool> bypass;
 
+	static constexpr unsigned max_stages = 12;
 	static constexpr unsigned presets_num = 7;
 	enum Parameter {
 		ParameterMix,
@@ -84,7 +86,9 @@ private:
 
 	//Valorile interne
 	float dry, wet, panning, fb, depth, lrcross, fbl, fbr, phase;
-	float oldl[MAX_PHASER_STAGES*2];
-	float oldr[MAX_PHASER_STAGES*2];
+	float oldl[max_stages * 2];
+	float oldr[max_stages * 2];
 	float oldlgain, oldrgain;
 };
+
+}

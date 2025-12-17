@@ -22,8 +22,13 @@
 
 */
 
+#include <cstring>
 #include <math.h>
+
 #include "Phaser.h"
+
+namespace zyn {
+
 #define PHASER_LFO_SHAPE 2
 
 Phaser::Phaser(float samplerate):
@@ -60,11 +65,11 @@ void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 	lgain = 1.0f - phase * (1.0f - depth) - (1.0f - phase) * lgain * depth;
 	rgain = 1.0f - phase * (1.0f - depth) - (1.0f - phase) * rgain * depth;
 
-	if (lgain > 1.0) lgain = 1.0f;
-	else if (lgain < 0.0) lgain = 0.0f;
+	if (lgain > 1.0f) lgain = 1.0f;
+	else if (lgain < 0.0f) lgain = 0.0f;
 
-	if (rgain > 1.0) rgain = 1.0f;
-	else if (rgain < 0.0) rgain = 0.0f;
+	if (rgain > 1.0f) rgain = 1.0f;
+	else if (rgain < 0.0f) rgain = 0.0f;
 
 	for (unsigned int i = 0; i < period; i++) {
 		float x = (float) i / ((float)period);
@@ -77,14 +82,14 @@ void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 		//Left channel
 		for (int j = 0; j < Pstages * 2; j++) {
 			//Phasing routine
-			float tmp = oldl[j] + DENORMAL_GUARD;
+			float tmp = oldl[j];
 			oldl[j] = gl * tmp + inl;
 			inl = tmp - gl * oldl[j];
 		};
 		//Right channel
 		for (int j = 0; j < Pstages * 2; j++) {
 			//Phasing routine
-			float tmp = oldr[j] + DENORMAL_GUARD;
+			float tmp = oldr[j];
 			oldr[j] = (gr * tmp) + inr;
 			inr = tmp - (gr * oldr[j]);
 		};
@@ -161,8 +166,8 @@ void Phaser::setlrcross(int Plrcross)
 
 void Phaser::setstages(int Pstages)
 {
-	if (Pstages > MAX_PHASER_STAGES)
-		Pstages = MAX_PHASER_STAGES;
+	if ((unsigned int)Pstages > max_stages)
+		Pstages = max_stages;
 	this->Pstages = Pstages;
 	cleanup ();
 };
@@ -175,21 +180,111 @@ void Phaser::setphase(int Pphase)
 
 void Phaser::loadpreset(unsigned npreset)
 {
-	const int PRESET_SIZE = 12;
-	const int presets[presets_num][PRESET_SIZE] = {
-		{0, 64, 11, 0, 0, 64, 110, 64, 1, 0, 0, 20},
-		{50, 64, 11, 0, 0, 64, 110, 64, 1, 0, 0, 20},
-		{50, 64, 10, 0, 0, 88, 40, 64, 3, 0, 0, 20},
-		{50, 64, 8, 0, 0, 66, 68, 107, 2, 0, 0, 20},
-		{31, 64, 1, 0, 0, 66, 67, 10, 5, 0, 1, 20},
-		{50, 64, 1, 0, 1, 110, 67, 78, 10, 0, 0, 20},
-		{50, 64, 31, 100, 0, 58, 37, 78, 3, 0, 0, 20}
+	const int presets[presets_num][ParameterCount] = {
+		{
+			[ParameterMix] = 0,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 11,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 110,
+			[ParameterFeedback] = 64,
+			[ParameterStages] = 1,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 11,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 110,
+			[ParameterFeedback] = 64,
+			[ParameterStages] = 1,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 10,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 88,
+			[ParameterDepth] = 40,
+			[ParameterFeedback] = 64,
+			[ParameterStages] = 3,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 8,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 66,
+			[ParameterDepth] = 68,
+			[ParameterFeedback] = 107,
+			[ParameterStages] = 2,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 31,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 1,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 66,
+			[ParameterDepth] = 67,
+			[ParameterFeedback] = 10,
+			[ParameterStages] = 5,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 1,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 1,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 110,
+			[ParameterDepth] = 67,
+			[ParameterFeedback] = 78,
+			[ParameterStages] = 10,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 31,
+			[ParameterLFORandomness] = 100,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 58,
+			[ParameterDepth] = 37,
+			[ParameterFeedback] = 78,
+			[ParameterStages] = 3,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterPhase] = 20,
+		},
 	};
 
 	if (npreset >= presets_num)
 		npreset = presets_num;
 
-	for (int n = 0; n < PRESET_SIZE; n++)
+	for (int n = 0; n < ParameterCount; n++)
 		changepar(n, presets[npreset][n]);
 
 	Ppreset = npreset;
@@ -220,11 +315,7 @@ void Phaser::changepar(unsigned npar, int value)
 	case ParameterFeedback: setfb(value); break;
 	case ParameterStages: setstages(value); break;
 	case ParameterLRCross: setlrcross(value); break;
-	case ParameterSubtractive:
-		if (value > 1)
-			value = 1;
-		Psubtractive = value;
-	break;
+	case ParameterSubtractive: Psubtractive = value > 1 ? 1 : value; break;
 	case ParameterPhase: setphase(value); break;
 	}
 };
@@ -247,3 +338,5 @@ int Phaser::getpar(unsigned npar)
 	default: return 0;
 	}
 };
+
+}
