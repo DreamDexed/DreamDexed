@@ -11,13 +11,15 @@
   of the License, or (at your option) any later version.
 */
 
-#include <cmath>
-#include <rtosc/ports.h>
-#include <rtosc/port-sugar.h>
-#include "../Misc/Allocator.h"
+#include <cassert>
+#include <cstring>
+#include <math.h>
+
 #include "Chorus.h"
-#include <iostream>
-using namespace std;
+
+#ifndef PI
+#define PI 3.141592653589793f
+#endif
 
 namespace zyn {
 
@@ -25,211 +27,129 @@ constexpr float PHASE_120 = 0.33333333f;
 constexpr float PHASE_180 = 0.5f;
 constexpr float PHASE_240 = 0.66666666f;
 
-#define rObject Chorus
-#define rBegin [](const char *msg, rtosc::RtData &d) {
-#define rEnd }
-
-rtosc::Ports Chorus::ports = {
-	{"preset::i", rProp(parameter)
-			rOptions(Chorus1, Chorus2, Chorus3, Celeste1, Celeste2,
-				Flange1, Flange2, Flange3, Flange4, Flange5,
-				Triple, Dual)
-			rProp(alias)
-			rDefault(0)
-			rDoc("Instrument Presets"), 0,
-			rBegin;
-			rObject *o = (rObject*)d.obj;
-			if(rtosc_narguments(msg))
-				o->setpreset(rtosc_argument(msg, 0).i);
-			else
-				d.reply(d.loc, "i", o->Ppreset);
-
-			rEnd},
-	//Pvolume/Ppanning are common
-	rEffParVol(rDefaultDepends(preset), rDefault(64), rPreset(10, 127), rPreset(11, 127)),
-	rEffParPan(),
-	rEffPar(Pfreq, 2, rShort("freq"),
-		rPresets(50, 45, 29, 26, 29, 57, 33, 53, 40, 55, 68, 55),
-		"Effect Frequency"),
-	rEffPar(Pfreqrnd, 3, rShort("rand"),
-		rPreset(4, 117) rPreset(6, 34) rPreset(7, 34) rPreset(9, 105)
-		rPreset(10, 25) rPreset(11, 25)
-		rDefault(0), "Frequency Randomness"),
-	rEffParOpt(PLFOtype, 4, rShort("shape"),
-		rOptions(sine, tri),
-		rPresets(sine, sine, tri, sine, sine, sine, tri, tri, tri, sine, tri, tri),
-		"LFO Shape"),
-	rEffPar(PStereo, 5, rShort("stereo"),
-		rPresets(90, 98, 42, 42, 50, 60, 40, 94, 62, 24, 24, 24), "Stereo Mode"),
-	rEffPar(Pdepth, 6, rShort("depth"),
-		rPresets(40, 56, 97, 115, 115, 23, 35, 35, 12, 39, 35, 32), "LFO Depth"),
-	rEffPar(Pdelay,   7, rShort("delay"),
-		rPresets(85, 90, 95, 18, 9, 3, 3, 3, 19, 19, 55, 55), "Delay"),
-	rEffPar(Pfeedback,8, rShort("fb"),
-		rPresets(64, 64, 90, 90, 31, 62, 109, 54, 97, 17, 64, 80), "Feedback"),
-	rEffPar(Plrcross, 9, rShort("l/r"), rPresets(119, 19, 127, 127, 127),
-		rDefault(0), "Left/Right Crossover"),
-	rEffParOpt(Pflangemode, 10, rShort("mode"), rDefault(CHORUS), rOptions(CHORUS_MODES),
-		rPreset(10, TRIPLE), rPreset(11, DUAL),
-		"Chorus Mode"),
-	rEffParTF(Poutsub, 11, rShort("sub"),
-		rPreset(4, true), rPreset(7, true), rPreset(9, true),
-		rDefault(false), "Output Subtraction"),
-};
-#undef rBegin
-#undef rEnd
-#undef rObject
-
-Chorus::Chorus(EffectParams pars)
-:Effect(pars),
-lfo(pars.srate, pars.bufsize),
-maxdelay((int)(MAX_CHORUS_DELAY / 1000.0f * samplerate_f)),
-delaySample(memory.valloc<float>(maxdelay), memory.valloc<float>(maxdelay))
+Chorus::Chorus(float samplerate):
+bypass{},
+samplerate{samplerate},
+lfo{samplerate},
+Ppreset{},
+dlNew{}, drNew{},
+dlNew2{}, drNew2{},
+dlNew3{}, drNew3{},
+maxdelay{(int)(max_delay_time / 1000.0f * samplerate)},
+dlk{}, drk{}
 {
-	dlk = 0;
-	drk = 0;
-	setpreset(Ppreset);
-	changepar(1, 64);
-	lfo.effectlfoout(&lfol, &lfor);
-	dlNew = getdelay(lfol);
-	drNew = getdelay(lfor);
+	loadpreset(Ppreset);
 	cleanup();
-}
-
-Chorus::~Chorus()
-{
-	memory.devalloc(delaySample.l);
-	memory.devalloc(delaySample.r);
 }
 
 //get the delay value in samples; xlfo is the current lfo value
 float Chorus::getdelay(float xlfo)
 {
-	float result = (Pflangemode==FLANGE) ? 0 : (delay + xlfo * depth) * samplerate_f;
+	float result = (Pflangemode == ModeFlange) ? 0 : (delay + xlfo * depth) * samplerate;
 
 	//check if delay is too big (caused by bad setdelay() and setdepth()
-	if((result + 0.5f) >= maxdelay) {
-		cerr
-		<<
-		"WARNING: Chorus.cpp::getdelay(..) too big delay (see setdelay and setdepth funcs.)"
-		<< endl;
+	if (result + 0.5f >= maxdelay) {
 		result = maxdelay - 1.0f;
 	}
 	return result;
 }
 
-// sample
+float cinterpolate(const float *data, size_t len, float pos)
+{
+	const unsigned int i_pos = (int)pos;
+	const unsigned int l_pos = i_pos % len;
+	const unsigned int r_pos = (l_pos + 1) < len ? l_pos + 1 : 0;
+	const float rightness = pos - (float)i_pos;
+	return data[l_pos] + (data[r_pos] - data[l_pos]) * rightness;
+}
 
 inline float Chorus::getSample(float* delayline, float mdel, int dk)
 {
 	float samplePos = dk - mdel + float(maxdelay * 2); //where should I get the sample from
 	return cinterpolate(delayline, maxdelay, samplePos);
-
 }
 
-//Apply the effect
-void Chorus::out(const Stereo<float *> &input)
+void Chorus::process(float *inputL, float *inputR, uint16_t period)
 {
+	if (bypass) return;
+
+	if (wet == 0.0f) return;
+
+	if (lfo.nPeriod != period) lfo.updateparams(period);
+
+	float lfol, lfor;
+	float output;
 	// store old delay value for linear interpolation
-	dlHist = dlNew;
-	drHist = drNew;
+	float dlHist = dlNew, drHist = drNew;
+	float dlHist2 = dlNew2, drHist2 = drNew2;
+	float dlHist3 = dlNew3, drHist3 = drNew3;
+
 	// calculate new lfo values
 	lfo.effectlfoout(&lfol, &lfor);
 	// calculate new delay values
 	dlNew = getdelay(lfol);
 	drNew = getdelay(lfor);
 	float fbComp = fb;
-	if (Pflangemode == DUAL) // ensemble mode
-	{
+	
+	switch (Pflangemode) {
+	case ModeDual: // ensemble mode
 		// same for second member for ensemble mode with 180° phase offset
-		dlHist2 = dlNew2;
-		drHist2 = drNew2;
 		lfo.effectlfoout(&lfol, &lfor, PHASE_180);
 		dlNew2 = getdelay(lfol);
 		drNew2 = getdelay(lfor);
 		fbComp /= 2.0f;
-	}
-
-	if (Pflangemode == TRIPLE) // ensemble mode
-	{
+		break;
+	case ModeTriple: // ensemble mode
 		// same for second member for ensemble mode with 120° phase offset
-		dlHist2 = dlNew2;
-		drHist2 = drNew2;
 		lfo.effectlfoout(&lfol, &lfor, PHASE_120);
 		dlNew2 = getdelay(lfol);
 		drNew2 = getdelay(lfor);
 
 		// same for third member for ensemble mode with 240° phase offset
-		dlHist3 = dlNew3;
-		drHist3 = drNew3;
 		lfo.effectlfoout(&lfol, &lfor, PHASE_240);
 		dlNew3 = getdelay(lfol);
 		drNew3 = getdelay(lfor);
 		// reduce amplitude to match single phase modes
 		// 0.85 * fbComp / 3
 		fbComp /= 3.53f;
+		break;
+	default:
+		break;
 	}
 
-	for(int i = 0; i < buffersize; ++i) {
-		float inL = input.l[i];
-		float inR = input.r[i];
+	for(int i = 0; i < period; ++i) {
+		float inL = inputL[i];
+		float inR = inputR[i];
+
 		//LRcross
-		Stereo<float> tmpc(inL, inR);
-		inL = tmpc.l * (1.0f - lrcross) + tmpc.r * lrcross;
-		inR = tmpc.r * (1.0f - lrcross) + tmpc.l * lrcross;
+		float tmpL = inL;
+		float tmpR = inR;
+		inL = tmpL * (1.0f - lrcross) + tmpR * lrcross;
+		inR = tmpR * (1.0f - lrcross) + tmpL * lrcross;
 
 		//Left channel
-		// reset output accumulator
-		output = 0.0f;
+
 		// increase delay line writing position and handle turnaround
 		if(++dlk >= maxdelay)
 			dlk = 0;
 		// linear interpolate from old to new value over length of the buffer
-		float dl = (dlHist * (buffersize - i) + dlNew * i) / buffersize_f;
+		float dl = (dlHist * (period - i) + dlNew * i) / period;
 		// get sample with that delay from delay line and add to output accumulator
-		output += getSample(delaySample.l, dl, dlk);
-		switch (Pflangemode) {
-		case DUAL:
-			// calculate and apply delay for second ensemble member
-			dl = (dlHist2 * (buffersize - i) + dlNew2 * i) / buffersize_f;
-			output += getSample(delaySample.l, dl, dlk);
-			break;
-		case TRIPLE:
-			// calculate and apply delay for second ensemble member
-			dl = (dlHist2 * (buffersize - i) + dlNew2 * i) / buffersize_f;
-			output += getSample(delaySample.l, dl, dlk);
-			// same for third ensemble member
-			dl = (dlHist3 * (buffersize - i) + dlNew3 * i) / buffersize_f;
-			output += getSample(delaySample.l, dl, dlk);
-			break;
-		default:
-			// nothing to do for standard chorus
-			break;
-		}
-		// store current input + feedback to delay line at writing position
-		delaySample.l[dlk] = inL + output * fbComp;
-		// write output to output interface
-		efxoutl[i] = output;
+		output = getSample(delaySampleL, dl, dlk);
 
-		//Right channel
-		output = 0.0f;
-		if(++drk >= maxdelay)
-			drk = 0;
-		float dr = (drHist * (buffersize - i) + drNew * i) / buffersize_f;
-		output += getSample(delaySample.r, dr, drk);
 		switch (Pflangemode) {
-		case DUAL:
+		case ModeDual:
 			// calculate and apply delay for second ensemble member
-			dr = (drHist2 * (buffersize - i) + drNew2 * i) / buffersize_f;
-			output += getSample(delaySample.r, dr, drk);
+			dl = (dlHist2 * (period - i) + dlNew2 * i) / period;
+			output += getSample(delaySampleL, dl, dlk);
 			break;
-		case TRIPLE:
+		case ModeTriple:
 			// calculate and apply delay for second ensemble member
-			dr = (drHist2 * (buffersize - i) + drNew2 * i) / buffersize_f;
-			output += getSample(delaySample.r, dr, drk);
+			dl = (dlHist2 * (period - i) + dlNew2 * i) / period;
+			output += getSample(delaySampleL, dl, dlk);
 			// same for third ensemble member
-			dr = (drHist3 * (buffersize - i) + drNew3 * i) / buffersize_f;
-			output += getSample(delaySample.r, dr, drk);
+			dl = (dlHist3 * (period - i) + dlNew3 * i) / period;
+			output += getSample(delaySampleL, dl, dlk);
 			// reduce amplitude to match single phase modes
 			output *= 0.85f;
 			break;
@@ -238,30 +158,56 @@ void Chorus::out(const Stereo<float *> &input)
 			break;
 		}
 
-		delaySample.r[drk] = inR + output * fbComp;
-		efxoutr[i] = output;
-	}
+		delaySampleL[dlk] = inL + output * fbComp;
 
-	if(Poutsub)
-		for(int i = 0; i < buffersize; ++i) {
-			efxoutl[i] *= -1.0f;
-			efxoutr[i] *= -1.0f;
+		if (Psubtractive) output *= -1.0f;
+		output *= panl;
+		inputL[i] = inputL[i] * dry + output * wet;
+
+		//Right channel
+
+		// increase delay line writing position and handle turnaround
+		if(++drk >= maxdelay)
+			drk = 0;
+		// linear interpolate from old to new value over length of the buffer
+		float dr = (drHist * (period - i) + drNew * i) / period;
+		output = getSample(delaySampleR, dr, drk);
+
+		switch (Pflangemode) {
+		case ModeDual:
+			// calculate and apply delay for second ensemble member
+			dr = (drHist2 * (period - i) + drNew2 * i) / period;
+			output += getSample(delaySampleR, dr, drk);
+			break;
+		case ModeTriple:
+			// calculate and apply delay for second ensemble member
+			dr = (drHist2 * (period - i) + drNew2 * i) / period;
+			output += getSample(delaySampleR, dr, drk);
+			// same for third ensemble member
+			dr = (drHist3 * (period - i) + drNew3 * i) / period;
+			output += getSample(delaySampleR, dr, drk);
+			// reduce amplitude to match single phase modes
+			output *= 0.85f;
+			break;
+		default:
+			// nothing to do for standard chorus
+			break;
 		}
 
-	for(int i = 0; i < buffersize; ++i) {
-		efxoutl[i] *= pangainL;
-		efxoutr[i] *= pangainR;
+		delaySampleR[drk] = inR + output * fbComp;
+
+		if (Psubtractive) output *= -1.0f;
+		output *= panr;
+		inputR[i] = inputR[i] * dry + output * wet;
 	}
 }
 
-//Cleanup the effect
-void Chorus::cleanup(void)
+void Chorus::cleanup()
 {
-	memset(delaySample.l, 0, maxdelay * sizeof(float));
-	memset(delaySample.r, 0, maxdelay * sizeof(float));
+	memset(delaySampleL, 0, sizeof delaySampleL);
+	memset(delaySampleR, 0, sizeof delaySampleR);
 }
 
-//Parameter control
 void Chorus::setdepth(unsigned char _Pdepth)
 {
 	Pdepth = _Pdepth;
@@ -280,120 +226,325 @@ void Chorus::setfb(unsigned char _Pfb)
 	fb  = (Pfb - 64.0f) / 64.1f;
 }
 
-void Chorus::setvolume(unsigned char _Pvolume)
+void Chorus::setlrcross(unsigned char _Plrcross)
 {
-	Pvolume   = _Pvolume;
-	outvolume = Pvolume / 127.0f;
-	volume    = (!insertion) ? 1.0f : outvolume;
+	Plrcross = _Plrcross;
+	lrcross = (float)Plrcross / 127.0f;
+};
+
+void Chorus::setmix(unsigned char _Pmix)
+{
+	Pmix = _Pmix;
+
+	float mix = (float)Pmix / 100.0f;
+	if (mix < 0.5f) {
+		dry = 1.0f;
+		wet = mix * 2.0f;
+	} else {
+		dry = (1.0f - mix) * 2.0f;
+		wet = 1.0f;
+	}
 }
 
-unsigned char Chorus::getpresetpar(unsigned char npreset, unsigned int npar)
+void Chorus::setpanning(unsigned char _Ppanning)
 {
-#define	PRESET_SIZE 12
-#define	NUM_PRESETS 12
-	static const unsigned char presets[NUM_PRESETS][PRESET_SIZE] = {
-		//Chorus1
-		{64, 64, 50, 0,   0, 90, 40,  85, 64,  119, 0, 0},
-		//Chorus2
-		{64, 64, 45, 0,   0, 98, 56,  90, 64,  19,  0, 0},
-		//Chorus3
-		{64, 64, 29, 0,   1, 42, 97,  95, 90,  127, 0, 0},
-		//Celeste1
-		{64, 64, 26, 0,   0, 42, 115, 18, 90,  127, 0, 0},
-		//Celeste2
-		{64, 64, 29, 117, 0, 50, 115, 9,  31,  127, 0, 1},
-		//Flange1
-		{64, 64, 57, 0,   0, 60, 23,  3,  62,  0,   0, 0},
-		//Flange2
-		{64, 64, 33, 34,  1, 40, 35,  3,  109, 0,   0, 0},
-		//Flange3
-		{64, 64, 53, 34,  1, 94, 35,  3,  54,  0,   0, 1},
-		//Flange4
-		{64, 64, 40, 0,   1, 62, 12,  19, 97,  0,   0, 0},
-		//Flange5
-		{64, 64, 55, 105, 0, 24, 39,  19, 17,  0,   0, 1},
-		//Ensemble
-		{127, 64, 68, 25, 1, 24, 35,  55, 64,  0,   TRIPLE, 0},
-		//Dual
-		{127, 64, 55, 25, 1, 24, 32,  55, 80,  0,   DUAL, 0}
-	};
-	if(npreset < NUM_PRESETS && npar < PRESET_SIZE) {
-		return presets[npreset][npar];
+	Ppanning = _Ppanning;
+	float panning = ((float)Ppanning - .5f)/ 127.0f;
+	panl = cosf(panning * PI / 2.0f);
+	panr = cosf((1.0f - panning) * PI / 2.0f);
+};
+
+std::string Chorus::ToChorusMode(int nValue, int nWidth)
+{
+	switch(nValue) {
+	case ModeDefault: return "Default";
+	case ModeFlange: return "Flange";
+	case ModeDual: return "Dual";
+	case ModeTriple: return "Triple";
+	default: return "Invalid";
 	}
+}
+
+std::string Chorus::ToPresetName(int nValue, int nWidth)
+{
+	return ToPresetNameChar(nValue);
+}
+
+static const char *PresetNames[Chorus::presets_num] = {
+	"Init",
+	"Chorus1",
+	"Chorus2",
+	"Chorus3",
+	"Celeste1",
+	"Celeste2",
+	"Flange1",
+	"Flange2",
+	"Flange3",
+	"Flange4",
+	"Flange5",
+	"Ensemble1",
+	"Ensemble2",
+};
+
+const char * Chorus::ToPresetNameChar(int nValue)
+{
+	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	return PresetNames[nValue];
+}
+
+unsigned Chorus::ToIDFromPreset(const char *preset)
+{
+	for (unsigned i = 0; i < presets_num; ++i)
+		if (strcmp(PresetNames[i], preset) == 0)
+			return i;
+
 	return 0;
 }
 
-void Chorus::setpreset(unsigned char npreset)
+void Chorus::loadpreset(unsigned char npreset)
 {
-	if(npreset >= NUM_PRESETS)
-		npreset = NUM_PRESETS - 1;
-	for(int n = 0; n != 128; n++)
-		changepar(n, getpresetpar(npreset, n));
+	const unsigned char presets[presets_num][ParameterCount] = {
+		{	//Init
+			[ParameterMix] = 0,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 14,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 40,
+			[ParameterDelay] = 85,
+			[ParameterFeedback] = 64,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Chorus1
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 50,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 90,
+			[ParameterDepth] = 40,
+			[ParameterDelay] = 85,
+			[ParameterFeedback] = 64,
+			[ParameterLRCross] = 119,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Chorus2
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 45,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 98,
+			[ParameterDepth] = 56,
+			[ParameterDelay] = 90,
+			[ParameterFeedback] = 64,
+			[ParameterLRCross] = 19,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Chorus3
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 29,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 42,
+			[ParameterDepth] = 97,
+			[ParameterDelay] = 95,
+			[ParameterFeedback] = 90,
+			[ParameterLRCross] = 127,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Celeste1
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 26,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 42,
+			[ParameterDepth] = 115,
+			[ParameterDelay] = 18,
+			[ParameterFeedback] = 90,
+			[ParameterLRCross] = 127,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Celeste2
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 29,
+			[ParameterLFORandomness] = 117,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 50,
+			[ParameterDepth] = 115,
+			[ParameterDelay] = 9,
+			[ParameterFeedback] = 31,
+			[ParameterLRCross] = 127,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 1,
+		},
+		{	//Flange1
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 57,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 60,
+			[ParameterDepth] = 23,
+			[ParameterDelay] = 3,
+			[ParameterFeedback] = 62,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Flange2
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 33,
+			[ParameterLFORandomness] = 34,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 40,
+			[ParameterDepth] = 35,
+			[ParameterDelay] = 3,
+			[ParameterFeedback] = 109,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Flange3
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 53,
+			[ParameterLFORandomness] = 34,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 94,
+			[ParameterDepth] = 35,
+			[ParameterDelay] = 3,
+			[ParameterFeedback] = 54,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 1,
+		},
+		{	//Flange4
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 40,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 62,
+			[ParameterDepth] = 12,
+			[ParameterDelay] = 19,
+			[ParameterFeedback] = 97,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Flange5
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 55,
+			[ParameterLFORandomness] = 105,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 24,
+			[ParameterDepth] = 39,
+			[ParameterDelay] = 19,
+			[ParameterFeedback] = 17,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDefault,
+			[ParameterSubtractive] = 1,
+		},
+		{	//Ensemble1
+			[ParameterMix] = 100,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 68,
+			[ParameterLFORandomness] = 25,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 24,
+			[ParameterDepth] = 35,
+			[ParameterDelay] = 55,
+			[ParameterFeedback] = 64,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeTriple,
+			[ParameterSubtractive] = 0,
+		},
+		{	//Ensemble2
+			[ParameterMix] = 100,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 55,
+			[ParameterLFORandomness] = 25,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 24,
+			[ParameterDepth] = 32,
+			[ParameterDelay] = 55,
+			[ParameterFeedback] = 80,
+			[ParameterLRCross] = 0,
+			[ParameterMode] = ModeDual,
+			[ParameterSubtractive] = 0,
+		},
+	};
+
+	if (npreset >= presets_num)
+		npreset = presets_num - 1;
+
+	for (int n = 0; n < ParameterCount; n++)
+		changepar(n, presets[npreset][n]);
+
 	Ppreset = npreset;
 }
 
 void Chorus::changepar(int npar, unsigned char value)
 {
 	switch(npar) {
-	case 0:
-		setvolume(value);
-		break;
-	case 1:
-		setpanning(value);
-		break;
-	case 2:
+	case ParameterMix: setmix(value); break;
+	case ParameterPanning: setpanning(value); break;
+	case ParameterLFOFreq:
 		lfo.Pfreq = value;
-		lfo.updateparams();
+		lfo.updateparams(lfo.nPeriod);
 		break;
-	case 3:
+	case ParameterLFORandomness:
 		lfo.Prandomness = value;
-		lfo.updateparams();
+		lfo.updateparams(lfo.nPeriod);
 		break;
-	case 4:
+	case ParameterLFOType:
 		lfo.PLFOtype = value;
-		lfo.updateparams();
+		lfo.updateparams(lfo.nPeriod);
 		break;
-	case 5:
+	case ParameterLFOLRDelay:
 		lfo.Pstereo = value;
-		lfo.updateparams();
+		lfo.updateparams(lfo.nPeriod);
 		break;
-	case 6:
-		setdepth(value);
+	case ParameterDepth: setdepth(value); break;
+	case ParameterDelay: setdelay(value); break;
+	case ParameterFeedback: setfb(value); break;
+	case ParameterLRCross: setlrcross(value); break;
+	case ParameterMode:
+		lfo.updateparams(lfo.nPeriod);
+		Pflangemode = (value >= ModeCount) ? ModeCount - 1 : value;
 		break;
-	case 7:
-		setdelay(value);
-		break;
-	case 8:
-		setfb(value);
-		break;
-	case 9:
-		setlrcross(value);
-		break;
-	case 10:
-		lfo.updateparams();
-		Pflangemode = (value > 3) ? 3 : value;
-		break;
-	case 11:
-		Poutsub = (value > 1) ? 1 : value;
-		break;
+	case ParameterSubtractive: Psubtractive = (value > 1) ? 1 : value; break;
 	}
 }
 
 unsigned char Chorus::getpar(int npar) const
 {
 	switch(npar) {
-	case 0:  return Pvolume;
-	case 1:  return Ppanning;
-	case 2:  return lfo.Pfreq;
-	case 3:  return lfo.Prandomness;
-	case 4:  return lfo.PLFOtype;
-	case 5:  return lfo.Pstereo;
-	case 6:  return Pdepth;
-	case 7:  return Pdelay;
-	case 8:  return Pfb;
-	case 9:  return Plrcross;
-	case 10: return Pflangemode;
-	case 11: return Poutsub;
+	case ParameterMix: return Pmix;
+	case ParameterPanning: return Ppanning;
+	case ParameterLFOFreq: return lfo.Pfreq;
+	case ParameterLFORandomness: return lfo.Prandomness;
+	case ParameterLFOType: return lfo.PLFOtype;
+	case ParameterLFOLRDelay: return lfo.Pstereo;
+	case ParameterDepth: return Pdepth;
+	case ParameterDelay: return Pdelay;
+	case ParameterFeedback: return Pfb;
+	case ParameterLRCross: return Plrcross;
+	case ParameterMode: return Pflangemode;
+	case ParameterSubtractive: return Psubtractive;
 	default: return 0;
 	}
 }
