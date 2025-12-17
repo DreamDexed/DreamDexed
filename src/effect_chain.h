@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "zyn/APhaser.h"
+#include "zyn/Chorus.h"
 #include "zyn/Phaser.h"
 
 #include "effect_3bandeq.h"
@@ -19,6 +20,7 @@ public:
 
         AudioFXChain(float samplerate):
         yk_chorus{samplerate},
+        zyn_chorus{samplerate},
         zyn_aphaser{samplerate},
         zyn_phaser{samplerate},
         dream_delay{samplerate},
@@ -30,6 +32,7 @@ public:
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { zyn_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_phaser.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { dream_delay.process(inputL, inputR, len); },
@@ -62,6 +65,7 @@ public:
 
         void resetState()
         {
+                zyn_chorus.cleanup();
                 zyn_aphaser.cleanup();
                 zyn_phaser.cleanup();
                 dream_delay.resetState();
@@ -82,6 +86,7 @@ public:
         }
 
         AudioEffectYKChorus yk_chorus;
+        zyn::Chorus zyn_chorus;
         zyn::APhaser zyn_aphaser;
         zyn::Phaser zyn_phaser;
         AudioEffectDreamDelay dream_delay;

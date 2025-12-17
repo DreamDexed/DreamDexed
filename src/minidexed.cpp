@@ -1168,6 +1168,33 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->yk_chorus.bypass = nValue;
 		break;
 
+	case FX::FXParameterZynChorusPreset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_chorus.loadpreset (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynChorusMix:
+	case FX::FXParameterZynChorusPanning:
+	case FX::FXParameterZynChorusLFOFreq:
+	case FX::FXParameterZynChorusLFORandomness:
+	case FX::FXParameterZynChorusLFOType:
+	case FX::FXParameterZynChorusLFOLRDelay:
+	case FX::FXParameterZynChorusDepth:
+	case FX::FXParameterZynChorusDelay:
+	case FX::FXParameterZynChorusFeedback:
+	case FX::FXParameterZynChorusLRCross:
+	case FX::FXParameterZynChorusMode:
+	case FX::FXParameterZynChorusSubtractive:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_chorus.changepar(Parameter - FX::FXParameterZynChorusMix, nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynChorusBypass:
+		fx_chain[nFX]->zyn_chorus.bypass = nValue;
+		break;
+
 	case FX::FXParameterZynAPhaserPreset:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->zyn_aphaser.loadpreset (nValue);
@@ -1499,6 +1526,10 @@ int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
 	assert (nFX < CConfig::FXChains);
 	assert (Parameter < FX::FXParameterUnknown);
 
+	if (Parameter >= FX::FXParameterZynChorusMix && Parameter <= FX::FXParameterZynChorusSubtractive)
+	{
+		return fx_chain[nFX]->zyn_chorus.getpar (Parameter - FX::FXParameterZynChorusMix);
+	}
 
 	if (Parameter >= FX::FXParameterZynAPhaserMix && Parameter <= FX::FXParameterZynAPhaserHyper)
 	{

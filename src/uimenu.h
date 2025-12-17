@@ -191,6 +191,7 @@ private:
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_YKChorusMenu[];
+	static const TMenuItem s_ZynChorusMenu[];
 	static const TMenuItem s_ZynAPhaserMenu[];
 	static const TMenuItem s_ZynPhaserMenu[];
 	static const TMenuItem s_DreamDelayMenu[];

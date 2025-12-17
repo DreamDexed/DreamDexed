@@ -207,6 +207,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 {
 	{"None"},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
+	{"ZynChorus",		MenuHandler,		s_ZynChorusMenu},
 	{"ZynAPhaser",		MenuHandler,		s_ZynAPhaserMenu},
 	{"ZynPhaser",		MenuHandler,		s_ZynPhaserMenu},
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
@@ -225,6 +226,25 @@ const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 	{"LFO Rate I",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate1},
 	{"LFO Rate II",	EditFXParameter2,	0,	FX::FXParameterYKChorusLFORate2},
 	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterYKChorusBypass},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ZynChorusMenu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynChorusPreset},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterZynChorusMix},
+	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynChorusPanning},
+	{"LFO Freq",	EditFXParameter2,	0,	FX::FXParameterZynChorusLFOFreq},
+	{"LFO Rndness",	EditFXParameter2,	0,	FX::FXParameterZynChorusLFORandomness},
+	{"LFO Type",	EditFXParameter2,	0,	FX::FXParameterZynChorusLFOType},
+	{"LFO LR Delay",EditFXParameter2,	0,	FX::FXParameterZynChorusLFOLRDelay},
+	{"Depth",	EditFXParameter2,	0,	FX::FXParameterZynChorusDepth},
+	{"Delay",	EditFXParameter2,	0,	FX::FXParameterZynChorusDelay},
+	{"Feedback",	EditFXParameter2,	0,	FX::FXParameterZynChorusFeedback},
+	{"LR Cross",	EditFXParameter2,	0,	FX::FXParameterZynChorusLRCross},
+	{"Mode",	EditFXParameter2,	0,	FX::FXParameterZynChorusMode},
+	{"Subtractive",	EditFXParameter2,	0,	FX::FXParameterZynChorusSubtractive},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynChorusBypass},
 	{0}
 };
 
