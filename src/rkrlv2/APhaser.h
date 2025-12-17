@@ -28,8 +28,9 @@
 
 #include <atomic>
 
-#include "global.h"
 #include "EffectLFO.h"
+
+namespace zyn {
 
 class APhaser
 {
@@ -43,6 +44,7 @@ public:
 
 	std::atomic<bool> bypass;
 
+	static constexpr unsigned max_stages = 12;
 	static constexpr unsigned presets_num = 7;
 	enum Parameter {
 		ParameterMix,
@@ -90,14 +92,16 @@ private:
 	//Internal Variables
 	bool barber;			//Barber pole phasing flag
 	float dry, wet, distortion, fb, width, mismatchpct, depth;
-	float lxn1[MAX_PHASER_STAGES];
-	float lyn1[MAX_PHASER_STAGES];
-	float rxn1[MAX_PHASER_STAGES];
-	float ryn1[MAX_PHASER_STAGES];
-	const float offset[MAX_PHASER_STAGES];	//model mismatch between JFET devices
+	float lxn1[max_stages];
+	float lyn1[max_stages];
+	float rxn1[max_stages];
+	float ryn1[max_stages];
+	const float offset[max_stages];	//model mismatch between JFET devices
 	float oldlgain, oldrgain, fbl, fbr;
 
 	const float Rmin;	// 2N5457 typical on resistance at Vgs = 0
 	const float Rmx;	// Rmin/Rmax to avoid division in loop
 	const float CFs;	// A constant derived from capacitor and resistor relationships
 };
+
+}

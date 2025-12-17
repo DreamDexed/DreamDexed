@@ -33,7 +33,12 @@
 
 */
 
+#include <cstring>
+#include <math.h>
+
 #include "APhaser.h"
+
+namespace zyn {
 
 #define PHASER_LFO_SHAPE 2
 #define ONE_  0.99999f        // To prevent LFO ever reaching 1.0 for filter stability purposes
@@ -124,7 +129,6 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 			float lgain = (CFs - bl)/(CFs + bl);
 
 			lyn1[j] = lgain * (lxn + lyn1[j]) - lxn1[j];
-			lyn1[j] += DENORMAL_GUARD;
 			hpfl = lyn1[j] + (1.0f-lgain)*lxn1[j];  //high pass filter -- Distortion depends on the high-pass part of the AP stage.
 
 			lxn1[j] = lxn;
@@ -142,7 +146,6 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 			float rgain = (CFs - br)/(CFs + br);
 
 			ryn1[j] = rgain * (rxn + ryn1[j]) - rxn1[j];
-			ryn1[j] += DENORMAL_GUARD;
 			hpfr = ryn1[j] + (1.0f-rgain)*rxn1[j];  //high pass filter
 
 			rxn1[j] = rxn;
@@ -216,8 +219,8 @@ void APhaser::setmismatch(int Pmismatch)
 
 void APhaser::setstages(int Pstages)
 {
-	if (Pstages >= MAX_PHASER_STAGES)
-		Pstages = MAX_PHASER_STAGES ;
+	if ((unsigned int)Pstages > max_stages)
+		Pstages = max_stages;
 	this->Pstages = Pstages;
 
 	cleanup ();
@@ -231,21 +234,132 @@ void APhaser::setdepth(int Pdepth)
 
 void APhaser::loadpreset(unsigned npreset)
 {
-	const int PRESET_SIZE = 13;
-	int presets[presets_num][PRESET_SIZE] = {
-		{0, 20, 14, 0, 1, 64, 110, 40, 4, 10, 0, 64, 1},
-		{50, 20, 14, 0, 1, 64, 110, 40, 4, 10, 0, 64, 1},
-		{50, 20, 14, 5, 1, 64, 110, 40, 6, 10, 0, 70, 1},
-		{50, 20, 9, 0, 0, 64, 40, 40, 8, 10, 0, 60, 0},
-		{50, 20, 14, 10, 0, 64, 110, 80, 7, 10, 1, 45, 1},
-		{20, 20, 240, 10, 0, 64, 25, 16, 8, 100, 0, 25, 0},
-		{50, 20, 1, 10, 1, 64, 110, 40, 12, 10, 0, 70, 1}
+	const int presets[presets_num][ParameterCount] = {
+		{
+			[ParameterMix] = 0,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 14,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 64,
+			[ParameterFeedback] = 40,
+			[ParameterStages] = 4,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 110,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 1,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 14,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 64,
+			[ParameterFeedback] = 40,
+			[ParameterStages] = 4,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 110,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 1,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 14,
+			[ParameterLFORandomness] = 5,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 70,
+			[ParameterFeedback] = 40,
+			[ParameterStages] = 6,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 110,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 1,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 9,
+			[ParameterLFORandomness] = 0,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 60,
+			[ParameterFeedback] = 40,
+			[ParameterStages] = 8,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 40,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 0,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 14,
+			[ParameterLFORandomness] = 10,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 45,
+			[ParameterFeedback] = 80,
+			[ParameterStages] = 7,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 1,
+			[ParameterWidth] = 110,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 1,
+		},
+		{
+			[ParameterMix] = 20,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 240,
+			[ParameterLFORandomness] = 10,
+			[ParameterLFOType] = 0,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 25,
+			[ParameterFeedback] = 16,
+			[ParameterStages] = 8,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 15,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 100,
+			[ParameterHyper] = 0,
+		},
+		{
+			[ParameterMix] = 50,
+			[ParameterPanning] = 64,
+			[ParameterLFOFreq] = 1,
+			[ParameterLFORandomness] = 10,
+			[ParameterLFOType] = 1,
+			[ParameterLFOLRDelay] = 64,
+			[ParameterDepth] = 70,
+			[ParameterFeedback] = 40,
+			[ParameterStages] = 12,
+			[ParameterLRCross] = 0,
+			[ParameterSubtractive] = 0,
+			[ParameterWidth] = 110,
+			[ParameterDistortion] = 20,
+			[ParameterMismatch] = 10,
+			[ParameterHyper] = 1,
+		},
 	};
 
 	if (npreset >= presets_num)
 		npreset = presets_num;
 
-	for (int n = 0; n < PRESET_SIZE; n++)
+	for (int n = 0; n < ParameterCount; n++)
 		changepar(n, presets[npreset][n]);
 
 	Ppreset = npreset;
@@ -325,3 +439,5 @@ int APhaser::getpar(unsigned npar)
 	default: return 0;
 	};
 };
+
+}
