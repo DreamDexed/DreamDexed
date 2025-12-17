@@ -5,6 +5,7 @@
 #include "effect_cloudseed2.h"
 #include "effect_compressor.h"
 #include "zyn/APhaser.h"
+#include "zyn/Chorus.h"
 #include "zyn/Phaser.h"
 #include "zyn/EffectLFO.h"
 
@@ -112,6 +113,20 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	100,	50,	1,	"YKChorusLFORate1"},
 	{0,	100,	83,	1,	"YKChorusLFORate2"},
 	{0,	1,	0,	1,	"YKChorusBypass",	ToOnOff},
+	{0,	zyn::Chorus::presets_num -1,	0,	1,	"ZynChorusPreset", zyn::Chorus::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0,	100,	0,	1,	"ZynChorusMix",		ToDryWet},
+	{0,	127,	64,	1,	"ZynChorusPanning"},
+	{1,	600,	14,	1,	"ZynChorusLFOFreq"},
+	{0,	127,	0,	1,	"ZynChorusLFORandomness"},
+	{0,	11,	1,	1,	"ZynChorusLFOType",	zyn::EffectLFO::ToLFOType},
+	{0,	127,	64,	1,	"ZynChorusLFOLRDelay"},
+	{0,	127,	40,	1,	"ZynChorusDepth"},
+	{0,	127,	85,	1,	"ZynChorusDelay"},
+	{0,	127,	64,	1,	"ZynChorusFeedback"},
+	{0,	127,	0,	1,	"ZynChorusLRCross"},
+	{0,	3,	0,	1,	"ZynChorusMode",	zyn::Chorus::ToChorusMode},
+	{0,	1,	0,	1,	"ZynChorusSubtractive",	ToOnOff},
+	{0,	1,	0,	1,	"ZynChorusBypass",	ToOnOff},
 	{0,	zyn::APhaser::presets_num - 1,	0,	1,	"ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynAPhaserMix",	ToDryWet},
 	{0,	127,	64,	1,	"ZynAPhaserPanning"},
@@ -244,6 +259,8 @@ int FX::getIDFromName(TFXParameter param, const char* name)
 		case FX::FXParameterSlot1:
 		case FX::FXParameterSlot2:
 			return getIDFromEffectName(name);
+		case FX::FXParameterZynChorusPreset:
+			return zyn::Chorus::ToIDFromPreset(name);
 		case FX::FXParameterZynAPhaserPreset:
 			return zyn::APhaser::ToIDFromPreset(name);
 		case FX::FXParameterZynPhaserPreset:
@@ -265,6 +282,8 @@ const char *FX::getNameFromID(TFXParameter param, int nID)
 		case FX::FXParameterSlot2:
 			assert (nID < FX::effects_num);
 			return FX::s_effects[nID].Name;
+		case FX::FXParameterZynChorusPreset:
+			return zyn::Chorus::ToPresetNameChar(nID);
 		case FX::FXParameterZynAPhaserPreset:
 			return zyn::APhaser::ToPresetNameChar(nID);
 		case FX::FXParameterZynPhaserPreset:
