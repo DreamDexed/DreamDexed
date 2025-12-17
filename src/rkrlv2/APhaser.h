@@ -65,6 +65,8 @@ public:
 		ParameterCount
 	};
 	static std::string ToPresetName(int nValue, int nWidth);
+	static const char * ToPresetNameChar(int nValue);
+	static unsigned ToIDFromPreset(const char *preset);
 
 private:
 	EffectLFO lfo;		//Phaser modulator

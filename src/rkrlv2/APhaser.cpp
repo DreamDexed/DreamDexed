@@ -33,6 +33,7 @@
 
 */
 
+#include <cassert>
 #include <cstring>
 #include <math.h>
 
@@ -63,11 +64,6 @@ CFs{2.0f * samplerate * 0.00000005f /* C 50 nF*/}
 	loadpreset(Ppreset);//this will get done before out is run
 	cleanup();
 };
-
-std::string APhaser::ToPresetName(int nValue, int nWidth)
-{
-	return nValue == 0 ? "INIT" : std::to_string(nValue);
-}
 
 void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 {
@@ -255,6 +251,36 @@ void APhaser::setmismatch(int Pmismatch)
 	this->Pmismatch = Pmismatch;
 	mismatchpct = (float)Pmismatch / 127.0f;
 };
+
+static const char *PresetNames[APhaser::presets_num] = {
+	"Init",
+	"APhaser1",
+	"APhaser2",
+	"APhaser3",
+	"APhaser4",
+	"APhaser5",
+	"APhaser6",
+};
+
+const char * APhaser::ToPresetNameChar(int nValue)
+{
+	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	return PresetNames[nValue];
+}
+
+std::string APhaser::ToPresetName(int nValue, int nWidth)
+{
+	return ToPresetNameChar(nValue);
+}
+
+unsigned APhaser::ToIDFromPreset(const char *preset)
+{
+	for (unsigned i = 0; i < presets_num; ++i)
+		if (strcmp(PresetNames[i], preset) == 0)
+			return i;
+
+	return 0;
+}
 
 void APhaser::loadpreset(unsigned npreset)
 {
