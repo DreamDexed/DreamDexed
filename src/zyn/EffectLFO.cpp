@@ -23,6 +23,7 @@
 
 */
 
+#include <cassert>
 #include <math.h>
 
 #include "EffectLFO.h"
@@ -33,10 +34,10 @@ namespace zyn {
 #define RND (rand()/(RAND_MAX+1.0))
 #define RND1 (((float) rand())/(((float) RAND_MAX)+1.0f))
 
-EffectLFO::EffectLFO(float sample_rate):
+EffectLFO::EffectLFO(float samplerate):
 nPeriod{256} //this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
 {
-	fSAMPLE_RATE = sample_rate;
+	fSAMPLE_RATE = samplerate;
 	xl = 0.0;
 	xr = 0.0;
 	Pfreq = 40;
@@ -49,10 +50,10 @@ nPeriod{256} //this is our best guess at what it will be, later we'll correct it
 	a = 10.0f;
 	b = 28.0f;
 	c = 8.0f / 5.0f;
-	scale = 1.0f/36.0f;
+	scale = 1.0f / 36.0f;
 	ratediv = 0.1f;
 	holdflag = 0;
-	tca = iperiod/(iperiod + 0.02);  //20ms default
+	tca = iperiod / (iperiod + 0.02f);  //20ms default
 	tcb = 1.0f - tca;
 	rreg = lreg = oldrreg = oldlreg = 0.0f;
 	xlreg = xrreg = 0.0f;
@@ -91,7 +92,7 @@ void EffectLFO::updateparams(uint16_t period)
 	//must update several parameters once we actually know the period
 	iperiod = fPERIOD/fSAMPLE_RATE;
 	h = iperiod;
-	tca = iperiod/(iperiod + 0.02);  //20ms default
+	tca = iperiod / (iperiod + 0.02f);  //20ms default
 	tcb = 1.0f - tca;
 
 
@@ -112,10 +113,10 @@ void EffectLFO::updateparams(uint16_t period)
 
 	xr = fmodf(xl + ((float)Pstereo - 64.0f) / 127.0f + 1.0f, 1.0f);
 
-	if ((h = incx*ratediv) > 0.02) h = 0.02;  //keeps it stable
+	if ((h = incx * ratediv) > 0.02) h = 0.02f;  //keeps it stable
 
-	a = 10.0f + (((float) RND) - 0.5f)*8.0f;
-	b = 28.0f + (((float) RND) - 0.5f)*12.0f;
+	a = 10.0f + (((float) RND) - 0.5f) * 8.0f;
+	b = 28.0f + (((float) RND) - 0.5f) * 12.0f;
 	c = 1.25f + 3.0f * ((float) RND);
 
 	// printf("incx %f x0 %f y0 %f z0 %f out %f c %f b %f a %f\n",incx,x0,y0,z0, (2.0f * radius - 1.0f), c, b, a);
@@ -124,25 +125,28 @@ void EffectLFO::updateparams(uint16_t period)
 	z0 = 0.2f;
 	x1 = y1 = z1 = radius = 0.0f;
 
-	float tmp = 6.0f/((float) Pfreq);  //S/H time attack  0.2*60=12.0
-	tca = iperiod/(iperiod + tmp);  //
+	float tmp = 6.0f / ((float) Pfreq);  //S/H time attack  0.2*60=12.0
+	tca = iperiod / (iperiod + tmp);  //
 	tcb = 1.0f - tca;
-	maxrate = 4.0f*iperiod;
+	maxrate = 4.0f * iperiod;
 };
 
 float EffectLFO::getlfoshape(float x)
 {
 	float tmpv;
-	float out=0.0;
+	float out = 0.0f;
 	int iterations = 1;  //make fractal go faster
 
 	if (x > 1.0f) x -= 1.0f;
 
 	switch (lfotype) {
+	case 0: //EffectLFO_SINE
+		out = f_cos(x * D_PI);
+		break;
 	case 1: //EffectLFO_TRIANGLE
-		if ((x > 0.0) && (x < 0.25))
+		if (x > 0.0f && x < 0.25f)
 			out = 4.0f * x;
-		else if ((x > 0.25) && (x < 0.75))
+		else if (x > 0.25 && x < 0.75)
 			out = 2.0f - 4.0f * x;
 		else
 			out = 4.0f * x - 4.0f;
@@ -156,20 +160,20 @@ float EffectLFO::getlfoshape(float x)
 	case 4: //ZigZag
 		x = x * 2.0f - 1.0f;
 		tmpv = 0.33f * f_sin(x);
-		out = f_sin(f_sin(x*D_PI)*x/tmpv);
+		out = f_sin(f_sin(x*D_PI) * x / tmpv);
 		break;
 	case 5: //Modulated Square ?? ;-)
 		tmpv = x * D_PI;
-		out=f_sin(tmpv+f_sin(2.0f*tmpv));
+		out = f_sin(tmpv + f_sin(2.0f * tmpv));
 		break;
 	case 6: // Modulated Saw
 		tmpv = x * D_PI;
-		out=f_sin(tmpv+f_sin(tmpv));
+		out = f_sin(tmpv + f_sin(tmpv));
 		break;
 	case 8: //Lorenz Fractal, faster, using X,Y outputs
 		iterations = 4;
 	case 7: // Lorenz Fractal
-		for(int j=0; j<iterations; j++) {
+		for (int j = 0; j < iterations; j++) {
 			x1 = x0 + h * a * (y0 - x0);
 			y1 = y0 + h * (x0 * (b - z0) - y0);
 			z1 = z0 + h * (x0 * y0 - c * z0);
@@ -177,55 +181,50 @@ float EffectLFO::getlfoshape(float x)
 			y0 = y1;
 			z0 = z1;
 		}
-		if(lfotype==7) {
-			if((radius = (sqrtf(x0*x0 + y0*y0 + z0*z0) * scale) - 0.25f)  > 1.0f) radius = 1.0f;
+		if (lfotype == 7) {
+			if((radius = (sqrtf(x0*x0 + y0*y0 + z0*z0) * scale) - 0.25f) > 1.0f) radius = 1.0f;
 			if(radius < 0.0) radius = 0.0;
 			out = 2.0f * radius - 1.0f;
 		}
-
 		break;
 	case 9:	//Sample/Hold Random
 		//this function is called by left, then right...so must toggle each time called
-		if(fmod(x,0.5f)<=(2.0f*incx)) {
+		if (fmod(x, 0.5f) <= 2.0f * incx) {
 			rreg = lreg;
 			lreg = RND1;
 		}
 
-		if(xlreg<lreg) xlreg += maxrate;
+		if (xlreg < lreg) xlreg += maxrate;
 		else xlreg -= maxrate;
-		if(xrreg<rreg) xrreg += maxrate;
+		if (xrreg < rreg) xrreg += maxrate;
 		else xrreg -= maxrate;
-		oldlreg = xlreg*tca + oldlreg*tcb;
-		oldrreg = xrreg*tca + oldrreg*tcb;
+		oldlreg = xlreg * tca + oldlreg * tcb;
+		oldrreg = xrreg * tca + oldrreg * tcb;
 
-		if(holdflag) {
-			out = 2.0f*oldlreg -1.0f;
-			holdflag = (1 + holdflag)%2;
+		if (holdflag) {
+			out = 2.0f * oldlreg - 1.0f;
+			holdflag = (1 + holdflag) % 2;
 		} else {
-			out = 2.0f*oldrreg - 1.0f;
+			out = 2.0f * oldrreg - 1.0f;
 		}
 		break;
 	case 10: //Tri-top
-		if(x<=0.5f) out = -f_sin(x*D_PI);
-		else if ((x > 0.5f) && (x < 0.75f))
-		out = 6 * (x-0.5);
-		else
-		out = 1.5 - 6.0f *( x - 0.75f);
-		out-=0.25f;
-		out*=0.88888889f;
+		if (x <= 0.5f) out = -f_sin(x * D_PI);
+		else if (x > 0.5f && x < 0.75f) out = 6 * (x - 0.5f);
+		else out = 1.5f - 6.0f * (x - 0.75f);
+		out -= 0.25f;
+		out *= 0.88888889f;
 		break;
 	case 11: //Tri-Bottom
-		if(x<=0.5f) out = -f_sin(x*D_PI);
-		else if ((x > 0.5f) && (x < 0.75f))
-		out = 6 * (x-0.5);
-		else
-		out = 1.5 - 6.0f *( x - 0.75f);
-		out-=0.25f;
-		out*=-0.88888889f;
+		if (x <= 0.5f) out = -f_sin(x * D_PI);
+		else if (x > 0.5f && x < 0.75f) out = 6 * (x - 0.5f);
+		else out = 1.5f - 6.0f * (x - 0.75f);
+		out -= 0.25f;
+		out *= -0.88888889f;
 		break;
-		//more to be added here; also ::updateparams() need to be updated (to allow more lfotypes)
 	default:
-		out = f_cos (x * D_PI);	//EffectLFO_SINE
+		assert(false);
+		break;
 	};
 	return out;
 };
