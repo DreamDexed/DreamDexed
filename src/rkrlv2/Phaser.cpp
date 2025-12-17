@@ -22,6 +22,7 @@
 
 */
 
+#include <cassert>
 #include <cstring>
 #include <math.h>
 
@@ -45,11 +46,6 @@ wet{}
 	loadpreset(Ppreset);
 	cleanup();
 };
-
-std::string Phaser::ToPresetName(int nValue, int nWidth)
-{
-	return nValue == 0 ? "INIT" : std::to_string(nValue);
-}
 
 void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 {
@@ -183,6 +179,36 @@ void Phaser::setphase(int Pphase)
 	this->Pphase = Pphase;
 	phase = ((float)Pphase / 127.0f);
 };
+
+static const char *PresetNames[Phaser::presets_num] = {
+	"Init",
+	"Phaser1",
+	"Phaser2",
+	"Phaser3",
+	"Phaser4",
+	"Phaser5",
+	"Phaser6",
+};
+
+const char * Phaser::ToPresetNameChar(int nValue)
+{
+	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	return PresetNames[nValue];
+}
+
+std::string Phaser::ToPresetName(int nValue, int nWidth)
+{
+	return ToPresetNameChar(nValue);
+}
+
+unsigned Phaser::ToIDFromPreset(const char *preset)
+{
+	for (unsigned i = 0; i < presets_num; ++i)
+		if (strcmp(PresetNames[i], preset) == 0)
+			return i;
+
+	return 0;
+}
 
 void Phaser::loadpreset(unsigned npreset)
 {
