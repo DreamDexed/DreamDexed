@@ -85,7 +85,7 @@ private:
 	void setphase(int Pphase);
 
 	//Valorile interne
-	float dry, wet, panning, fb, depth, lrcross, fbl, fbr, phase;
+	float dry, wet, panl, panr, fb, depth, lrcross, fbl, fbr, phase;
 	float oldl[max_stages * 2];
 	float oldr[max_stages * 2];
 	float oldlgain, oldrgain;
