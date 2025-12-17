@@ -33,7 +33,7 @@ namespace zyn {
 class EffectLFO
 {
 public:
-	EffectLFO(float sample_rate);
+	EffectLFO(float samplerate);
 	void effectlfoout(float *outl, float *outr, float phaseOffset = 0.0f);
 	void updateparams(uint16_t period);
 	uint16_t nPeriod;
