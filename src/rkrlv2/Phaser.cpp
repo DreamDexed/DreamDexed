@@ -31,6 +31,10 @@ namespace zyn {
 
 #define PHASER_LFO_SHAPE 2
 
+#ifndef PI
+#define PI 3.141592653589793f
+#endif
+
 Phaser::Phaser(float samplerate):
 bypass{},
 lfo{samplerate},
@@ -76,8 +80,8 @@ void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 		float x1 = 1.0f - x;
 		float gl = lgain * x + oldlgain * x1;
 		float gr = rgain * x + oldrgain * x1;
-		float inl = smpsl[i] * panning + fbl;
-		float inr = smpsr[i] * (1.0f - panning) + fbr;
+		float inl = smpsl[i] * panl + fbl;
+		float inr = smpsr[i] * panr + fbr;
 
 		//Left channel
 		for (int j = 0; j < Pstages * 2; j++) {
@@ -155,7 +159,9 @@ void Phaser::setmix(int Pmix)
 void Phaser::setpanning(int Ppanning)
 {
 	this->Ppanning = Ppanning;
-	panning = ((float)Ppanning - .5f)/ 127.0f;
+	float panning = ((float)Ppanning - .5f)/ 127.0f;
+	panl = cosf(panning * PI / 2.0f);
+	panr = cosf((1.0f - panning) * PI / 2.0f);
 };
 
 void Phaser::setlrcross(int Plrcross)
