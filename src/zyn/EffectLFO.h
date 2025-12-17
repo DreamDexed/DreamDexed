@@ -34,7 +34,7 @@ class EffectLFO
 {
 public:
 	EffectLFO(float sample_rate);
-	void effectlfoout(float *outl, float *outr);
+	void effectlfoout(float *outl, float *outr, float phaseOffset = 0.0f);
 	void updateparams(uint16_t period);
 	uint16_t nPeriod;
 	int Pfreq;
