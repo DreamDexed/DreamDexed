@@ -135,6 +135,9 @@ float EffectLFO::getlfoshape(float x)
 	float tmpv;
 	float out=0.0;
 	int iterations = 1;  //make fractal go faster
+
+	if (x > 1.0f) x -= 1.0f;
+
 	switch (lfotype) {
 	case 1: //EffectLFO_TRIANGLE
 		if ((x > 0.0) && (x < 0.25))
@@ -227,35 +230,41 @@ float EffectLFO::getlfoshape(float x)
 	return out;
 };
 
-void EffectLFO::effectlfoout(float * outl, float * outr)
+void EffectLFO::effectlfoout(float *outl, float *outr, float phaseOffset)
 {
 	float out;
 
-	out = getlfoshape(xl);
-	//if ((lfotype == 0) || (lfotype == 1))         //What was that for?
-	out *= (ampl1 + xl * (ampl2 - ampl1));
-	xl += incx;
-	if (xl > 1.0) {
-		xl -= 1.0f;
-		ampl1 = ampl2;
-		ampl2 = (1.0f - lfornd) + lfornd * (float)RND;
-	};
-	if(lfotype==8) out = scale*x0;  //fractal parameter
+	// left stereo signal
+	out = getlfoshape(xl + phaseOffset);
+	if (lfotype == 8) out = scale * x0;  //fractal parameter
+	out *= ampl1 + xl * (ampl2 - ampl1);
 	*outl = (out + 1.0f) * 0.5f;
 
+	// update left phase for master lfo
+	if (phaseOffset == 0.0f) {
+		xl += incx;
+		if(xl > 1.0f) {
+			xl -= 1.0f;
+			ampl1 = ampl2;
+			ampl2 = (1.0f - lfornd) + lfornd * (float)RND;
+		}
+	}
 
-	if(lfotype==8) out = scale*y0;  //fractal parameter
-	else out = getlfoshape(xr);
-
-	//if ((lfotype == 0) || (lfotype == 1))
-	out *= (ampr1 + xr * (ampr2 - ampr1));
-	xr += incx;
-	if (xr > 1.0) {
-		xr -= 1.0f;
-		ampr1 = ampr2;
-		ampr2 = (1.0f - lfornd) + lfornd * (float)RND;
-	};
+	// right stereo signal
+	if (lfotype == 8) out = scale * y0; //fractal parameter
+	else out = getlfoshape(xr + phaseOffset);
+	out *= ampr1 + xr * (ampr2 - ampr1);
 	*outr = (out + 1.0f) * 0.5f;
+
+	// update right phase for master lfo
+	if(phaseOffset == 0.0f) {
+		xr += incx;
+		if(xr > 1.0f) {
+			xr -= 1.0f;
+			ampr1 = ampr2;
+			ampr2 = (1.0f - lfornd) + lfornd * (float)RND;
+		}
+	}
 };
 
 }
