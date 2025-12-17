@@ -44,6 +44,10 @@ namespace zyn {
 #define ONE_  0.99999f        // To prevent LFO ever reaching 1.0 for filter stability purposes
 #define ZERO_ 0.00001f        // Same idea as above.
 
+#ifndef PI
+#define PI 3.141592653589793f
+#endif
+
 APhaser::APhaser(float samplerate):
 bypass{},
 lfo{samplerate},
@@ -111,8 +115,8 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 		gl += ldiff;	// Linear interpolation between LFO samples
 		gr += rdiff;
 
-		float lxn = smpsl[i];
-		float rxn = smpsr[i];
+		float lxn = smpsl[i] * panl;
+		float rxn = smpsr[i] * panr;
 
 		if (barber) {
 			gl = fmodf((gl + 0.25f) , ONE_);
@@ -153,6 +157,12 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 			if (j==1) rxn += fbr;  //Insert feedback after first phase stage
 		};
 
+		// LR cross
+		float l = lxn;
+		float r = rxn;
+		lxn = l * (1.0f - lrcross) + r * lrcross;
+		rxn = r * (1.0f - lrcross) + l * lrcross;
+
 		fbl = lxn * fb;
 		fbr = rxn * fb;
 
@@ -176,18 +186,6 @@ void APhaser::cleanup()
 	memset(ryn1, 0, sizeof ryn1);
 };
 
-void APhaser::setwidth(int Pwidth)
-{
-	this->Pwidth = Pwidth;
-	width = ((float)Pwidth / 127.0f);
-};
-
-void APhaser::setfb(int Pfb)
-{
-	this->Pfb = Pfb;
-	fb = ((float)Pfb - 64.0f) / 64.2f;
-};
-
 void APhaser::setmix(int Pmix)
 {
 	this->Pmix = Pmix;
@@ -205,16 +203,24 @@ void APhaser::setmix(int Pmix)
 	}
 };
 
-void APhaser::setdistortion(int Pdistortion)
+void APhaser::setpanning(int Ppanning)
 {
-	this->Pdistortion = Pdistortion;
-	distortion = (float)Pdistortion / 127.0f;
+	this->Ppanning = Ppanning;
+	float panning = ((float)Ppanning - .5f)/ 127.0f;
+	panl = cosf(panning * PI / 2.0f);
+	panr = cosf((1.0f - panning) * PI / 2.0f);
 };
 
-void APhaser::setmismatch(int Pmismatch)
+void APhaser::setdepth(int Pdepth)
 {
-	this->Pmismatch = Pmismatch;
-	mismatchpct = (float)Pmismatch / 127.0f;
+	this->Pdepth = Pdepth;
+	depth = (float)(Pdepth - 64) / 127.0f;  //Pdepth input should be 0-127.  depth shall range 0-0.5 since we don't need to shift the full spectrum.
+};
+
+void APhaser::setfb(int Pfb)
+{
+	this->Pfb = Pfb;
+	fb = ((float)Pfb - 64.0f) / 64.2f;
 };
 
 void APhaser::setstages(int Pstages)
@@ -226,10 +232,28 @@ void APhaser::setstages(int Pstages)
 	cleanup ();
 };
 
-void APhaser::setdepth(int Pdepth)
+void APhaser::setlrcross(int Plrcross)
 {
-	this->Pdepth = Pdepth;
-	depth = (float)(Pdepth - 64) / 127.0f;  //Pdepth input should be 0-127.  depth shall range 0-0.5 since we don't need to shift the full spectrum.
+	this->Plrcross = Plrcross;
+	lrcross = (float)Plrcross / 127.0f;
+};
+
+void APhaser::setwidth(int Pwidth)
+{
+	this->Pwidth = Pwidth;
+	width = ((float)Pwidth / 127.0f);
+};
+
+void APhaser::setdistortion(int Pdistortion)
+{
+	this->Pdistortion = Pdistortion;
+	distortion = (float)Pdistortion / 127.0f;
+};
+
+void APhaser::setmismatch(int Pmismatch)
+{
+	this->Pmismatch = Pmismatch;
+	mismatchpct = (float)Pmismatch / 127.0f;
 };
 
 void APhaser::loadpreset(unsigned npreset)
@@ -368,12 +392,8 @@ void APhaser::loadpreset(unsigned npreset)
 void APhaser::changepar(unsigned npar, int value)
 {
 	switch (npar) {
-	case ParameterMix:
-		setmix(value);
-		break;
-	case ParameterDistortion:
-		setdistortion(value);
-		break;
+	case ParameterMix: setmix(value); break;
+	case ParameterPanning: setpanning(value); break;
 	case ParameterLFOFreq:
 		lfo.Pfreq = value;
 		lfo.updateparams(lfo.nPeriod);
@@ -392,31 +412,15 @@ void APhaser::changepar(unsigned npar, int value)
 		lfo.Pstereo = value;
 		lfo.updateparams(lfo.nPeriod);
 		break;
-	case ParameterWidth:
-		setwidth(value);
-		break;
-	case ParameterFeedback:
-		setfb(value);
-		break;
-	case ParameterStages:
-		setstages(value);
-		break;
-	case ParameterMismatch:
-		setmismatch(value);
-		break;
-	case ParameterSubtractive:
-		if (value > 1)
-			value = 1;
-		Psubtractive = value;
-		break;
-	case ParameterDepth:
-		setdepth(value);
-		break;
-	case ParameterHyper:
-		if (value > 1)
-			value = 1;
-		Phyper = value;
-		break;
+	case ParameterDepth: setdepth(value); break;
+	case ParameterFeedback: setfb(value); break;
+	case ParameterStages: setstages(value); break;
+	case ParameterLRCross: setlrcross(value); break;
+	case ParameterSubtractive: Psubtractive = value > 1 ? 1 : value; break;
+	case ParameterWidth: setwidth(value); break;
+	case ParameterDistortion: setdistortion(value); break;
+	case ParameterMismatch: setmismatch(value); break;
+	case ParameterHyper: Phyper = value > 1 ? 1 : value; break;
 	};
 };
 
@@ -424,17 +428,19 @@ int APhaser::getpar(unsigned npar)
 {
 	switch (npar) {
 	case ParameterMix: return Pmix;
-	case ParameterDistortion: return Pdistortion;
+	case ParameterPanning: return Ppanning;
 	case ParameterLFOFreq: return lfo.Pfreq;
 	case ParameterLFORandomness: return lfo.Prandomness;
 	case ParameterLFOType: return lfo.PLFOtype;
 	case ParameterLFOLRDelay: return lfo.Pstereo;
-	case ParameterWidth: return Pwidth;
+	case ParameterDepth: return Pdepth;
 	case ParameterFeedback: return Pfb;
 	case ParameterStages: return Pstages;
-	case ParameterMismatch: return Pmismatch;
+	case ParameterLRCross: return Plrcross;
 	case ParameterSubtractive: return Psubtractive;
-	case ParameterDepth: return Pdepth;
+	case ParameterWidth: return Pwidth;
+	case ParameterDistortion: return Pdistortion;
+	case ParameterMismatch: return Pmismatch;
 	case ParameterHyper: return Phyper;
 	default: return 0;
 	};
