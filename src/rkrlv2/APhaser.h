@@ -48,17 +48,19 @@ public:
 	static constexpr unsigned presets_num = 7;
 	enum Parameter {
 		ParameterMix,
-		ParameterDistortion,
+		ParameterPanning,
 		ParameterLFOFreq,
 		ParameterLFORandomness,
 		ParameterLFOType,
 		ParameterLFOLRDelay,
-		ParameterWidth,
+		ParameterDepth,
 		ParameterFeedback,
 		ParameterStages,
-		ParameterMismatch,
+		ParameterLRCross,
 		ParameterSubtractive,
-		ParameterDepth,
+		ParameterWidth,
+		ParameterDistortion,
+		ParameterMismatch,
 		ParameterHyper,
 		ParameterCount
 	};
@@ -71,27 +73,31 @@ private:
 
 	//Phaser parameters
 	int Pmix;		//Used in Process.C to set wet/dry mix
-	int Pdistortion;	//Model distortion added by FET element
-	int Pwidth;		//Phaser width (LFO amplitude)
-	int Pfb;		//feedback
-	int Pmismatch;		//Model mismatch between variable resistors
-	int Pstages;		//Number of first-order All-Pass stages
-	int Psubtractive;		//if I wish to subtract the output instead of the adding it
-	int Phyper;		//lfo^2 -- converts tri into hyper-sine
+	int Ppanning;
 	int Pdepth;		//Depth of phaser sweep
+	int Pfb;		//feedback
+	int Pstages;		//Number of first-order All-Pass stages
+	int Plrcross;
+	int Psubtractive;		//if I wish to subtract the output instead of the adding it
+	int Pwidth;		//Phaser width (LFO amplitude)
+	int Pdistortion;	//Model distortion added by FET element
+	int Pmismatch;		//Model mismatch between variable resistors
+	int Phyper;		//lfo^2 -- converts tri into hyper-sine
 
 	//Control parameters
 	void setmix(int Pmix);
-	void setdistortion(int Pdistortion);
-	void setwidth(int Pwidth);
-	void setfb(int Pfb);
-	void setmismatch(int Pmismatch);
-	void setstages(int Pstages);
+	void setpanning(int Ppanning);
 	void setdepth(int Pdepth);
+	void setfb(int Pfb);
+	void setstages(int Pstages);
+	void setlrcross(int Plrcross);
+	void setwidth(int Pwidth);
+	void setdistortion(int Pdistortion);
+	void setmismatch(int Pmismatch);
 
 	//Internal Variables
 	bool barber;			//Barber pole phasing flag
-	float dry, wet, distortion, fb, width, mismatchpct, depth;
+	float dry, wet, panl, panr, depth, fb, lrcross, width, distortion, mismatchpct;
 	float lxn1[max_stages];
 	float lyn1[max_stages];
 	float rxn1[max_stages];
