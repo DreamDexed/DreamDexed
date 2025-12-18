@@ -6,10 +6,9 @@ DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with th
 - [x] Multiple font sizes for ST7789
 - [x] Noiseless performance and volume change
 - [x] Configurable TG compressors
-- [x] Master Compressor
 - [x] 3-band EQ (per TG and Master)
 - [x] TG-Link
-- [x] Two Effect Sends with YKChrous, DreamDelay, PlateReverb, CloudSeed2
+- [x] Two Send FX + Master FX with YKChrous, ZynChorus, ZynAPhaser, ZynPhaser, DreamDelay, PlateReverb, CloudSeed2, Compressor, EQ
 - [ ] 8 channel mixer (Rpi4+)
 - [ ] Multiple parts (RPi4+)
 - [ ] Overlay Menu for easier parameter changes
