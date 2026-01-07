@@ -102,6 +102,34 @@ static std::string ToRatio (int nValue, int nWidth)
 	return std::to_string (nValue) + ":1";
 }
 
+static std::string ToPan (int nValue, int nWidth)
+{
+	char buf[nWidth + 1];
+	unsigned nBarWidth = nWidth - 3;
+	unsigned nIndex = std::min(nValue * nBarWidth / 127, nBarWidth - 1);
+	std::fill_n(buf, nBarWidth, '.');
+	buf[nBarWidth / 2] = ':';
+	buf[nIndex] = 0xFF; // 0xFF is the block character
+	snprintf(buf + nBarWidth, 4, "%3d", nValue);
+	return buf;
+}
+
+static std::string ToLRDelay (int nValue, int nWidth)
+{
+	nValue -= 64;
+	if (nValue < 0) return std::to_string(nValue) + " L";
+	else if (nValue == 0) return " 0 Center";
+	else return std::string("+") + std::to_string(nValue) + " R";
+}
+
+static std::string ToCenter64 (int nValue, int nWidth)
+{
+	nValue -= 64;
+	if (nValue > 0) return std::string("+") + std::to_string(nValue);
+	else if (nValue == 0) return " 0";
+	else return std::to_string(nValue);
+}
+
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
 	{0,	FX::effects_num - 1,	0,	1,	"Slot1",	ToEffectName, FX::FXSaveAsString},
@@ -115,27 +143,27 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	1,	0,	1,	"YKChorusBypass",	ToOnOff},
 	{0,	zyn::Chorus::presets_num -1,	0,	1,	"ZynChorusPreset", zyn::Chorus::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynChorusMix",		ToDryWet},
-	{0,	127,	64,	1,	"ZynChorusPanning"},
+	{0,	127,	64,	1,	"ZynChorusPanning",	ToPan},
 	{1,	600,	14,	1,	"ZynChorusLFOFreq"},
 	{0,	127,	0,	1,	"ZynChorusLFORandomness"},
 	{0,	11,	1,	1,	"ZynChorusLFOType",	zyn::EffectLFO::ToLFOType},
-	{0,	127,	64,	1,	"ZynChorusLFOLRDelay"},
+	{0,	127,	64,	1,	"ZynChorusLFOLRDelay",	ToLRDelay},
 	{0,	127,	40,	1,	"ZynChorusDepth"},
 	{0,	127,	85,	1,	"ZynChorusDelay"},
-	{0,	127,	64,	1,	"ZynChorusFeedback"},
+	{0,	127,	64,	1,	"ZynChorusFeedback",	ToCenter64},
 	{0,	127,	0,	1,	"ZynChorusLRCross"},
 	{0,	3,	0,	1,	"ZynChorusMode",	zyn::Chorus::ToChorusMode},
 	{0,	1,	0,	1,	"ZynChorusSubtractive",	ToOnOff},
 	{0,	1,	0,	1,	"ZynChorusBypass",	ToOnOff},
 	{0,	zyn::APhaser::presets_num - 1,	0,	1,	"ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynAPhaserMix",	ToDryWet},
-	{0,	127,	64,	1,	"ZynAPhaserPanning"},
+	{0,	127,	64,	1,	"ZynAPhaserPanning",	ToPan},
 	{1,	600,	14,	1,	"ZynAPhaserLFOFreq"},
 	{0,	127,	0,	1,	"ZynAPhaserLFORandomness"},
 	{0,	11,	1,	1,	"ZynAPhaserLFOType",	zyn::EffectLFO::ToLFOType},
-	{0,	127,	64,	1,	"ZynAPhaserLFOLRDelay"},
-	{0,	127,	64,	1,	"ZynAPhaserDepth"},
-	{0,	127,	40,	1,	"ZynAPhaserFeedback"},
+	{0,	127,	64,	1,	"ZynAPhaserLFOLRDelay",	ToLRDelay},
+	{0,	127,	64,	1,	"ZynAPhaserDepth",	ToCenter64},
+	{0,	127,	40,	1,	"ZynAPhaserFeedback",	ToCenter64},
 	{1,	12,	4,	1,	"ZynAPhaserStages"},
 	{0,	127,	0,	1,	"ZynAPhaserLRCross"},
 	{0,	1,	0,	1,	"ZynAPhaserSubtractive",ToOnOff},
@@ -146,13 +174,13 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	1,	0,	1,	"ZynAPhaserBypass",	ToOnOff},
 	{0,	zyn::Phaser::presets_num - 1,	0,	1,	"ZynPhaserPreset", zyn::Phaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynPhaserMix",		ToDryWet},
-	{0,	127,	64,	1,	"ZynPhaserPanning"},
+	{0,	127,	64,	1,	"ZynPhaserPanning",	ToPan},
 	{1,	600,	11,	1,	"ZynPhaserLFOFreq"},
 	{0,	127,	0,	1,	"ZynPhaserLFORandomness"},
 	{0,	11,	0,	1,	"ZynPhaserLFOType",	zyn::EffectLFO::ToLFOType},
-	{0,	127,	64,	1,	"ZynPhaserLFOLRDelay"},
+	{0,	127,	64,	1,	"ZynPhaserLFOLRDelay",	ToLRDelay},
 	{0,	127,	110,	1,	"ZynPhaserDepth"},
-	{0,	127,	64,	1,	"ZynPhaserFeedback"},
+	{0,	127,	64,	1,	"ZynPhaserFeedback",	ToCenter64},
 	{1,	12,	1,	1,	"ZynPhaserStages"},
 	{0,	127,	0,	1,	"ZynPhaserLRCross"},
 	{0,	1,	0,	1,	"ZynPhaserSubtractive",	ToOnOff},
