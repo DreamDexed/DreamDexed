@@ -14,6 +14,11 @@ public:
 		FXParameterSlot0,
 		FXParameterSlot1,
 		FXParameterSlot2,
+		FXParameterMDAOverdriveMix,
+		FXParameterMDAOverdriveDrive,
+		FXParameterMDAOverdriveMuffle,
+		FXParameterMDAOverdriveGain,
+		FXParameterMDAOverdriveBypass,
 		FXParameterYKChorusMix,
 		FXParameterYKChorusEnable1,
 		FXParameterYKChorusEnable2,
@@ -172,6 +177,7 @@ public:
 
         static constexpr const EffectType s_effects[] = {
                 {"None"},
+		{"MDAOverdrive", FXParameterMDAOverdriveMix, FXParameterMDAOverdriveBypass},
                 {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusBypass},
 		{"ZynChorus", FXParameterZynChorusPreset, FXParameterZynChorusBypass},
 		{"ZynAPhaser", FXParameterZynAPhaserPreset, FXParameterZynAPhaserBypass},
