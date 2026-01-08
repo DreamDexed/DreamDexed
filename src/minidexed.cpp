@@ -1134,6 +1134,19 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->setSlot(Parameter - FX::FXParameterSlot0, nValue);
 		break;
 
+	case FX::FXParameterMDAOverdriveMix:
+	case FX::FXParameterMDAOverdriveDrive:
+	case FX::FXParameterMDAOverdriveMuffle:
+	case FX::FXParameterMDAOverdriveGain:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->mda_overdrive.setParameter (Parameter - FX::FXParameterMDAOverdriveMix, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterMDAOverdriveBypass:
+		fx_chain[nFX]->mda_overdrive.bypass = nValue;
+		break;
+
 	case FX::FXParameterYKChorusMix:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->yk_chorus.setMix (nValue / 100.0f);

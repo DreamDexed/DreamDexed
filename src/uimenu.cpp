@@ -206,6 +206,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
 const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 {
 	{"None"},
+	{"MDAOverdrive",	MenuHandler,		s_MDAOverdriveMenu},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
 	{"ZynChorus",		MenuHandler,		s_ZynChorusMenu},
 	{"ZynAPhaser",		MenuHandler,		s_ZynAPhaserMenu},
@@ -216,6 +217,16 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 	{"Compressor",		MenuHandler,		s_CompressorMenu},
 	{"EQ",			MenuHandler,		s_FXEQMenu},
 	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_MDAOverdriveMenu[] =
+{
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterMDAOverdriveMix},
+	{"Drive",	EditFXParameter2,	0,	FX::FXParameterMDAOverdriveDrive},
+	{"Muffle",	EditFXParameter2,	0,	FX::FXParameterMDAOverdriveMuffle},
+	{"Gain",	EditFXParameter2,	0,	FX::FXParameterMDAOverdriveGain},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterMDAOverdriveBypass},
+	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =

@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include "mda/overdrive.h"
+
 #include "zyn/APhaser.h"
 #include "zyn/Chorus.h"
 #include "zyn/Phaser.h"
@@ -19,6 +21,7 @@ public:
         typedef std::function<void(float *inputL, float *inputR, uint16_t len)> process_t;
 
         AudioFXChain(float samplerate):
+        mda_overdrive{samplerate},
         yk_chorus{samplerate},
         zyn_chorus{samplerate},
         zyn_aphaser{samplerate},
@@ -31,6 +34,7 @@ public:
         bypass{},
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
+                [this](float *inputL, float *inputR, uint16_t len) { mda_overdrive.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
@@ -65,6 +69,7 @@ public:
 
         void resetState()
         {
+                mda_overdrive.cleanup();
                 zyn_chorus.cleanup();
                 zyn_aphaser.cleanup();
                 zyn_phaser.cleanup();
@@ -85,6 +90,7 @@ public:
                 slots[slot] = effect_id;
         }
 
+        mda::Overdrive mda_overdrive;
         AudioEffectYKChorus yk_chorus;
         zyn::Chorus zyn_chorus;
         zyn::APhaser zyn_aphaser;
