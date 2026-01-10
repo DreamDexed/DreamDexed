@@ -24,6 +24,8 @@
 /* compensate for missing nonlib macro */
 #define assume_aligned(x) (x)
 
+namespace zyn {
+
 void
 ValueSmoothingFilter::sample_rate ( nframes_t n )
 {
@@ -72,4 +74,6 @@ ValueSmoothingFilter::apply( sample_t * __restrict__ dst, nframes_t nframes, flo
 	this->g2 = g2;
 
 	return true;
+}
+
 }
