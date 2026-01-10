@@ -75,7 +75,7 @@ private:
 	int order;      //the order of the filter (number of poles)
 
 	int freqbufsize;
-	Value_Smoothing_Filter freq_smoothing; /* for smoothing freq modulations to avoid zipper effect */
+	ValueSmoothingFilter freq_smoothing; /* for smoothing freq modulations to avoid zipper effect */
 	bool beforeFirstTick; // reset the smoothing at first Tick
 };
 
