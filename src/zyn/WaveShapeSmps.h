@@ -10,8 +10,7 @@
   as published by the Free Software Foundation; either version 2
   of the License, or (at your option) any later version.
 */
-#ifndef WAVESHAPESMPS_H
-#define WAVESHAPESMPS_H
+#pragma once
 
 namespace zyn {
 
@@ -25,6 +24,5 @@ void waveShapeSmps(int n,
 
 //calculate the polyblamp residual value (called by waveshape function)
 float polyblampres(float smp, float ws, float dMax);
-}
 
-#endif
+}
