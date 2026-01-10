@@ -11,8 +11,7 @@
   of the License, or (at your option) any later version.
 */
 
-#ifndef DISTORTION_H
-#define DISTORTION_H
+#pragma once
 
 #include "Effect.h"
 
@@ -56,5 +55,3 @@ private:
 };
 
 }
-
-#endif

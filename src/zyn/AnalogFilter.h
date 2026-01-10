@@ -13,8 +13,7 @@
   of the License, or (at your option) any later version.
 */
 
-#ifndef ANALOG_FILTER_H
-#define ANALOG_FILTER_H
+#pragma once
 
 #include "../globals.h"
 #include "Filter.h"
@@ -81,5 +80,3 @@ private:
 };
 
 }
-
-#endif
