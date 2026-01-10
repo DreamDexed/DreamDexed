@@ -19,6 +19,8 @@
 
 #pragma once
 
+namespace zyn {
+
 typedef unsigned long nframes_t;
 typedef float sample_t;
 
@@ -53,3 +55,5 @@ public:
 
 	bool apply( sample_t * __restrict__ dst, nframes_t nframes, float gt );
 };
+
+}
