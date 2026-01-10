@@ -25,34 +25,34 @@ typedef float sample_t;
 
 class Value_Smoothing_Filter
 {
-    float w, g1, g2, t;
+	float w, g1, g2, t;
 
-    float _cutoff;
+	float _cutoff;
 
-    bool _reset_on_next_apply;
+	bool _reset_on_next_apply;
 
 public:
 
-    Value_Smoothing_Filter ( )
-        {
-            g1 = g2 = 0;
-            _cutoff = 10.0f;
-            t = 0.0001f;
-            _reset_on_next_apply = false;
-        }
+	Value_Smoothing_Filter ()
+	{
+		g1 = g2 = 0;
+		_cutoff = 10.0f;
+		t = 0.0001f;
+		_reset_on_next_apply = false;
+	}
 
-    void reset_on_next_apply ( bool v ) { _reset_on_next_apply = v; }
+	void reset_on_next_apply ( bool v ) { _reset_on_next_apply = v; }
 
-    void cutoff ( float v ) { _cutoff = v; }
-    void thresh ( float t_ ) { t = t_; }
+	void cutoff ( float v ) { _cutoff = v; }
+	void thresh ( float t_ ) { t = t_; }
 
-    void reset ( float v ) { g2 = g1 = v; }
+	void reset ( float v ) { g2 = g1 = v; }
 
-    inline bool target_reached ( float gt ) const { return gt == g2; }
+	inline bool target_reached ( float gt ) const { return gt == g2; }
 
-    void sample_rate ( nframes_t n );
+	void sample_rate ( nframes_t n );
 
-    bool apply( sample_t * __restrict__ dst, nframes_t nframes, float gt );
+	bool apply( sample_t * __restrict__ dst, nframes_t nframes, float gt );
 };
 
 #endif
