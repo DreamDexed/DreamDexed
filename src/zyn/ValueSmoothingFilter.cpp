@@ -25,7 +25,7 @@
 #define assume_aligned(x) (x)
 
 void
-Value_Smoothing_Filter::sample_rate ( nframes_t n )
+ValueSmoothingFilter::sample_rate ( nframes_t n )
 {
 	const float FS = n;
 	const float T = 0.05f;
@@ -34,7 +34,7 @@ Value_Smoothing_Filter::sample_rate ( nframes_t n )
 }
 
 bool
-Value_Smoothing_Filter::apply( sample_t * __restrict__ dst, nframes_t nframes, float gt )
+ValueSmoothingFilter::apply( sample_t * __restrict__ dst, nframes_t nframes, float gt )
 {
 	if ( _reset_on_next_apply )
 	{

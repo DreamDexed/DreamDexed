@@ -22,7 +22,7 @@
 typedef unsigned long nframes_t;
 typedef float sample_t;
 
-class Value_Smoothing_Filter
+class ValueSmoothingFilter
 {
 	float w, g1, g2, t;
 
@@ -32,7 +32,7 @@ class Value_Smoothing_Filter
 
 public:
 
-	Value_Smoothing_Filter ()
+	ValueSmoothingFilter ()
 	{
 		g1 = g2 = 0;
 		_cutoff = 10.0f;
