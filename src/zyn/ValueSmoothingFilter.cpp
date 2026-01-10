@@ -27,49 +27,49 @@
 void
 Value_Smoothing_Filter::sample_rate ( nframes_t n )
 {
-    const float FS = n;
-    const float T = 0.05f;
+	const float FS = n;
+	const float T = 0.05f;
 
-    w = _cutoff / (FS * T);
+	w = _cutoff / (FS * T);
 }
 
 bool
 Value_Smoothing_Filter::apply( sample_t * __restrict__ dst, nframes_t nframes, float gt )
 {
-    if ( _reset_on_next_apply )
-    {
-        reset( gt );
-        _reset_on_next_apply = false;
-        return false;
-    }
+	if ( _reset_on_next_apply )
+	{
+		reset( gt );
+		_reset_on_next_apply = false;
+		return false;
+	}
 
-    if ( target_reached(gt) )
-        return false;
+	if ( target_reached(gt) )
+		return false;
 
-    sample_t * dst_ = (sample_t*) assume_aligned(dst);
+	sample_t * dst_ = (sample_t*) assume_aligned(dst);
 
-    const float a = 0.07f;
-    const float b = 1 + a;
+	const float a = 0.07f;
+	const float b = 1 + a;
 
-    const float gm = b * gt;
+	const float gm = b * gt;
 
-    float g1 = this->g1;
-    float g2 = this->g2;
+	float g1 = this->g1;
+	float g2 = this->g2;
 
-    for (nframes_t i = 0; i < nframes; i++)
-    {
-        g1 += w * (gm - g1 - a * g2);
-        g2 += w * (g1 - g2);
-        dst_[i] = g2;
-    }
+	for (nframes_t i = 0; i < nframes; i++)
+	{
+		g1 += w * (gm - g1 - a * g2);
+		g2 += w * (g1 - g2);
+		dst_[i] = g2;
+	}
 
-    g2 += 1e-10f;               /* denormal protection */
+	g2 += 1e-10f;               /* denormal protection */
 
-    if ( fabsf( gt - g2 ) < t )
-        g2 = gt;
+	if ( fabsf( gt - g2 ) < t )
+		g2 = gt;
 
-    this->g1 = g1;
-    this->g2 = g2;
+	this->g1 = g1;
+	this->g2 = g2;
 
-    return true;
+	return true;
 }
