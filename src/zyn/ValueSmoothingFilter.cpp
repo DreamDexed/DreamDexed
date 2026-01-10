@@ -65,8 +65,6 @@ ValueSmoothingFilter::apply( sample_t * __restrict__ dst, nframes_t nframes, flo
 		dst_[i] = g2;
 	}
 
-	g2 += 1e-10f;               /* denormal protection */
-
 	if ( fabsf( gt - g2 ) < t )
 		g2 = gt;
 
