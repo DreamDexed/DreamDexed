@@ -206,6 +206,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
 const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 {
 	{"None"},
+	{"ZynDistortion",	MenuHandler,		s_ZynDistortionMenu},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
 	{"ZynChorus",		MenuHandler,		s_ZynChorusMenu},
 	{"ZynAPhaser",		MenuHandler,		s_ZynAPhaserMenu},
@@ -216,6 +217,26 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 	{"Compressor",		MenuHandler,		s_CompressorMenu},
 	{"EQ",			MenuHandler,		s_FXEQMenu},
 	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ZynDistortionMenu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynDistortionPreset},
+	{"Mix",		EditFXParameter2,	0,	FX::FXParameterZynDistortionMix},
+	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynDistortionPanning},
+	{"Drive",	EditFXParameter2,	0,	FX::FXParameterZynDistortionDrive},
+	{"Level",	EditFXParameter2,	0,	FX::FXParameterZynDistortionLevel},
+	{"Type",	EditFXParameter2,	0,	FX::FXParameterZynDistortionType},
+	{"Negate",	EditFXParameter2,	0,	FX::FXParameterZynDistortionNegate},
+	{"LPF",		EditFXParameter2,	0,	FX::FXParameterZynDistortionLPF},
+	{"HPF",		EditFXParameter2,	0,	FX::FXParameterZynDistortionHPF},
+	{"Stereo",	EditFXParameter2,	0,	FX::FXParameterZynDistortionStereo},
+	{"LR Cross",	EditFXParameter2,	0,	FX::FXParameterZynDistortionLRCross},
+	{"Prefilter",	EditFXParameter2,	0,	FX::FXParameterZynDistortionPrefiltering},
+	{"FuncPar",	EditFXParameter2,	0,	FX::FXParameterZynDistortionFuncPar},
+	{"Offset",	EditFXParameter2,	0,	FX::FXParameterZynDistortionOffset},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynDistortionBypass},
+	{0}
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =

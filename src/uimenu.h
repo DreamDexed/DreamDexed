@@ -190,6 +190,7 @@ private:
 	static const TMenuItem s_MixerMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
+	static const TMenuItem s_ZynDistortionMenu[];
 	static const TMenuItem s_YKChorusMenu[];
 	static const TMenuItem s_ZynChorusMenu[];
 	static const TMenuItem s_ZynAPhaserMenu[];

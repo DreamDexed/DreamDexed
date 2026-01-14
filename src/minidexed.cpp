@@ -1134,6 +1134,34 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->setSlot(Parameter - FX::FXParameterSlot0, nValue);
 		break;
 
+	case FX::FXParameterZynDistortionPreset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_distortion.loadpreset (nValue);
+		m_FXSpinLock.Release ();
+		break;
+	
+	case FX::FXParameterZynDistortionMix:
+	case FX::FXParameterZynDistortionPanning:
+	case FX::FXParameterZynDistortionDrive:
+	case FX::FXParameterZynDistortionLevel:
+	case FX::FXParameterZynDistortionType:
+	case FX::FXParameterZynDistortionNegate:
+	case FX::FXParameterZynDistortionLPF:
+	case FX::FXParameterZynDistortionHPF:
+	case FX::FXParameterZynDistortionStereo:
+	case FX::FXParameterZynDistortionLRCross:
+	case FX::FXParameterZynDistortionPrefiltering:
+	case FX::FXParameterZynDistortionFuncPar:
+	case FX::FXParameterZynDistortionOffset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_distortion.changepar (Parameter - FX::FXParameterZynDistortionMix, nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynDistortionBypass:
+		fx_chain[nFX]->zyn_distortion.bypass = nValue;
+		break;
+
 	case FX::FXParameterYKChorusMix:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->yk_chorus.setMix (nValue / 100.0f);
@@ -1525,6 +1553,11 @@ int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
 {
 	assert (nFX < CConfig::FXChains);
 	assert (Parameter < FX::FXParameterUnknown);
+
+	if (Parameter >= FX::FXParameterZynDistortionMix && Parameter <= FX::FXParameterZynDistortionOffset)
+	{
+		return fx_chain[nFX]->zyn_distortion.getpar (Parameter - FX::FXParameterZynDistortionMix);
+	}
 
 	if (Parameter >= FX::FXParameterZynChorusMix && Parameter <= FX::FXParameterZynChorusSubtractive)
 	{
