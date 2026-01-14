@@ -98,7 +98,6 @@ private:
 	void setmismatch(int Pmismatch);
 
 	//Internal Variables
-	bool barber;			//Barber pole phasing flag
 	float dry, wet, panl, panr, depth, fb, lrcross, width, distortion, mismatchpct;
 	float lxn1[max_stages];
 	float lyn1[max_stages];
