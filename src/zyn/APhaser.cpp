@@ -53,7 +53,6 @@ APhaser::APhaser(float samplerate):
 bypass{},
 lfo{samplerate},
 Ppreset{},
-barber{},
 dry{1.0f},
 wet{},
 offset{-0.2509303f, 0.9408924f, 0.998f, -0.3486182f, -0.2762545f, -0.5215785f, 0.2509303f, -0.9408924f, -0.998f, 0.3486182f,  0.2762545f, 0.5215785f},
@@ -113,11 +112,6 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 
 		float lxn = smpsl[i] * panl;
 		float rxn = smpsr[i] * panr;
-
-		if (barber) {
-			gl = fmodf((gl + 0.25f) , ONE_);
-			gr = fmodf((gr + 0.25f) , ONE_);
-		};
 
 		//Left channel
 		for (int j = 0; j < Pstages; j++) {
@@ -373,7 +367,7 @@ void APhaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 20,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 240,
+			[ParameterLFOFreq] = 127,
 			[ParameterLFORandomness] = 10,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 64,
@@ -382,7 +376,7 @@ void APhaser::loadpreset(unsigned npreset)
 			[ParameterStages] = 8,
 			[ParameterLRCross] = 0,
 			[ParameterSubtractive] = 0,
-			[ParameterWidth] = 15,
+			[ParameterWidth] = 25,
 			[ParameterDistortion] = 20,
 			[ParameterMismatch] = 100,
 			[ParameterHyper] = 0,
@@ -431,8 +425,6 @@ void APhaser::changepar(unsigned npar, int value)
 	case ParameterLFOType:
 		lfo.PLFOtype = value;
 		lfo.updateparams(lfo.nPeriod);
-		barber = 0;
-		if (value == 2) barber = 1;
 		break;
 	case ParameterLFOLRDelay:
 		lfo.Pstereo = value;

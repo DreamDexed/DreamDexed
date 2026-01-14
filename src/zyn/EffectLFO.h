@@ -37,10 +37,11 @@ public:
 	void effectlfoout(float *outl, float *outr, float phaseOffset = 0.0f);
 	void updateparams(uint16_t period);
 	uint16_t nPeriod;
-	int Pfreq;
-	int Prandomness;
-	int PLFOtype;
-	int Pstereo;	//"64"=0
+
+	unsigned char Pfreq;  //!< Frequency parameter (0-127)
+	unsigned char Prandomness;  //!< Randomness parameter (0-127)
+	unsigned char PLFOtype;  //!< LFO type parameter
+	unsigned char Pstereo;  //!< Stereo parameter (64 = 0)
 
 	static std::string ToLFOType(int nValue, int nWidth);
 private:
@@ -49,26 +50,10 @@ private:
 	float xl, xr;
 	float incx;
 	float ampl1, ampl2, ampr1, ampr2;	//necesar pentru "randomness"
-	float lfointensity;
 	float lfornd;
-	int lfotype;
+	char lfotype;
 
-	//Lorenz Fractal parameters
-	float x0,y0,z0,x1,y1,z1,radius;
-	float h;
-	float a;
-	float b;
-	float c;
-	float scale;
-	float iperiod;
-	float ratediv;
-
-	//Sample/Hold
-	int holdflag;  //toggle left/right channel changes
-	float tca, tcb, maxrate;
-	float rreg, lreg, xlreg,xrreg, oldrreg, oldlreg;
-
-	float fSAMPLE_RATE;
+	float samplerate;
 };
 
 }

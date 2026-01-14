@@ -216,7 +216,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 0,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 11,
+			[ParameterLFOFreq] = 36,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 64,
@@ -230,7 +230,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 11,
+			[ParameterLFOFreq] = 36,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 64,
@@ -244,7 +244,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 10,
+			[ParameterLFOFreq] = 35,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 88,
@@ -258,7 +258,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 8,
+			[ParameterLFOFreq] = 31,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 66,
@@ -272,7 +272,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 31,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 1,
+			[ParameterLFOFreq] = 22,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 66,
@@ -286,7 +286,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 1,
+			[ParameterLFOFreq] = 20,
 			[ParameterLFORandomness] = 0,
 			[ParameterLFOType] = 1,
 			[ParameterLFOLRDelay] = 110,
@@ -300,7 +300,7 @@ void Phaser::loadpreset(unsigned npreset)
 		{
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
-			[ParameterLFOFreq] = 31,
+			[ParameterLFOFreq] = 53,
 			[ParameterLFORandomness] = 100,
 			[ParameterLFOType] = 0,
 			[ParameterLFOLRDelay] = 58,
