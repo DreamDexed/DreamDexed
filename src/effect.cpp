@@ -6,6 +6,7 @@
 #include "effect_compressor.h"
 #include "zyn/APhaser.h"
 #include "zyn/Chorus.h"
+#include "zyn/Distortion.h"
 #include "zyn/Phaser.h"
 #include "zyn/EffectLFO.h"
 
@@ -135,6 +136,21 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	FX::effects_num - 1,	0,	1,	"Slot1",	ToEffectName, FX::FXSaveAsString},
 	{0,	FX::effects_num - 1,	0,	1,	"Slot2",	ToEffectName, FX::FXSaveAsString},
 	{0,	FX::effects_num - 1,	0,	1,	"Slot3",	ToEffectName, FX::FXSaveAsString},
+	{0,	zyn::Distortion::presets_num - 1,	0,	1,	"ZynDistortionPreset", zyn::Distortion::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0,	100,	0,	1,	"ZynDistortionMix",		ToDryWet},
+	{0,	127,	0,	1,	"ZynDistortionPanning",		ToPan},
+	{0,	127,	0,	1,	"ZynDistortionDrive"},
+	{0,	127,	0,	1,	"ZynDistortionLevel"},
+	{0,	16,	0,	1,	"ZynDistortionType",		zyn::Distortion::ToDistortionType},
+	{0,	1,	0,	1,	"ZynDistortionNegate",		ToOnOff},
+	{0,	127,	0,	1,	"ZynDistortionLPF"},
+	{0,	127,	0,	1,	"ZynDistortionHPF"},
+	{0,	127,	0,	1,	"ZynDistortionStereo",		ToOnOff},
+	{0,	127,	0,	1,	"ZynDistortionLRCross"},
+	{0,	127,	0,	1,	"ZynDistortionPrefiltering",	ToOnOff},
+	{0,	127,	0,	1,	"ZynDistortionFuncPar"},
+	{0,	127,	0,	1,	"ZynDistortionOffset",		ToCenter64},
+	{0,	1,	0,	1,	"ZynDistortionBypass",		ToOnOff},
 	{0,	100,	0,	1,	"YKChorusMix",	ToDryWet},
 	{0,	1,	1,	1,	"YKChorusEnable1",	ToOnOff},
 	{0,	1,	1,	1,	"YKChorusEnable2",	ToOnOff},
@@ -287,6 +303,8 @@ int FX::getIDFromName(TFXParameter param, const char* name)
 		case FX::FXParameterSlot1:
 		case FX::FXParameterSlot2:
 			return getIDFromEffectName(name);
+		case FX::FXParameterZynDistortionPreset:
+			return zyn::Distortion::ToIDFromPreset(name);
 		case FX::FXParameterZynChorusPreset:
 			return zyn::Chorus::ToIDFromPreset(name);
 		case FX::FXParameterZynAPhaserPreset:
@@ -310,6 +328,8 @@ const char *FX::getNameFromID(TFXParameter param, int nID)
 		case FX::FXParameterSlot2:
 			assert (nID < FX::effects_num);
 			return FX::s_effects[nID].Name;
+		case FX::FXParameterZynDistortionPreset:
+			return zyn::Distortion::ToPresetNameChar(nID);
 		case FX::FXParameterZynChorusPreset:
 			return zyn::Chorus::ToPresetNameChar(nID);
 		case FX::FXParameterZynAPhaserPreset:

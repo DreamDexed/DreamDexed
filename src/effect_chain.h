@@ -4,6 +4,7 @@
 
 #include "zyn/APhaser.h"
 #include "zyn/Chorus.h"
+#include "zyn/Distortion.h"
 #include "zyn/Phaser.h"
 
 #include "effect_3bandeq.h"
@@ -19,6 +20,7 @@ public:
         typedef std::function<void(float *inputL, float *inputR, uint16_t len)> process_t;
 
         AudioFXChain(float samplerate):
+        zyn_distortion{samplerate},
         yk_chorus{samplerate},
         zyn_chorus{samplerate},
         zyn_aphaser{samplerate},
@@ -31,6 +33,7 @@ public:
         bypass{},
         funcs{
                 [this](float *inputL, float *inputR, uint16_t len) {},
+                [this](float *inputL, float *inputR, uint16_t len) { zyn_distortion.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
@@ -65,6 +68,7 @@ public:
 
         void resetState()
         {
+                zyn_distortion.cleanup();
                 zyn_chorus.cleanup();
                 zyn_aphaser.cleanup();
                 zyn_phaser.cleanup();
@@ -85,6 +89,7 @@ public:
                 slots[slot] = effect_id;
         }
 
+        zyn::Distortion zyn_distortion;
         AudioEffectYKChorus yk_chorus;
         zyn::Chorus zyn_chorus;
         zyn::APhaser zyn_aphaser;
