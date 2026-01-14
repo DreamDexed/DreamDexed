@@ -15,22 +15,30 @@
 
 #pragma once
 
-#include "../globals.h"
-#include "Filter.h"
+#include <cstdint>
+
 #include "ValueSmoothingFilter.h"
+
+#ifndef LOG_10
+#define LOG_10 2.302585093f
+#endif
+
+#ifndef dB2rap
+#define dB2rap(dB) ((expf((dB) * LOG_10 / 20.0f)))
+#endif
 
 namespace zyn {
 
 /**Implementation of Several analog filters (lowpass, highpass...)
  * Implemented with IIR filters
  * Coefficients generated with "Cookbook formulae for audio EQ"*/
-class AnalogFilter:public Filter
+class AnalogFilter
 {
 public:
 	AnalogFilter(unsigned char Ftype, float Ffreq, float Fq,
-		     unsigned char Fstages, unsigned int srate, int bufsize);
+		     unsigned char Fstages, float srate);
 	~AnalogFilter();
-	void filterout(float *smp);
+	void filterout(float *smp, uint16_t period);
 	void setfreq(float frequency);
 	void setfreq_and_q(float frequency, float q_);
 	void setq(float q_);
@@ -52,11 +60,18 @@ public:
 				  float gain, float fs, int &order);
 	void filterSample(float& smp);
 
+	static constexpr int MAX_FILTER_STAGES = 5;
+
 private:
+	float outgain;
+
+	// current setup
+	float samplerate;
+
 	struct fstage {
 		float x1, x2; //Input History
 		float y1, y2; //Output History
-	} history[MAX_FILTER_STAGES + 1], oldHistory[MAX_FILTER_STAGES + 1];
+	} history[MAX_FILTER_STAGES + 1];
 
 	//old coeffs are used for interpolation when parameters change quickly
 
@@ -74,7 +89,6 @@ private:
 	bool recompute; // need to recompute coeff.
 	int order;      //the order of the filter (number of poles)
 
-	int freqbufsize;
 	ValueSmoothingFilter freq_smoothing; /* for smoothing freq modulations to avoid zipper effect */
 	bool beforeFirstTick; // reset the smoothing at first Tick
 };

@@ -22,6 +22,26 @@ void waveShapeSmps(int n,
 		   unsigned char offset = 64,
 		   unsigned char funcpar = 0);
 
+	enum WaveShapeType {
+		WaveShapeArctangent,
+		WaveShapeAsymmetric,
+		WaveShapePow,
+		WaveShapeSine,
+		WaveShapeQuantisize,
+		WaveShapeZigzag,
+		WaveShapeLimiter,
+		WaveShapeUpperLimiter,
+		WaveShapeLowerLimiter,
+		WaveShapeInverseLimiter,
+		WaveShapeClip,
+		WaveShapeAsymmetric2,
+		WaveShapePow2,
+		WaveShapeSigmoid,
+		WaveShapeTanhSoft,
+		WaveShapeCubic,
+		WaveShapeSquare,
+	};
+
 //calculate the polyblamp residual value (called by waveshape function)
 float polyblampres(float smp, float ws, float dMax);
 
