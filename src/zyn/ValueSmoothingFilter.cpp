@@ -27,7 +27,7 @@
 namespace zyn {
 
 void
-ValueSmoothingFilter::sample_rate ( nframes_t n )
+ValueSmoothingFilter::sample_rate(nframes_t n)
 {
 	const float FS = n;
 	const float T = 0.05f;
@@ -36,16 +36,16 @@ ValueSmoothingFilter::sample_rate ( nframes_t n )
 }
 
 bool
-ValueSmoothingFilter::apply( sample_t * __restrict__ dst, nframes_t nframes, float gt )
+ValueSmoothingFilter::apply(sample_t * __restrict__ dst, nframes_t nframes, float gt)
 {
-	if ( _reset_on_next_apply )
+	if (_reset_on_next_apply)
 	{
-		reset( gt );
+		reset(gt);
 		_reset_on_next_apply = false;
 		return false;
 	}
 
-	if ( target_reached(gt) )
+	if (target_reached(gt))
 		return false;
 
 	sample_t * dst_ = (sample_t*) assume_aligned(dst);
@@ -65,7 +65,7 @@ ValueSmoothingFilter::apply( sample_t * __restrict__ dst, nframes_t nframes, flo
 		dst_[i] = g2;
 	}
 
-	if ( fabsf( gt - g2 ) < t )
+	if (fabsf(gt - g2) < t)
 		g2 = gt;
 
 	this->g1 = g1;

@@ -13,28 +13,62 @@
 
 #pragma once
 
-#include "Effect.h"
+#include <atomic>
+#include <cstdint>
+#include <string>
+
+#include "AnalogFilter.h"
 
 namespace zyn {
 
-/**Distortion Effect*/
-class Distortion final :public Effect
+class Distortion
 {
 public:
-	Distortion(EffectParams pars);
-	~Distortion();
-	void out(const Stereo<float *> &smp);
-	unsigned char getpresetpar(unsigned char npreset, unsigned int npar);
-	void setpreset(unsigned char npreset);
+	Distortion(float samplerate);
+	void process(float *inputL, float *inputR, uint16_t period);
+	void loadpreset(unsigned char npreset);
 	void changepar(int npar, unsigned char value);
 	unsigned char getpar(int npar) const;
-	void cleanup(void);
-	void applyfilters(float *efxoutl, float *efxoutr);
+	void cleanup();
 
-	static rtosc::Ports ports;
+	std::atomic<bool> bypass;
+
+	static constexpr unsigned presets_num = 7;
+	static constexpr unsigned types_num = 17;
+
+	enum Parameter {
+		ParameterMix,
+		ParameterPanning,
+		ParameterDrive,
+		ParameterLevel,
+		ParameterType,
+		ParameterNegate,
+		ParameterLPF,
+		ParameterHPF,
+		ParameterStereo,
+		ParameterLRCross,
+		ParameterPrefiltering,
+		ParameterFuncPar,
+		ParameterOffset,
+		ParameterCount,
+	};
+
+	static std::string ToDistortionType(int nValue, int nWidth);
+	static std::string ToPresetName(int nValue, int nWidth);
+	static const char * ToPresetNameChar(int nValue);
+	static unsigned ToIDFromPreset(const char *preset);
+
 private:
+	void applyfilters(float *inputL, float *inputR, uint16_t period);
+
+
+	float samplerate;
+
+	unsigned char Ppreset;
+
 	//Parameters
-	unsigned char Pvolume;       //Volume or E/R
+	unsigned char Pmix;
+	unsigned char Ppanning;
 	unsigned char Pdrive;        //the input amplification
 	unsigned char Plevel;        //the output amplification
 	unsigned char Ptype;         //Distortion type
@@ -42,16 +76,22 @@ private:
 	unsigned char Plpf;          //lowpass filter
 	unsigned char Phpf;          //highpass filter
 	unsigned char Pstereo;       //0=mono, 1=stereo
+	unsigned char Plrcross;      //L/R mix
 	unsigned char Pprefiltering; //if you want to do the filtering before the distortion
 	unsigned char Pfuncpar;      //for parametric functions
 	unsigned char Poffset;       //the input offset
 
-	void setvolume(unsigned char _Pvolume);
+	void setmix(unsigned char _Pmix);
 	void setlpf(unsigned char _Plpf);
 	void sethpf(unsigned char _Phpf);
+	void setpanning(unsigned char _Ppanning);
+	void setlevel(unsigned char _Plevel);
+	void setlrcross(unsigned char _Plrcross);
 
 	//Real Parameters
-	class AnalogFilter * lpfl, *lpfr, *hpfl, *hpfr;
+	AnalogFilter lpfl, lpfr, hpfl, hpfr;
+
+	float dry, wet, panl, panr, level, lrcross;
 };
 
 }
