@@ -221,11 +221,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 70,
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 127,
 			[ParameterHPF] = 0,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 0,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -236,11 +236,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 70,
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 96,
 			[ParameterHPF] = 0,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -251,11 +251,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 127,
 			[ParameterHPF] = 0,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -266,11 +266,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 80,
 			[ParameterType] = WaveShapeZigzag,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 127,
 			[ParameterHPF] = 105,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -281,11 +281,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 62,
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 127,
 			[ParameterHPF] = 118,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -296,11 +296,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapePow,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 55,
 			[ParameterHPF] = 0,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -311,11 +311,11 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapeQuantisize,
 			[ParameterNegate] = 0,
+			[ParameterPrefiltering] = 0,
 			[ParameterLPF] = 127,
 			[ParameterHPF] = 0,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterPrefiltering] = 0,
 			[ParameterFuncPar] = 32,
 			[ParameterOffset] = 64,
 		},
@@ -339,11 +339,11 @@ void Distortion::changepar(int npar, unsigned char value)
 	case ParameterLevel: setlevel(value); break;
 	case ParameterType: Ptype = value > 16 ? 16 : value; break;
 	case ParameterNegate: Pnegate = (value > 1) ? 1 : value; break;
+	case ParameterPrefiltering: Pprefiltering = value != 0; break;
 	case ParameterLPF: setlpf(value); break;
 	case ParameterHPF: sethpf(value); break;
 	case ParameterStereo: Pstereo = (value > 1) ? 1 : value; break;
 	case ParameterLRCross: setlrcross(value); break;
-	case ParameterPrefiltering: Pprefiltering = value != 0; break;
 	case ParameterFuncPar: Pfuncpar = value; break;
 	case ParameterOffset: Poffset = value; break;
 	}
@@ -358,11 +358,11 @@ unsigned char Distortion::getpar(int npar) const
 	case ParameterLevel: return Plevel;
 	case ParameterType: return Ptype;
 	case ParameterNegate: return Pnegate;
+	case ParameterPrefiltering: return Pprefiltering;
 	case ParameterLPF: return Plpf;
 	case ParameterHPF: return Phpf;
 	case ParameterStereo: return Pstereo;
 	case ParameterLRCross: return Plrcross;
-	case ParameterPrefiltering: return Pprefiltering;
 	case ParameterFuncPar: return Pfuncpar;
 	case ParameterOffset: return Poffset;
 	default: return 0;

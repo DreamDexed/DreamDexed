@@ -43,11 +43,11 @@ public:
 		ParameterLevel,
 		ParameterType,
 		ParameterNegate,
+		ParameterPrefiltering,
 		ParameterLPF,
 		ParameterHPF,
 		ParameterStereo,
 		ParameterLRCross,
-		ParameterPrefiltering,
 		ParameterFuncPar,
 		ParameterOffset,
 		ParameterCount,
@@ -73,11 +73,11 @@ private:
 	unsigned char Plevel;        //the output amplification
 	unsigned char Ptype;         //Distortion type
 	unsigned char Pnegate;       //if the input is negated
+	unsigned char Pprefiltering; //if you want to do the filtering before the distortion
 	unsigned char Plpf;          //lowpass filter
 	unsigned char Phpf;          //highpass filter
 	unsigned char Pstereo;       //0=mono, 1=stereo
 	unsigned char Plrcross;      //L/R mix
-	unsigned char Pprefiltering; //if you want to do the filtering before the distortion
 	unsigned char Pfuncpar;      //for parametric functions
 	unsigned char Poffset;       //the input offset
 
