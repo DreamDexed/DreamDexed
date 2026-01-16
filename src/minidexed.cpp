@@ -1146,11 +1146,11 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 	case FX::FXParameterZynDistortionLevel:
 	case FX::FXParameterZynDistortionType:
 	case FX::FXParameterZynDistortionNegate:
+	case FX::FXParameterZynDistortionPrefiltering:
 	case FX::FXParameterZynDistortionLPF:
 	case FX::FXParameterZynDistortionHPF:
 	case FX::FXParameterZynDistortionStereo:
 	case FX::FXParameterZynDistortionLRCross:
-	case FX::FXParameterZynDistortionPrefiltering:
 	case FX::FXParameterZynDistortionFuncPar:
 	case FX::FXParameterZynDistortionOffset:
 		m_FXSpinLock.Acquire ();
