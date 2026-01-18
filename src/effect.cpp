@@ -131,6 +131,15 @@ static std::string ToCenter64 (int nValue, int nWidth)
 	else return std::to_string(nValue);
 }
 
+static std::string ToPrePost (int nValue, int nWidth)
+{
+	static const char *PrePost[] = {"Pre", "Post"};
+
+	assert ((unsigned) nValue < sizeof PrePost / sizeof *PrePost);
+
+	return PrePost[nValue];
+}
+
 FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 {
 	{0,	FX::effects_num - 1,	0,	1,	"Slot1",	ToEffectName, FX::FXSaveAsString},
@@ -143,7 +152,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	127,	0,	1,	"ZynDistortionLevel"},
 	{0,	16,	0,	1,	"ZynDistortionType",		zyn::Distortion::ToDistortionType},
 	{0,	1,	0,	1,	"ZynDistortionNegate",		ToOnOff},
-	{0,	127,	0,	1,	"ZynDistortionPrefiltering",	ToOnOff},
+	{0,	1,	1,	1,	"ZynDistortionFiltering",	ToPrePost},
 	{0,	60,	0,	1,	"ZynDistortionLowcut",		ToHz},
 	{0,	60,	60,	1,	"ZynDistortionHighcut",		ToHz},
 	{0,	127,	0,	1,	"ZynDistortionStereo",		ToOnOff},

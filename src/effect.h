@@ -21,7 +21,7 @@ public:
 		FXParameterZynDistortionLevel,
 		FXParameterZynDistortionType,
 		FXParameterZynDistortionNegate,
-		FXParameterZynDistortionPrefiltering,
+		FXParameterZynDistortionFiltering,
 		FXParameterZynDistortionLowcut,
 		FXParameterZynDistortionHighcut,
 		FXParameterZynDistortionStereo,
