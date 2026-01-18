@@ -1147,8 +1147,8 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 	case FX::FXParameterZynDistortionType:
 	case FX::FXParameterZynDistortionNegate:
 	case FX::FXParameterZynDistortionPrefiltering:
-	case FX::FXParameterZynDistortionLPF:
-	case FX::FXParameterZynDistortionHPF:
+	case FX::FXParameterZynDistortionLowcut:
+	case FX::FXParameterZynDistortionHighcut:
 	case FX::FXParameterZynDistortionStereo:
 	case FX::FXParameterZynDistortionLRCross:
 	case FX::FXParameterZynDistortionFuncPar:

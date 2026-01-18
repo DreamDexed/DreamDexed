@@ -23,6 +23,17 @@
 #define PI 3.141592653589793f
 #endif
 
+static const uint16_t MIDI_EQ_HZ[] = {
+        20, 22, 25, 28, 32, 36, 40, 45, 50, 56,
+        63, 70, 80, 90, 100, 110, 125, 140, 160, 180,
+        200, 225, 250, 280, 315, 355, 400, 450, 500, 560,
+        630, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800,
+        2000, 2200, 2500, 2800, 3200, 3600, 4000, 4500, 5000, 5600,
+        6300, 7000, 8000, 9000, 10000, 11000, 12000, 14000, 16000, 18000,
+        20000
+};
+static constexpr uint8_t MIDI_EQ_N = sizeof MIDI_EQ_HZ / sizeof *MIDI_EQ_HZ;
+
 namespace zyn {
 
 Distortion::Distortion(float samplerate):
@@ -49,11 +60,11 @@ void Distortion::cleanup(void)
 //Apply the filters
 void Distortion::applyfilters(float *inputL, float *inputR, uint16_t period)
 {
-	if (Plpf != 127) lpfl.filterout(inputL, period);
-	if (Phpf != 0) hpfl.filterout(inputL, period);
+	if (Phighcut != MIDI_EQ_N - 1) lpfl.filterout(inputL, period);
+	if (Plowcut != 0) hpfl.filterout(inputL, period);
 	if (Pstereo != 0) { //stereo
-		if (Plpf != 127) lpfr.filterout(inputR, period);
-		if (Phpf != 0) hpfr.filterout(inputR, period);
+		if (Phighcut != MIDI_EQ_N - 1) lpfr.filterout(inputR, period);
+		if (Plowcut != 0) hpfr.filterout(inputR, period);
 	}
 }
 
@@ -118,20 +129,24 @@ void Distortion::setmix(unsigned char _Pmix)
 	}
 }
 
-void Distortion::setlpf(unsigned char _Plpf)
+void Distortion::setlowcut(unsigned char _Plowcut)
 {
-	Plpf = _Plpf;
-	float fr = expf(sqrtf(Plpf / 127.0f) * logf(25000.0f)) + 40.0f;
-	lpfl.setfreq(fr);
-	lpfr.setfreq(fr);
-}
+	assert (_Plowcut < MIDI_EQ_N);
 
-void Distortion::sethpf(unsigned char _Phpf)
-{
-	Phpf = _Phpf;
-	float fr = expf(sqrtf(Phpf / 127.0f) * logf(25000.0f)) + 20.0f;
+	Plowcut = _Plowcut;
+	float fr = MIDI_EQ_HZ[Plowcut];
 	hpfl.setfreq(fr);
 	hpfr.setfreq(fr);
+}
+
+void Distortion::sethighcut(unsigned char _Phighcut)
+{
+	assert (_Phighcut < MIDI_EQ_N);
+
+	Phighcut = _Phighcut;
+	float fr = MIDI_EQ_HZ[Phighcut];
+	lpfl.setfreq(fr);
+	lpfr.setfreq(fr);
 }
 
 void Distortion::setpanning(unsigned char Ppanning_)
@@ -222,8 +237,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 127,
-			[ParameterHPF] = 0,
+			[ParameterLowcut] = 0,
+			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 0,
 			[ParameterFuncPar] = 32,
@@ -237,8 +252,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 96,
-			[ParameterHPF] = 0,
+			[ParameterLowcut] = 0,
+			[ParameterHighcut] = 51,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -252,8 +267,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 127,
-			[ParameterHPF] = 0,
+			[ParameterLowcut] = 0,
+			[ParameterHighcut] = 60,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -267,8 +282,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeZigzag,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 127,
-			[ParameterHPF] = 105,
+			[ParameterLowcut] = 54,
+			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -282,8 +297,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 127,
-			[ParameterHPF] = 118,
+			[ParameterLowcut] = 59,
+			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -297,8 +312,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapePow,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 55,
-			[ParameterHPF] = 0,
+			[ParameterLowcut] = 0,
+			[ParameterHighcut] = 32,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -312,8 +327,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterType] = WaveShapeQuantisize,
 			[ParameterNegate] = 0,
 			[ParameterPrefiltering] = 0,
-			[ParameterLPF] = 127,
-			[ParameterHPF] = 0,
+			[ParameterLowcut] = 0,
+			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
 			[ParameterFuncPar] = 32,
@@ -340,8 +355,8 @@ void Distortion::changepar(int npar, unsigned char value)
 	case ParameterType: Ptype = value > 16 ? 16 : value; break;
 	case ParameterNegate: Pnegate = (value > 1) ? 1 : value; break;
 	case ParameterPrefiltering: Pprefiltering = value != 0; break;
-	case ParameterLPF: setlpf(value); break;
-	case ParameterHPF: sethpf(value); break;
+	case ParameterLowcut: setlowcut(value); break;
+	case ParameterHighcut: sethighcut(value); break;
 	case ParameterStereo: Pstereo = (value > 1) ? 1 : value; break;
 	case ParameterLRCross: setlrcross(value); break;
 	case ParameterFuncPar: Pfuncpar = value; break;
@@ -359,8 +374,8 @@ unsigned char Distortion::getpar(int npar) const
 	case ParameterType: return Ptype;
 	case ParameterNegate: return Pnegate;
 	case ParameterPrefiltering: return Pprefiltering;
-	case ParameterLPF: return Plpf;
-	case ParameterHPF: return Phpf;
+	case ParameterLowcut: return Plowcut;
+	case ParameterHighcut: return Phighcut;
 	case ParameterStereo: return Pstereo;
 	case ParameterLRCross: return Plrcross;
 	case ParameterFuncPar: return Pfuncpar;
