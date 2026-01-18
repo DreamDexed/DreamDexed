@@ -44,8 +44,8 @@ public:
 		ParameterType,
 		ParameterNegate,
 		ParameterPrefiltering,
-		ParameterLPF,
-		ParameterHPF,
+		ParameterLowcut,
+		ParameterHighcut,
 		ParameterStereo,
 		ParameterLRCross,
 		ParameterFuncPar,
@@ -74,16 +74,16 @@ private:
 	unsigned char Ptype;         //Distortion type
 	unsigned char Pnegate;       //if the input is negated
 	unsigned char Pprefiltering; //if you want to do the filtering before the distortion
-	unsigned char Plpf;          //lowpass filter
-	unsigned char Phpf;          //highpass filter
+	unsigned char Plowcut;       //lowcut
+	unsigned char Phighcut;      //higcut
 	unsigned char Pstereo;       //0=mono, 1=stereo
 	unsigned char Plrcross;      //L/R mix
 	unsigned char Pfuncpar;      //for parametric functions
 	unsigned char Poffset;       //the input offset
 
 	void setmix(unsigned char _Pmix);
-	void setlpf(unsigned char _Plpf);
-	void sethpf(unsigned char _Phpf);
+	void setlowcut(unsigned char _Plowcut);
+	void sethighcut(unsigned char _Phighcut);
 	void setpanning(unsigned char _Ppanning);
 	void setlevel(unsigned char _Plevel);
 	void setlrcross(unsigned char _Plrcross);
