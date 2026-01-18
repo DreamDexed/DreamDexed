@@ -93,9 +93,9 @@ void Distortion::process(float *inputL, float *inputR, uint16_t period)
 	if (Pfiltering == FilteringPre)
 		applyfilters(tempL, tempR, period);
 
-	waveShapeSmps(period, tempL, Ptype, Pdrive, Poffset, Pfuncpar);
+	waveShapeSmps(period, tempL, Ptype, Pdrive, Poffset, Pshape);
 	if (Pstereo)
-		waveShapeSmps(period, tempR, Ptype, Pdrive, Poffset, Pfuncpar);
+		waveShapeSmps(period, tempR, Ptype, Pdrive, Poffset, Pshape);
 
 	if (Pfiltering == FilteringPost)
 		applyfilters(tempL, tempR, period);
@@ -241,7 +241,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 0,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // Overdrive 1
@@ -256,7 +256,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 51,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // Overdrive 2
@@ -271,7 +271,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // A. Exciter 1
@@ -286,7 +286,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // A. Exciter 2
@@ -301,7 +301,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // Guitar Amp
@@ -316,7 +316,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 32,
 			[ParameterStereo] = 0,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 		{ // Quantisize
@@ -331,7 +331,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
 			[ParameterLRCross] = 35,
-			[ParameterFuncPar] = 32,
+			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
 	};
@@ -359,7 +359,7 @@ void Distortion::changepar(int npar, unsigned char value)
 	case ParameterHighcut: sethighcut(value); break;
 	case ParameterStereo: Pstereo = (value > 1) ? 1 : value; break;
 	case ParameterLRCross: setlrcross(value); break;
-	case ParameterFuncPar: Pfuncpar = value; break;
+	case ParameterShape: Pshape = value; break;
 	case ParameterOffset: Poffset = value; break;
 	}
 }
@@ -378,7 +378,7 @@ unsigned char Distortion::getpar(int npar) const
 	case ParameterHighcut: return Phighcut;
 	case ParameterStereo: return Pstereo;
 	case ParameterLRCross: return Plrcross;
-	case ParameterFuncPar: return Pfuncpar;
+	case ParameterShape: return Pshape;
 	case ParameterOffset: return Poffset;
 	default: return 0;
 	}

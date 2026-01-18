@@ -69,11 +69,11 @@ void waveShapeSmps(int n,
 		   unsigned char type,
 		   unsigned char drive,
 		   unsigned char offset,
-		   unsigned char funcpar)
+		   unsigned char shape)
 {
 	int i;
 	float ws = drive / 127.0f;
-	float par = funcpar / 127.0f;
+	float par = shape / 127.0f;
 	float offs = (offset - 64.0f) / 64.0f;
 	float tmpv;
 

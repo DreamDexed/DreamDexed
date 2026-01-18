@@ -20,7 +20,7 @@ void waveShapeSmps(int n,
 		   unsigned char type,
 		   unsigned char drive,
 		   unsigned char offset = 64,
-		   unsigned char funcpar = 0);
+		   unsigned char shape = 0);
 
 	enum WaveShapeType {
 		WaveShapeArctangent,
