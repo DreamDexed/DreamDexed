@@ -48,7 +48,7 @@ public:
 		ParameterHighcut,
 		ParameterStereo,
 		ParameterLRCross,
-		ParameterFuncPar,
+		ParameterShape,
 		ParameterOffset,
 		ParameterCount,
 	};
@@ -83,7 +83,7 @@ private:
 	unsigned char Phighcut;      //higcut
 	unsigned char Pstereo;       //0=mono, 1=stereo
 	unsigned char Plrcross;      //L/R mix
-	unsigned char Pfuncpar;      //for parametric functions
+	unsigned char Pshape;        //for waveshaper shape
 	unsigned char Poffset;       //the input offset
 
 	void setmix(unsigned char _Pmix);

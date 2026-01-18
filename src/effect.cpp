@@ -157,7 +157,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	60,	60,	1,	"ZynDistortionHighcut",		ToHz},
 	{0,	127,	0,	1,	"ZynDistortionStereo",		ToOnOff},
 	{0,	127,	0,	1,	"ZynDistortionLRCross"},
-	{0,	127,	0,	1,	"ZynDistortionFuncPar"},
+	{0,	127,	0,	1,	"ZynDistortionShape"},
 	{0,	127,	0,	1,	"ZynDistortionOffset",		ToCenter64},
 	{0,	1,	0,	1,	"ZynDistortionBypass",		ToOnOff},
 	{0,	100,	0,	1,	"YKChorusMix",	ToDryWet},

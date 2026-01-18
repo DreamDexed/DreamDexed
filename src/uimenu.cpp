@@ -233,7 +233,7 @@ const CUIMenu::TMenuItem CUIMenu::s_ZynDistortionMenu[] =
 	{"Highcut",	EditFXParameter2,	0,	FX::FXParameterZynDistortionHighcut},
 	{"Stereo",	EditFXParameter2,	0,	FX::FXParameterZynDistortionStereo},
 	{"LR Cross",	EditFXParameter2,	0,	FX::FXParameterZynDistortionLRCross},
-	{"FuncPar",	EditFXParameter2,	0,	FX::FXParameterZynDistortionFuncPar},
+	{"Shape",	EditFXParameter2,	0,	FX::FXParameterZynDistortionShape},
 	{"Offset",	EditFXParameter2,	0,	FX::FXParameterZynDistortionOffset},
 	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynDistortionBypass},
 	{0}

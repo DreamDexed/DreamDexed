@@ -26,7 +26,7 @@ public:
 		FXParameterZynDistortionHighcut,
 		FXParameterZynDistortionStereo,
 		FXParameterZynDistortionLRCross,
-		FXParameterZynDistortionFuncPar,
+		FXParameterZynDistortionShape,
 		FXParameterZynDistortionOffset,
 		FXParameterZynDistortionBypass,
 		FXParameterYKChorusMix,
