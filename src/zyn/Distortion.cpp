@@ -28,8 +28,8 @@ namespace zyn {
 Distortion::Distortion(float samplerate):
 samplerate{samplerate},
 Ppreset{},
-lpfl{2, 22000, 1, 0, samplerate},
-lpfr{2, 22000, 1, 0, samplerate},
+lpfl{2, 20000, 1, 0, samplerate},
+lpfr{2, 20000, 1, 0, samplerate},
 hpfl{3, 20, 1, 0, samplerate},
 hpfr{3, 20, 1, 0, samplerate}
 {
