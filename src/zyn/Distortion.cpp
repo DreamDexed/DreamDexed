@@ -90,14 +90,14 @@ void Distortion::process(float *inputL, float *inputR, uint16_t period)
 		for(int i = 0; i < period; ++i)
 			tempL[i] = (inputL[i] * panl + inputR[i] * panr) * inputvol;
 
-	if (Pprefiltering)
+	if (Pfiltering == FilteringPre)
 		applyfilters(tempL, tempR, period);
 
 	waveShapeSmps(period, tempL, Ptype, Pdrive, Poffset, Pfuncpar);
 	if (Pstereo)
 		waveShapeSmps(period, tempR, Ptype, Pdrive, Poffset, Pfuncpar);
 
-	if (!Pprefiltering)
+	if (Pfiltering == FilteringPost)
 		applyfilters(tempL, tempR, period);
 
 	if (!Pstereo)
@@ -236,7 +236,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 70,
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
@@ -251,7 +251,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 70,
 			[ParameterType] = WaveShapeArctangent,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 51,
 			[ParameterStereo] = 0,
@@ -266,7 +266,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 0,
@@ -281,7 +281,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 80,
 			[ParameterType] = WaveShapeZigzag,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 54,
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
@@ -296,7 +296,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 62,
 			[ParameterType] = WaveShapeAsymmetric,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 59,
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
@@ -311,7 +311,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapePow,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 32,
 			[ParameterStereo] = 0,
@@ -326,7 +326,7 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapeQuantisize,
 			[ParameterNegate] = 0,
-			[ParameterPrefiltering] = 0,
+			[ParameterFiltering] = FilteringPost,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
 			[ParameterStereo] = 1,
@@ -354,7 +354,7 @@ void Distortion::changepar(int npar, unsigned char value)
 	case ParameterLevel: setlevel(value); break;
 	case ParameterType: Ptype = value > 16 ? 16 : value; break;
 	case ParameterNegate: Pnegate = (value > 1) ? 1 : value; break;
-	case ParameterPrefiltering: Pprefiltering = value != 0; break;
+	case ParameterFiltering: Pfiltering = value > FilteringPost ? FilteringPost : value; break;
 	case ParameterLowcut: setlowcut(value); break;
 	case ParameterHighcut: sethighcut(value); break;
 	case ParameterStereo: Pstereo = (value > 1) ? 1 : value; break;
@@ -373,7 +373,7 @@ unsigned char Distortion::getpar(int npar) const
 	case ParameterLevel: return Plevel;
 	case ParameterType: return Ptype;
 	case ParameterNegate: return Pnegate;
-	case ParameterPrefiltering: return Pprefiltering;
+	case ParameterFiltering: return Pfiltering;
 	case ParameterLowcut: return Plowcut;
 	case ParameterHighcut: return Phighcut;
 	case ParameterStereo: return Pstereo;

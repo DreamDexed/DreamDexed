@@ -43,7 +43,7 @@ public:
 		ParameterLevel,
 		ParameterType,
 		ParameterNegate,
-		ParameterPrefiltering,
+		ParameterFiltering,
 		ParameterLowcut,
 		ParameterHighcut,
 		ParameterStereo,
@@ -51,6 +51,11 @@ public:
 		ParameterFuncPar,
 		ParameterOffset,
 		ParameterCount,
+	};
+
+	enum Filtering {
+		FilteringPre,
+		FilteringPost,
 	};
 
 	static std::string ToDistortionType(int nValue, int nWidth);
@@ -73,7 +78,7 @@ private:
 	unsigned char Plevel;        //the output amplification
 	unsigned char Ptype;         //Distortion type
 	unsigned char Pnegate;       //if the input is negated
-	unsigned char Pprefiltering; //if you want to do the filtering before the distortion
+	unsigned char Pfiltering;    //if you want to do the filtering before or after the distortion
 	unsigned char Plowcut;       //lowcut
 	unsigned char Phighcut;      //higcut
 	unsigned char Pstereo;       //0=mono, 1=stereo

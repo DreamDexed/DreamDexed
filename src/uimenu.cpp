@@ -228,7 +228,7 @@ const CUIMenu::TMenuItem CUIMenu::s_ZynDistortionMenu[] =
 	{"Level",	EditFXParameter2,	0,	FX::FXParameterZynDistortionLevel},
 	{"Type",	EditFXParameter2,	0,	FX::FXParameterZynDistortionType},
 	{"Negate",	EditFXParameter2,	0,	FX::FXParameterZynDistortionNegate},
-	{"Prefilter",	EditFXParameter2,	0,	FX::FXParameterZynDistortionPrefiltering},
+	{"Filtering",	EditFXParameter2,	0,	FX::FXParameterZynDistortionFiltering},
 	{"Lowcut",	EditFXParameter2,	0,	FX::FXParameterZynDistortionLowcut},
 	{"Highcut",	EditFXParameter2,	0,	FX::FXParameterZynDistortionHighcut},
 	{"Stereo",	EditFXParameter2,	0,	FX::FXParameterZynDistortionStereo},
