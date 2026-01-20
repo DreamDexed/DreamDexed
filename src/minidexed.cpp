@@ -145,6 +145,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nEQGain[i] = 0;
 		m_nEQLowMidFreq[i] = 24;
 		m_nEQMidHighFreq[i] = 44;
+		m_nEQPreLowcut[i] = 0;
+		m_nEQPreHighcut[i] = 60;
 
 		// Active the required number of active TGs
 		if (i<m_nToneGenerators)
@@ -1528,7 +1530,19 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setMidHighFreq_n (nValue);
 		m_FXSpinLock.Release ();
 		break;
-	
+
+	case FX::FXParameterEQPreLowCut:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setPreLowCut(MIDI_EQ_HZ[nValue]);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterEQPreHighCut:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->eq.setPreHighCut(MIDI_EQ_HZ[nValue]);
+		m_FXSpinLock.Release ();
+		break;
+
 	case FX::FXParameterEQBypass:
 		fx_chain[nFX]->eq.bypass = nValue;
 		break;
@@ -1670,6 +1684,8 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 		case TGParameterEQGain:			SetEQGain (nValue, i); break;
 		case TGParameterEQLowMidFreq:		SetEQLowMidFreq (nValue, i); break;
 		case TGParameterEQMidHighFreq:		SetEQMidHighFreq (nValue, i); break;
+		case TGParameterEQPreLowcut:		SetEQPreLowcut (nValue, i); break;
+		case TGParameterEQPreHighcut:		SetEQPreHighcut (nValue, i); break;
 
 		default:
 			assert (0);
@@ -1742,6 +1758,8 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterEQGain:			return m_nEQGain[nTG]; break;
 	case TGParameterEQLowMidFreq:		return m_nEQLowMidFreq[nTG]; break;
 	case TGParameterEQMidHighFreq:		return m_nEQMidHighFreq[nTG]; break;
+	case TGParameterEQPreLowcut:		return m_nEQPreLowcut[nTG]; break;
+	case TGParameterEQPreHighcut:		return m_nEQPreHighcut[nTG]; break;
 
 	default:
 		assert (0);
@@ -2167,6 +2185,8 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetEQGain (m_nEQGain[nTG], nTG);
 		m_PerformanceConfig.SetEQLowMidFreq (m_nEQLowMidFreq[nTG], nTG);
 		m_PerformanceConfig.SetEQMidHighFreq (m_nEQMidHighFreq[nTG], nTG);
+		m_PerformanceConfig.SetEQPreLowcut (m_nEQPreLowcut[nTG], nTG);
+		m_PerformanceConfig.SetEQPreHighcut (m_nEQPreHighcut[nTG], nTG);
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
@@ -2329,6 +2349,26 @@ void CMiniDexed::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
 
 	nValue = constrain(nValue, 28u, 59u);
 	m_nEQMidHighFreq[nTG] = m_pTG[nTG]->EQ.setMidHighFreq_n(nValue);
+}
+
+void CMiniDexed::SetEQPreLowcut (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, 0u, 60u);
+	m_nEQPreLowcut[nTG] = nValue;
+	m_pTG[nTG]->EQ.setPreLowCut(MIDI_EQ_HZ[nValue]);
+}
+
+void CMiniDexed::SetEQPreHighcut (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	nValue = constrain(nValue, 0u, 60u);
+	m_nEQPreHighcut[nTG] = nValue;
+	m_pTG[nTG]->EQ.setPreHighCut(MIDI_EQ_HZ[nValue]);
 }
 
 void CMiniDexed::setMonoMode(uint8_t mono, uint8_t nTG)
@@ -2877,6 +2917,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		SetEQGain (m_PerformanceConfig.GetEQGain (nTG), nTG);
 		SetEQLowMidFreq (m_PerformanceConfig.GetEQLowMidFreq (nTG), nTG);
 		SetEQMidHighFreq (m_PerformanceConfig.GetEQMidHighFreq (nTG), nTG);
+		SetEQPreLowcut (m_PerformanceConfig.GetEQPreLowcut (nTG), nTG);
+		SetEQPreHighcut (m_PerformanceConfig.GetEQPreHighcut (nTG), nTG);
 	}
 
 	for (unsigned nFX=0; nFX < CConfig::FXChains; ++nFX)

@@ -68,6 +68,18 @@ public:
 		return eqR.setMidHighFreq_n(value);
 	}
 
+	void setPreLowCut(float value)
+	{
+		eqL.setPreLowCut(value);
+		eqR.setPreLowCut(value);
+	}
+
+	void setPreHighCut(float value)
+	{
+		eqL.setPreHighCut(value);
+		eqR.setPreHighCut(value);
+	}
+
 	float getLow_dB() const { return eqR.getLow_dB(); }
 	float getMid_dB() const { return eqR.getMid_dB(); }
 	float getHigh_dB() const { return eqR.getHigh_dB(); }
@@ -76,6 +88,9 @@ public:
 	float getMidHighFreq() const { return eqR.getMidHighFreq(); }
 	unsigned getLowMidFreq_n() const { return eqR.getLowMidFreq_n(); }
 	unsigned getMidHighFreq_n() const { return eqR.getMidHighFreq_n(); }
+
+	float getPreLowCut() { return eqR.getPreLowCut(); }
+	float getPreHighCut() { return eqR.getPreHighCut(); }
 
 	void resetState() { eqL.resetState(); eqR.resetState(); }
 
@@ -90,6 +105,6 @@ public:
 	std::atomic<bool> bypass;
 
 private:
-        AudioEffect3BandEQMono eqL;
-        AudioEffect3BandEQMono eqR;
+	AudioEffect3BandEQMono eqL;
+	AudioEffect3BandEQMono eqR;
 };

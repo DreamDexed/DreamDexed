@@ -128,6 +128,8 @@ public:
 	int GetEQGain (unsigned nTG) const;
 	unsigned GetEQLowMidFreq (unsigned nTG) const;
 	unsigned GetEQMidHighFreq (unsigned nTG) const;
+	unsigned GetEQPreLowcut (unsigned nTG) const;
+	unsigned GetEQPreHighcut (unsigned nTG) const;
 
 	void SetEQLow (int nValue, unsigned nTG);
 	void SetEQMid (int nValue, unsigned nTG);
@@ -135,6 +137,8 @@ public:
 	void SetEQGain (int nValue, unsigned nTG);
 	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
+	void SetEQPreLowcut (unsigned nValue, unsigned nTG);
+	void SetEQPreHighcut (unsigned nValue, unsigned nTG);
 
 	// Effects
 	int GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const;
@@ -225,6 +229,8 @@ private:
 	int m_nEQGain[CConfig::AllToneGenerators];
 	unsigned m_nEQLowMidFreq[CConfig::AllToneGenerators];
 	unsigned m_nEQMidHighFreq[CConfig::AllToneGenerators];
+	unsigned m_nEQPreLowcut[CConfig::AllToneGenerators];
+	unsigned m_nEQPreHighcut[CConfig::AllToneGenerators];
 
 	unsigned m_nLastPerformance;  
 	unsigned m_nActualPerformance = 0;  

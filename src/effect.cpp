@@ -288,6 +288,8 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{-24,	24,	0,	1,	"EQGain",		TodB},
 	{0,	46,	24,	1,	"EQLowMidFreq",		ToHz},
 	{28,	59,	44,	1,	"EQMidHighFreq",	ToHz},
+	{0,	60,	0,	1,	"EQPreLowCut",		ToHz},
+	{0,	60,	60,	1,	"EQPreHighCut",		ToHz},
 	{0,	1,	0,	1,	"EQBypass",		ToOnOff},
 	{0,	99,	0,	1,	"ReturnLevel"},
 	{0,	1,	0,	1,	"Bypass",		ToOnOff},
