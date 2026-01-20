@@ -8,6 +8,7 @@
 
 #include <cmath>
 
+#include "effect_bwfmono.h"
 #include "midi.h"
 
 class AudioEffect3BandEQMono
@@ -15,6 +16,8 @@ class AudioEffect3BandEQMono
 public:
 	AudioEffect3BandEQMono(float samplerate):
 	samplerate{samplerate},
+	preHPF{AudioEffectBWFMono::HP, samplerate, 20.0f, 2},
+	preLPF(AudioEffectBWFMono::LP, samplerate, 20000.0f, 2),
 	fLow{}, fMid{}, fHigh{}, fGain{}, fLowMidFreq{}, fMidHighFreq{},
 	nLowMidFreq{24}, /* 315Hz */
 	nMidHighFreq{44}, /* 3.2kHz */
@@ -84,6 +87,9 @@ public:
 		return nMidHighFreq;
 	}
 
+	void setPreLowCut(float value) { preHPF.setCutoff_Hz(value); }
+	void setPreHighCut(float value) { preLPF.setCutoff_Hz(value); }
+
 	float getLow_dB() const { return fLow; }
 	float getMid_dB() const { return fMid; }
 	float getHigh_dB() const { return fHigh; }
@@ -93,11 +99,20 @@ public:
 	unsigned getLowMidFreq_n() const { return nLowMidFreq; }
 	unsigned getMidHighFreq_n() const { return nMidHighFreq; }
 
-	void resetState() { tmpLP = 0.0f; tmpHP = 0.0f; }
+	float getPreLowCut() { return preHPF.getCutoff_Hz(); }
+	float getPreHighCut() { return preLPF.getCutoff_Hz(); }
+
+	void resetState() { tmpLP = 0.0f; tmpHP = 0.0f; preHPF.resetState(); preLPF.resetState(); }
 
 	void process(float32_t* block, uint16_t len)
 	{
 		float outLP, outHP;
+
+		if (preHPF.getCutoff_Hz() != 20.0f)
+			preHPF.process(block, len);
+
+		if (preLPF.getCutoff_Hz() != 20000.0f)
+			preLPF.process(block, len);
 
 		if (!fLow && !fMid && !fHigh && !fGain) return;
 
@@ -117,6 +132,9 @@ public:
 
 private:
 	float samplerate;
+
+	AudioEffectBWFMono preHPF;
+	AudioEffectBWFMono preLPF;
 
 	float fLow, fMid, fHigh, fGain, fLowMidFreq, fMidHighFreq;
 	unsigned nLowMidFreq, nMidHighFreq;

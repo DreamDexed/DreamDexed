@@ -159,6 +159,8 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 	{"Gain",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQGain},
 	{"Low-Mid Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQLowMidFreq},
 	{"Mid-High Freq",	EditTGParameter2,	0,	CMiniDexed::TGParameterEQMidHighFreq},
+	{"Pre Lowcut",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQPreLowcut},
+	{"Pre Highcut",		EditTGParameter2,	0,	CMiniDexed::TGParameterEQPreHighcut},
 	{0}
 };
 
@@ -457,6 +459,8 @@ const CUIMenu::TMenuItem CUIMenu::s_FXEQMenu[] =
 	{"Gain",		EditFXParameter2,	0,	FX::FXParameterEQGain},
 	{"Low-Mid Freq",	EditFXParameter2,	0,	FX::FXParameterEQLowMidFreq},
 	{"Mid-High Freq",	EditFXParameter2,	0,	FX::FXParameterEQMidHighFreq},
+	{"Pre Lowcut",		EditFXParameter2,	0,	FX::FXParameterEQPreLowCut},
+	{"Pre Highcut",		EditFXParameter2,	0,	FX::FXParameterEQPreHighCut},
 	{"Bypass",		EditFXParameter2,	0,	FX::FXParameterEQBypass},
 	{0}
 };
@@ -594,6 +598,8 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{-24,	24,	1,	TodB},		// TGParameterEQGain
 	{0,	46,	1,	ToHz},		// TGParameterEQLowMidFreq
 	{28,	59,	1,	ToHz},		// TGParameterEQMidHighFreq
+	{0,	60,	1,	ToHz},		// TGParameterEQPreLowcut
+	{0,	60,	1,	ToHz},		// TGParameterEQPreHighcut
 };
 
 // must match DexedVoiceParameters in Synth_Dexed

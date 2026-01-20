@@ -13,6 +13,7 @@ OBJS = main.o kernel.o minidexed.o config.o userinterface.o uimenu.o ddfont8x16.
        ../CloudSeedCore/DSP/Biquad.o ../CloudSeedCore/DSP/RandomBuffer.o ../CloudSeedCore/DSP/FastSin.o \
        zyn/EffectLFO.o zyn/Phaser.o zyn/APhaser.o zyn/Chorus.o \
        zyn/AnalogFilter.o zyn/ValueSmoothingFilter.o zyn/WaveShapeSmps.o zyn/Distortion.o \
+       butter.o \
        arm_float_to_q23.o arm_zip_f32.o arm_scale_zip_f32.o \
        net/ftpdaemon.o net/ftpworker.o net/applemidi.o net/udpmidi.o net/mdnspublisher.o udpmididevice.o
 

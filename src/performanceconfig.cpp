@@ -265,6 +265,12 @@ bool CPerformanceConfig::Load (void)
 
 		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
 		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber (PropertyName, 44);
+
+		PropertyName.Format ("EQPreLowcut%u", nTG+1);
+		m_nEQPreLowcut[nTG] = m_Properties.GetNumber (PropertyName, 0);
+
+		PropertyName.Format ("EQPreHighcut%u", nTG+1);
+		m_nEQPreHighcut[nTG] = m_Properties.GetNumber (PropertyName, 60);
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
@@ -474,6 +480,11 @@ bool CPerformanceConfig::Save (void)
 		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nEQMidHighFreq[nTG]);
 
+		PropertyName.Format ("EQPreLowcut%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nEQPreLowcut[nTG]);
+
+		PropertyName.Format ("EQPreHighcut%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nEQPreHighcut[nTG]);
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
@@ -724,6 +735,18 @@ unsigned CPerformanceConfig::GetEQMidHighFreq (unsigned nTG) const
 	return m_nEQMidHighFreq[nTG];
 }
 
+unsigned CPerformanceConfig::GetEQPreLowcut (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQPreLowcut[nTG];
+}
+
+unsigned CPerformanceConfig::GetEQPreHighcut (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nEQPreHighcut[nTG];
+}
+
 void CPerformanceConfig::SetEQLow (int nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -758,6 +781,18 @@ void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nEQMidHighFreq[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQPreLowcut (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQPreLowcut[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetEQPreHighcut (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nEQPreHighcut[nTG] = nValue;
 }
 
 int CPerformanceConfig::GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const

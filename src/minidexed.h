@@ -123,6 +123,8 @@ public:
 	void SetEQGain (int nValue, unsigned nTG);
 	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
 	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
+	void SetEQPreLowcut (unsigned nValue, unsigned nTG);
+	void SetEQPreHighcut (unsigned nValue, unsigned nTG);
 
 	void setMonoMode(uint8_t mono, uint8_t nTG);
 
@@ -266,6 +268,8 @@ public:
 		TGParameterEQGain,
 		TGParameterEQLowMidFreq,
 		TGParameterEQMidHighFreq,
+		TGParameterEQPreLowcut,
+		TGParameterEQPreHighcut,
 
 		TGParameterUnknown
 	};
@@ -369,6 +373,8 @@ private:
 	int m_nEQGain[CConfig::AllToneGenerators];
 	unsigned m_nEQLowMidFreq[CConfig::AllToneGenerators];
 	unsigned m_nEQMidHighFreq[CConfig::AllToneGenerators];
+	unsigned m_nEQPreLowcut[CConfig::AllToneGenerators];
+	unsigned m_nEQPreHighcut[CConfig::AllToneGenerators];
 
 	uint8_t m_nRawVoiceData[156]; 
 	

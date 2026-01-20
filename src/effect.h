@@ -157,6 +157,8 @@ public:
 		FXParameterEQGain,
 		FXParameterEQLowMidFreq,
 		FXParameterEQMidHighFreq,
+		FXParameterEQPreLowCut,
+		FXParameterEQPreHighCut,
 		FXParameterEQBypass,
 		FXParameterReturnLevel,
 		FXParameterBypass,
