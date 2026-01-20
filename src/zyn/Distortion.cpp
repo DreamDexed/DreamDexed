@@ -322,7 +322,7 @@ void Distortion::loadpreset(unsigned char npreset)
 		{ // Quantisize
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
-			[ParameterDrive] = 88,
+			[ParameterDrive] = 3,
 			[ParameterLevel] = 75,
 			[ParameterType] = WaveShapeQuantisize,
 			[ParameterNegate] = 0,
