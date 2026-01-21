@@ -1,6 +1,4 @@
-#include "../Misc/Allocator.h"
-#include "../globals.h"
-#include "../DSP/Value_Smoothing_Filter.h"
+#include "ValueSmoothingFilter.h"
 
 #pragma once
 
@@ -10,33 +8,30 @@ namespace zyn {
 class CombFilterBank
 {
 public:
-	CombFilterBank(Allocator *alloc, unsigned int samplerate_, int buffersize_, float initgain);
-	~CombFilterBank();
-	void filterout(float *smp);
+	CombFilterBank(float samplerate, float initgain);
+	void filterout(float *smp, uint16_t period);
 
-	float delays[NUM_SYMPATHETIC_STRINGS] = {};
+	static constexpr unsigned max_strings = 76 * 3;
+	static constexpr unsigned max_samples = 6048;
+
+	float delays[max_strings];
 	float inputgain;
 	float outgain;
 	float gainbwd;
 
-	void setStrings(unsigned int nr, const float basefreq);
+	void setStrings(unsigned nr, float basefreq);
 
 private:
-	static float tanhX(const float x);
-	float sampleLerp(const float *smp, const float pos) const;
-
-	float* string_smps[NUM_SYMPATHETIC_STRINGS] = {};
-	float baseFreq;
-	unsigned int nrOfStrings = 0;
-	unsigned int pos_writer = 0;
+	float string_smps[max_strings][max_samples];
+	float basefreq;
+	unsigned strings_nr;
+	unsigned pos_writer;
 
 	/* for smoothing gain jump when using binary valued sustain pedal */
-	Value_Smoothing_Filter gain_smoothing;
+	ValueSmoothingFilter gain_smoothing;
 
-	Allocator &memory;
-	unsigned int mem_size = 0;
-	int samplerate = 0;
-	unsigned int buffersize = 0;
+	unsigned mem_size;
+	float samplerate;
 };
 
 }
