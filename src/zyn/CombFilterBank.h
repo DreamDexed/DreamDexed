@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 namespace zyn {
 
 /**Comb Filter Bank for sympathetic Resonance*/

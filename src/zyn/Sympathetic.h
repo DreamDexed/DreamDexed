@@ -11,8 +11,7 @@
   of the License, or (at your option) any later version.
 */
 
-#ifndef SYMPATHETIC_H
-#define SYMPATHETIC_H
+#pragma once
 
 #include "Effect.h"
 
@@ -82,5 +81,3 @@ private:
 };
 
 }
-
-#endif
