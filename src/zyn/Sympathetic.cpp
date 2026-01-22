@@ -146,14 +146,18 @@ void Sympathetic::calcFreqsGeneric()
 	float unison_real_spread_up = powf(2.0f, (unison_spread_semicent * 0.5f) / 1200.0f);
 	float unison_real_spread_down = 1.0f / unison_real_spread_up;
 
-	for (unsigned int i = 0; i < Punison_size * Pstrings; i += Punison_size)
+	for (unsigned i = 0; i < Pstrings; ++i)
 	{
-		float centerFreq = powf(2.0f, (float)i / 36.0f) * baseFreq;
-		filterBank.delays[i] = samplerate / centerFreq;
+		float centerFreq = powf(2.0f, i / 12.0f) * baseFreq;
+
+		int n = i * Punison_size;
+		filterBank.delays[n] = samplerate / centerFreq;
+
 		if (Punison_size > 1)
-			filterBank.delays[i + 1] = samplerate / (centerFreq * unison_real_spread_up);
+			filterBank.delays[n + 1] = samplerate / (centerFreq * unison_real_spread_up);
+
 		if (Punison_size > 2)
-			filterBank.delays[i + 2] = samplerate / (centerFreq * unison_real_spread_down);
+			filterBank.delays[n + 2] = samplerate / (centerFreq * unison_real_spread_down);
 	}
 	filterBank.setStrings(Pstrings * Punison_size, baseFreq);
 }
@@ -164,52 +168,62 @@ void Sympathetic::calcFreqsPiano()
 	float unison_real_spread_up = powf(2.0f, (unison_spread_semicent * 0.5f) / 1200.0f);
 	float unison_real_spread_down = 1.0f / unison_real_spread_up;
 
-	for (unsigned int i = 0; i < Punison_size * Pstrings; i += Punison_size)
+	for (unsigned int i = 0; i < Pstrings; ++i)
 	{
-		float centerFreq = powf(2.0f, (float)i / 36.0f) * baseFreq;
-
+		float centerFreq = powf(2.0f, i / 12.0f) * baseFreq;
 		unsigned int stringchoir_size;
-		if (i < num_single_strings)
-			stringchoir_size = 1;
-		else if (i < Pstrings - num_triple_strings)
-			stringchoir_size = 2;
-		else
-			stringchoir_size = 3;
 
-		filterBank.delays[i] = samplerate / centerFreq;
+		if (centerFreq < 52.0f) // 1 string for Low bass section keys 1 - 12 (51.91 Hz)
+			stringchoir_size = 1;
+		else if (centerFreq < 93.0f) // 2 strings for Bass break section keys 13 - 22 (92.50 Hz)
+			stringchoir_size = 2;
+		else // 3 strings for Mid Range & High Treble section keys 23 - 88
+			stringchoir_size = 3;
+		
+		int n = i * Punison_size;
+		filterBank.delays[n] = samplerate / centerFreq;
+
 		if (Punison_size > 1)
 			if (stringchoir_size > 1)
-				filterBank.delays[i + 1] = samplerate / (centerFreq * unison_real_spread_up);
+				filterBank.delays[n + 1] = samplerate / (centerFreq * unison_real_spread_up);
 			else
-				filterBank.delays[i + 1] = 0;
+				filterBank.delays[n + 1] = 0;
 
 		if (Punison_size > 2)
 			if (stringchoir_size > 2)
-				filterBank.delays[i + 2] = samplerate / (centerFreq * unison_real_spread_down);
+				filterBank.delays[n + 2] = samplerate / (centerFreq * unison_real_spread_down);
 			else
-				filterBank.delays[i + 2] = 0;
+				filterBank.delays[n + 2] = 0;
 	}
 	filterBank.setStrings(Pstrings * Punison_size, baseFreq);
 }
 
 void Sympathetic::calcFreqsGuitar()
 {
+	// frequencies steps of a guitar in standard e tuning
+	//static constexpr float guitar_freqs[6] = {82.4f, 110.0f, 146.8f, 196.0f, 246.9f, 329.6f};
+	static constexpr uint8_t strings = 6;
+	static constexpr uint8_t steps[strings] = {0, 5, 10, 15, 19, 24};
+	
+
 	float unison_spread_semicent = powf(Punison_spread / 63.5f, 2.0f) * 25.0f;
 	float unison_real_spread_up = powf(2.0f, (unison_spread_semicent * 0.5f) / 1200.0f);
 	float unison_real_spread_down = 1.0f / unison_real_spread_up;
 
-	for (unsigned int i = 0; i < 6 * Punison_size; i += Punison_size)
+	for (unsigned int i = 0; i < strings; ++i)
 	{
-		float centerFreq = guitar_freqs[i / Punison_size];
+		float centerFreq = powf(2.0f, steps[i] / 12.0f) * baseFreq;
 
-		filterBank.delays[i] = samplerate / centerFreq;
+		int n = i * Punison_size;
+		filterBank.delays[n] = samplerate / centerFreq;
+
 		if (Punison_size > 1)
-			filterBank.delays[i + 1] = samplerate / (centerFreq * unison_real_spread_up);
-		if (Punison_size > 2)
-			filterBank.delays[i + 2] = samplerate / (centerFreq * unison_real_spread_down);
+			filterBank.delays[n + 1] = samplerate / (centerFreq * unison_real_spread_up);
 
+		if (Punison_size > 2)
+			filterBank.delays[n + 2] = samplerate / (centerFreq * unison_real_spread_down);
 	}
-	filterBank.setStrings(6 * Punison_size, guitar_freqs[0]);
+	filterBank.setStrings(strings * Punison_size, baseFreq);
 }
 
 static const char *SympTypes[Sympathetic::types_num] = {
@@ -326,7 +340,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 1,
 			[ParameterUnisonSpread] = 0,
 			[ParameterStrings] = 6,
-			[ParameterBaseNote] = 52,
+			[ParameterBaseNote] = 40,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
@@ -341,7 +355,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 2,
 			[ParameterUnisonSpread] = 10,
 			[ParameterStrings] = 6,
-			[ParameterBaseNote] = 52,
+			[ParameterBaseNote] = 40,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
