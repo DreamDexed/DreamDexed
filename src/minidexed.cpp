@@ -1240,6 +1240,7 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 	case FX::FXParameterZynSympatheticUnisonSize:
 	case FX::FXParameterZynSympatheticUnisonSpread:
 	case FX::FXParameterZynSympatheticStrings:
+	case FX::FXParameterZynSympatheticInterval:
 	case FX::FXParameterZynSympatheticBaseNote:
 	case FX::FXParameterZynSympatheticLowcut:
 	case FX::FXParameterZynSympatheticHighcut:

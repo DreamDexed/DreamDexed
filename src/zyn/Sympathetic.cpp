@@ -157,7 +157,7 @@ void Sympathetic::calcFreqsGeneric()
 
 	for (unsigned i = 0; i < Pstrings; ++i)
 	{
-		float centerFreq = powf(2.0f, i / 12.0f) * baseFreq;
+		float centerFreq = powf(2.0f, i * Pinterval / 12.0f) * baseFreq;
 
 		int n = i * Punison_size;
 		filterBank.delays[n] = samplerate / centerFreq;
@@ -179,7 +179,7 @@ void Sympathetic::calcFreqsPiano()
 
 	for (unsigned int i = 0; i < Pstrings; ++i)
 	{
-		float centerFreq = powf(2.0f, i / 12.0f) * baseFreq;
+		float centerFreq = powf(2.0f, i * Pinterval / 12.0f) * baseFreq;
 		unsigned int stringchoir_size;
 
 		if (centerFreq < 52.0f) // 1 string for Low bass section keys 1 - 12 (51.91 Hz)
@@ -289,6 +289,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 1,
 			[ParameterUnisonSpread] = 10,
 			[ParameterStrings] = 12,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 57,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -304,6 +305,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 3,
 			[ParameterUnisonSpread] = 10,
 			[ParameterStrings] = 12,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 57,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -319,6 +321,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 3,
 			[ParameterUnisonSpread] = 10,
 			[ParameterStrings] = 12,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 57,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -334,6 +337,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 1,
 			[ParameterUnisonSpread] = 5,
 			[ParameterStrings] = 60,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 33,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -349,6 +353,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 1,
 			[ParameterUnisonSpread] = 0,
 			[ParameterStrings] = 6,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 40,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -364,6 +369,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterUnisonSize] = 2,
 			[ParameterUnisonSpread] = 10,
 			[ParameterStrings] = 6,
+			[ParameterInterval] = 1,
 			[ParameterBaseNote] = 40,
 			[ParameterLowcut] = 0,
 			[ParameterHighcut] = 60,
@@ -434,6 +440,17 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		}
 	}
 	break;
+	case ParameterInterval:
+	{
+		value = value < 1 ? 1 : value;
+		value = value > 10 ? 10 : value;
+		if (Pinterval != value)
+		{
+			Pinterval = value;
+			calcFreqs();
+		}
+	}
+	break;
 	case ParameterBaseNote:
 		if (Pbasenote != value)
 		{
@@ -461,6 +478,7 @@ unsigned char Sympathetic::getpar(int npar) const
 	case ParameterUnisonSize: return Punison_size;
 	case ParameterUnisonSpread: return Punison_spread;
 	case ParameterStrings: return Pstrings;
+	case ParameterInterval: return Pinterval;
 	case ParameterBaseNote: return Pbasenote;
 	case ParameterLowcut: return Plowcut;
 	case ParameterHighcut: return Phighcut;
