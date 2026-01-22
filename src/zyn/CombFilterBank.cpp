@@ -86,39 +86,40 @@ void CombFilterBank::filterout(float *smp, uint16_t period)
 	if (!gain_smoothing.apply(gainbuf, gainbufsize, gainbwd))
 		std::fill(gainbuf, gainbuf + gainbufsize, gainbwd); // if nothing to interpolate (constant value)
 
-	for (uint16_t i = 0; i < period; ++i)
+	float temp[period] = {};
+
+	unsigned strings_act_nr = 0;
+
+	for (unsigned j = 0; j < strings_nr; ++j)
 	{
-		float input_smp = smp[i] * inputgain;
+		if (delays[j] == 0.0f) continue;
 
-		float gain = gainbuf[i / 16];
+		strings_act_nr++;
 
-		for (unsigned j = 0; j < strings_nr; ++j)
+		unsigned pos_writer_ = pos_writer;
+		float delay = delays[j];
+
+		for (uint16_t i = 0; i < period; ++i)
 		{
-			if (delays[j] == 0.0f) continue;
+			float input_smp = smp[i] * inputgain;
+			float gain = gainbuf[i / 16];
 
-			assert(mem_size > delays[j]);
-
-			float pos_reader = pos_writer + mem_size - delays[j];
+			float pos_reader = pos_writer_ + mem_size - delay;
 			if (pos_reader > mem_size) pos_reader -= mem_size;
 
 			float sample = sampleLerp(string_smps[j], pos_reader, mem_size);
-			string_smps[j][pos_writer] = input_smp + tanhX(sample * gain);
+			temp[i] += string_smps[j][pos_writer_] = input_smp + tanhX(sample * gain);
+
+			pos_writer_ = (pos_writer_ + 1) % mem_size;
 		}
+	}
 
-		float out = 0.0f;
-		unsigned strings_act_nr = 0;
+	pos_writer = (pos_writer + period) % mem_size;
 
-		for (unsigned j = 0; j < strings_nr; ++j)
-		{
-			if (delays[j] == 0.0f) continue;
-
-			out += string_smps[j][pos_writer];
-			strings_act_nr++;
-		}
-
-		smp[i] = out * outgain / strings_act_nr;
-
-		pos_writer = (pos_writer + 1) % mem_size;
+	float gain = outgain / strings_act_nr;
+	for (uint16_t i = 0; i < period; ++i)
+	{
+		smp[i] = temp[i] * gain;
 	}
 }
 
