@@ -32,6 +32,15 @@ static const uint16_t MIDI_EQ_HZ[] = {
 };
 static constexpr uint8_t MIDI_EQ_N = sizeof MIDI_EQ_HZ / sizeof *MIDI_EQ_HZ;
 
+// coefficients for calculating gainbwd from Pq
+// gainbwd = gainbwd_offset + Pq * gainbwd_factor
+// designed for gainbwd range up to 1.0 at Pq==127
+static const float gainbwd_offset = 0.873f;
+static const float gainbwd_factor = 0.001f;
+// precalc gainbwd_init = gainbwd_offset + gainbwd_factor * Pq
+// 0.873f + 0.001f * 65 = 0.873f + 0.065f = 0.938f
+static const float gainbwd_init = 0.938f;
+
 namespace zyn {
 
 Sympathetic::Sympathetic(float samplerate):
