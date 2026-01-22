@@ -1225,6 +1225,34 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 		fx_chain[nFX]->zyn_chorus.bypass = nValue;
 		break;
 
+	case FX::FXParameterZynSympatheticPreset:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_sympathetic.loadpreset (nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynSympatheticMix:
+	case FX::FXParameterZynSympatheticPanning:
+	case FX::FXParameterZynSympatheticQ:
+	case FX::FXParameterZynSympatheticDrive:
+	case FX::FXParameterZynSympatheticLevel:
+	case FX::FXParameterZynSympatheticType:
+	case FX::FXParameterZynSympatheticUnisonSize:
+	case FX::FXParameterZynSympatheticUnisonSpread:
+	case FX::FXParameterZynSympatheticStrings:
+	case FX::FXParameterZynSympatheticBaseNote:
+	case FX::FXParameterZynSympatheticLowcut:
+	case FX::FXParameterZynSympatheticHighcut:
+	case FX::FXParameterZynSympatheticNegate:
+		m_FXSpinLock.Acquire ();
+		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::FXParameterZynSympatheticMix, nValue);
+		m_FXSpinLock.Release ();
+		break;
+
+	case FX::FXParameterZynSympatheticBypass:
+		fx_chain[nFX]->zyn_sympathetic.bypass = nValue;
+		break;
+
 	case FX::FXParameterZynAPhaserPreset:
 		m_FXSpinLock.Acquire ();
 		fx_chain[nFX]->zyn_aphaser.loadpreset (nValue);
@@ -1576,6 +1604,11 @@ int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
 	if (Parameter >= FX::FXParameterZynChorusMix && Parameter <= FX::FXParameterZynChorusSubtractive)
 	{
 		return fx_chain[nFX]->zyn_chorus.getpar (Parameter - FX::FXParameterZynChorusMix);
+	}
+
+	if (Parameter >= FX::FXParameterZynSympatheticMix && Parameter <= FX::FXParameterZynSympatheticNegate)
+	{
+		return fx_chain[nFX]->zyn_sympathetic.getpar (Parameter - FX::FXParameterZynSympatheticMix);
 	}
 
 	if (Parameter >= FX::FXParameterZynAPhaserMix && Parameter <= FX::FXParameterZynAPhaserHyper)
