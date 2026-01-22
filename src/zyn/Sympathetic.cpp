@@ -284,6 +284,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Init
 			[ParameterMix] = 0,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 125,
 			[ParameterDrive] = 5,
 			[ParameterLevel] = 80,
@@ -300,6 +301,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Generic
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 125,
 			[ParameterDrive] = 5,
 			[ParameterLevel] = 80,
@@ -316,6 +318,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Piano 12-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 1,
 			[ParameterQ] = 125,
 			[ParameterDrive] = 5,
 			[ParameterLevel] = 80,
@@ -332,6 +335,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Piano 60-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 1,
 			[ParameterQ] = 125,
 			[ParameterDrive] = 5,
 			[ParameterLevel] = 90,
@@ -348,6 +352,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Guitar 6-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 110,
 			[ParameterDrive] = 20,
 			[ParameterLevel] = 65,
@@ -364,6 +369,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Guitar 12-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 110,
 			[ParameterDrive] = 20,
 			[ParameterLevel] = 77,
@@ -380,6 +386,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Violin
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 110,
 			[ParameterDrive] = 20,
 			[ParameterLevel] = 77,
@@ -396,6 +403,7 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		{ // Double Bass
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
+			[ParameterUseSustain] = 0,
 			[ParameterQ] = 110,
 			[ParameterDrive] = 20,
 			[ParameterLevel] = 77,
@@ -425,9 +433,14 @@ void Sympathetic::changepar(int npar, unsigned char value)
 	switch(npar) {
 	case ParameterMix: setmix(value); break;
 	case ParameterPanning: setpanning(value); break;
+	case ParameterUseSustain:
+		Puse_sustain = value;
+		filterBank.gainbwd = Puse_sustain ? gainbwd_offset : gainbwd_offset + Pq * gainbwd_factor;
+	break;
 	case ParameterQ:
 		Pq = value;
-		filterBank.gainbwd = gainbwd_offset + (float)Pq * gainbwd_factor;
+		if (!Puse_sustain)
+			filterBank.gainbwd = gainbwd_offset + Pq * gainbwd_factor;
 	break;
 	case ParameterDrive:
 		setdrive(value);
@@ -505,6 +518,7 @@ unsigned char Sympathetic::getpar(int npar) const
 	switch(npar) {
 	case ParameterMix: return Pmix;
 	case ParameterPanning: return Ppanning;
+	case ParameterUseSustain: return Puse_sustain;
 	case ParameterQ: return Pq;
 	case ParameterDrive: return Pdrive;
 	case ParameterLevel: return Plevel;
@@ -519,6 +533,12 @@ unsigned char Sympathetic::getpar(int npar) const
 	case ParameterNegate: return Pnegate;
 	default: assert(false);
 	}
+}
+
+void Sympathetic::sustain(bool sustain)
+{
+	if (Puse_sustain)
+		filterBank.gainbwd = sustain ? gainbwd_offset + Pq * gainbwd_factor : gainbwd_offset;
 }
 
 }
