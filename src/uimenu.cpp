@@ -277,6 +277,7 @@ const CUIMenu::TMenuItem CUIMenu::s_ZynSympatheticMenu[] =
 	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticPreset},
 	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticMix},
 	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticPanning},
+	{"Use Sustain",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticUseSustain},
 	{"Q",		EditFXParameter2,	0,	FX::FXParameterZynSympatheticQ},
 	{"Drive",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticDrive},
 	{"Level",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticLevel},

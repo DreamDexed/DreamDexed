@@ -52,6 +52,7 @@ public:
 		FXParameterZynSympatheticPreset,
 		FXParameterZynSympatheticMix,
 		FXParameterZynSympatheticPanning,
+		FXParameterZynSympatheticUseSustain,
 		FXParameterZynSympatheticQ,
 		FXParameterZynSympatheticDrive,
 		FXParameterZynSympatheticLevel,

@@ -189,6 +189,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	zyn::Sympathetic::presets_num -1,	0,	1,	"ZynSympatheticPreset", zyn::Sympathetic::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynSympatheticMix",		ToDryWet},
 	{0,	127,	64,	1,	"ZynSympatheticPanning",	ToPan},
+	{0,	1,	0,	1,	"ZynSympatheticUseSustain",	ToOnOff},
 	{0,	127,	125,	1,	"ZynSympatheticQ"},
 	{0,	127,	5,	1,	"ZynSympatheticDrive"},
 	{0,	127,	80,	1,	"ZynSympatheticLevel"},

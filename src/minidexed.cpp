@@ -977,6 +977,11 @@ void CMiniDexed::setSustain(bool sustain, unsigned nTG)
 
 	assert (m_pTG[nTG]);
 	m_pTG[nTG]->setSustain (sustain);
+
+	// TODO: use the bus MIDI channel for sustain
+	if (nTG == 0)
+		for (unsigned i = 0; i < CConfig::FXChains; ++i)
+			fx_chain[i]->zyn_sympathetic.sustain(sustain);
 }
 
 void CMiniDexed::setSostenuto(bool sostenuto, unsigned nTG)
@@ -1233,6 +1238,7 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 
 	case FX::FXParameterZynSympatheticMix:
 	case FX::FXParameterZynSympatheticPanning:
+	case FX::FXParameterZynSympatheticUseSustain:
 	case FX::FXParameterZynSympatheticQ:
 	case FX::FXParameterZynSympatheticDrive:
 	case FX::FXParameterZynSympatheticLevel:

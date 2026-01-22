@@ -31,6 +31,8 @@ public:
 	unsigned char getpar(int npar) const;
 	void cleanup();
 
+	void sustain(bool sustain);
+
 	std::atomic<bool> bypass;
 
 	static constexpr unsigned presets_num = 8;
@@ -38,6 +40,7 @@ public:
 	enum Parameter {
 		ParameterMix,
 		ParameterPanning,
+		ParameterUseSustain,
 		ParameterQ,
 		ParameterDrive,
 		ParameterLevel,
@@ -71,6 +74,7 @@ private:
 	//Parameters
 	unsigned char Pmix;
 	unsigned char Ppanning;
+	unsigned char Puse_sustain;
 	unsigned char Pq; //0=0.95 ... 127=1.05
 	unsigned char Pdrive; //the input amplification
 	unsigned char Plevel; //the output amplification
