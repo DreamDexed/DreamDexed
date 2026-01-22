@@ -6,6 +6,7 @@
 #include "effect_compressor.h"
 #include "zyn/APhaser.h"
 #include "zyn/Chorus.h"
+#include "zyn/Sympathetic.h"
 #include "zyn/Distortion.h"
 #include "zyn/Phaser.h"
 #include "zyn/EffectLFO.h"
@@ -180,6 +181,21 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0,	3,	0,	1,	"ZynChorusMode",	zyn::Chorus::ToChorusMode},
 	{0,	1,	0,	1,	"ZynChorusSubtractive",	ToOnOff},
 	{0,	1,	0,	1,	"ZynChorusBypass",	ToOnOff},
+	{0,	zyn::Sympathetic::presets_num -1,	0,	1,	"ZynSympatheticPreset", zyn::Sympathetic::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0,	100,	0,	1,	"ZynSympatheticMix",		ToDryWet},
+	{0,	127,	64,	1,	"ZynSympatheticPanning",	ToPan},
+	{0,	127,	125,	1,	"ZynSympatheticQ"},
+	{0,	127,	5,	1,	"ZynSympatheticDrive"},
+	{0,	127,	80,	1,	"ZynSympatheticLevel"},
+	{0,	zyn::Sympathetic::types_num - 1,	0,	1,	"ZynSympatheticType",	zyn::Sympathetic::ToTypeName},
+	{1,	3,	1,	1,	"ZynSympatheticUnisonSize"},
+	{0,	127,	10,	1,	"ZynSympatheticUnisonSpread"},
+	{0,	76,	12,	1,	"ZynSympatheticStrings"},
+	{0,	127,	57,	1,	"ZynSympatheticBaseNote"},
+	{0,	60,	0,	1,	"ZynSympatheticLowcut",	ToHz},
+	{0,	60,	60,	1,	"ZynSympatheticHighcut",	ToHz},
+	{0,	1,	0,	1,	"ZynSympatheticNegate",	ToOnOff},
+	{0,	1,	0,	1,	"ZynSympatheticBypass",	ToOnOff},
 	{0,	zyn::APhaser::presets_num - 1,	0,	1,	"ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
 	{0,	100,	0,	1,	"ZynAPhaserMix",	ToDryWet},
 	{0,	127,	64,	1,	"ZynAPhaserPanning",	ToPan},
@@ -318,6 +334,8 @@ int FX::getIDFromName(TFXParameter param, const char* name)
 			return zyn::Distortion::ToIDFromPreset(name);
 		case FX::FXParameterZynChorusPreset:
 			return zyn::Chorus::ToIDFromPreset(name);
+		case FX::FXParameterZynSympatheticPreset:
+			return zyn::Sympathetic::ToIDFromPreset(name);
 		case FX::FXParameterZynAPhaserPreset:
 			return zyn::APhaser::ToIDFromPreset(name);
 		case FX::FXParameterZynPhaserPreset:
@@ -343,6 +361,8 @@ const char *FX::getNameFromID(TFXParameter param, int nID)
 			return zyn::Distortion::ToPresetNameChar(nID);
 		case FX::FXParameterZynChorusPreset:
 			return zyn::Chorus::ToPresetNameChar(nID);
+		case FX::FXParameterZynSympatheticPreset:
+			return zyn::Sympathetic::ToPresetNameChar(nID);
 		case FX::FXParameterZynAPhaserPreset:
 			return zyn::APhaser::ToPresetNameChar(nID);
 		case FX::FXParameterZynPhaserPreset:

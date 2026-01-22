@@ -211,6 +211,7 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 	{"ZynDistortion",	MenuHandler,		s_ZynDistortionMenu},
 	{"YKChorus",		MenuHandler,		s_YKChorusMenu},
 	{"ZynChorus",		MenuHandler,		s_ZynChorusMenu},
+	{"ZynSympathetic",	MenuHandler,		s_ZynSympatheticMenu},
 	{"ZynAPhaser",		MenuHandler,		s_ZynAPhaserMenu},
 	{"ZynPhaser",		MenuHandler,		s_ZynPhaserMenu},
 	{"DreamDelay",		MenuHandler,		s_DreamDelayMenu},
@@ -268,6 +269,26 @@ const CUIMenu::TMenuItem CUIMenu::s_ZynChorusMenu[] =
 	{"Mode",	EditFXParameter2,	0,	FX::FXParameterZynChorusMode},
 	{"Subtractive",	EditFXParameter2,	0,	FX::FXParameterZynChorusSubtractive},
 	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynChorusBypass},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_ZynSympatheticMenu[] =
+{
+	{"Load Preset",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticPreset},
+	{"Mix Dry:Wet",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticMix},
+	{"Panning",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticPanning},
+	{"Q",		EditFXParameter2,	0,	FX::FXParameterZynSympatheticQ},
+	{"Drive",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticDrive},
+	{"Level",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticLevel},
+	{"Type",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticType},
+	{"Unison Size",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticUnisonSize},
+	{"Unison Spread",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticUnisonSpread},
+	{"Strings",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticStrings},
+	{"Base Note",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticBaseNote},
+	{"Lowcut",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticLowcut},
+	{"Highcut",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticHighcut},
+	{"Negate",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticNegate},
+	{"Bypass",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticBypass},
 	{0}
 };
 

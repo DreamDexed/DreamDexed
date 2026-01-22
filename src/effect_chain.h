@@ -6,6 +6,7 @@
 #include "zyn/Chorus.h"
 #include "zyn/Distortion.h"
 #include "zyn/Phaser.h"
+#include "zyn/Sympathetic.h"
 
 #include "effect_3bandeq.h"
 #include "effect_compressor.h"
@@ -23,6 +24,7 @@ public:
         zyn_distortion{samplerate},
         yk_chorus{samplerate},
         zyn_chorus{samplerate},
+        zyn_sympathetic{samplerate},
         zyn_aphaser{samplerate},
         zyn_phaser{samplerate},
         dream_delay{samplerate},
@@ -36,6 +38,7 @@ public:
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_distortion.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_chorus.process(inputL, inputR, len); },
+                [this](float *inputL, float *inputR, uint16_t len) { zyn_sympathetic.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { zyn_phaser.process(inputL, inputR, len); },
                 [this](float *inputL, float *inputR, uint16_t len) { dream_delay.process(inputL, inputR, len); },
@@ -70,6 +73,7 @@ public:
         {
                 zyn_distortion.cleanup();
                 zyn_chorus.cleanup();
+                zyn_sympathetic.cleanup();
                 zyn_aphaser.cleanup();
                 zyn_phaser.cleanup();
                 dream_delay.resetState();
@@ -92,6 +96,7 @@ public:
         zyn::Distortion zyn_distortion;
         AudioEffectYKChorus yk_chorus;
         zyn::Chorus zyn_chorus;
+        zyn::Sympathetic zyn_sympathetic;
         zyn::APhaser zyn_aphaser;
         zyn::Phaser zyn_phaser;
         AudioEffectDreamDelay dream_delay;
