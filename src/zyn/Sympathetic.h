@@ -33,7 +33,7 @@ public:
 
 	std::atomic<bool> bypass;
 
-	static constexpr unsigned presets_num = 6;
+	static constexpr unsigned presets_num = 8;
 
 	enum Parameter {
 		ParameterMix,
