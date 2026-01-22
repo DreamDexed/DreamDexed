@@ -45,6 +45,7 @@ public:
 		ParameterUnisonSize,
 		ParameterUnisonSpread,
 		ParameterStrings,
+		ParameterInterval,
 		ParameterBaseNote,
 		ParameterLowcut,
 		ParameterHighcut,
@@ -77,6 +78,7 @@ private:
 	unsigned char Punison_size; //number of unison strings
 	unsigned char Punison_spread;
 	unsigned char Pstrings; //number of strings
+	unsigned char Pinterval; //number of semitones between strings
 	unsigned char Pbasenote; //midi note of lowest string
 	unsigned char Plowcut;
 	unsigned char Phighcut;

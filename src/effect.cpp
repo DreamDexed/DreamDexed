@@ -58,6 +58,11 @@ static std::string ToHz (int nValue, int nWidth)
 	return buf;
 }
 
+static std::string ToSemitones(int nValue, int nWidth)
+{
+	return std::to_string(nValue) + " semitone" + (nValue > 1 ? "s" : "");
+}
+
 static std::string ToDryWet (int nValue, int nWidth)
 {
 	unsigned dry, wet;
@@ -191,6 +196,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{1,	3,	1,	1,	"ZynSympatheticUnisonSize"},
 	{0,	127,	10,	1,	"ZynSympatheticUnisonSpread"},
 	{0,	76,	12,	1,	"ZynSympatheticStrings"},
+	{1,	10,	1,	1,	"ZynSympatheticInterval",	ToSemitones},
 	{0,	127,	57,	1,	"ZynSympatheticBaseNote"},
 	{0,	60,	0,	1,	"ZynSympatheticLowcut",	ToHz},
 	{0,	60,	60,	1,	"ZynSympatheticHighcut",	ToHz},

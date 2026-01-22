@@ -59,6 +59,7 @@ public:
 		FXParameterZynSympatheticUnisonSize,
 		FXParameterZynSympatheticUnisonSpread,
 		FXParameterZynSympatheticStrings,
+		FXParameterZynSympatheticInterval,
 		FXParameterZynSympatheticBaseNote,
 		FXParameterZynSympatheticLowcut,
 		FXParameterZynSympatheticHighcut,

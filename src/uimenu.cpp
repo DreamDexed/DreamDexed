@@ -284,6 +284,7 @@ const CUIMenu::TMenuItem CUIMenu::s_ZynSympatheticMenu[] =
 	{"Unison Size",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticUnisonSize},
 	{"Unison Spread",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticUnisonSpread},
 	{"Strings",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticStrings},
+	{"Interval",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticInterval},
 	{"Base Note",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticBaseNote},
 	{"Lowcut",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticLowcut},
 	{"Highcut",	EditFXParameter2,	0,	FX::FXParameterZynSympatheticHighcut},
