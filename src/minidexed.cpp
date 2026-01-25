@@ -1252,7 +1252,7 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 	case FX::FXParameterZynSympatheticHighcut:
 	case FX::FXParameterZynSympatheticNegate:
 		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::FXParameterZynSympatheticMix, nValue);
+		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::FXParameterZynSympatheticMix, nValue, true);
 		m_FXSpinLock.Release ();
 		break;
 
