@@ -139,8 +139,11 @@ void Sympathetic::sethighcut(unsigned char _Phighcut)
 	lpf.setfreq(fr);
 }
 
-void Sympathetic::calcFreqs()
+void Sympathetic::calcFreqs(bool update)
 {
+	if (!update)
+		return;
+
 	switch (Ptype) {
 	case TypeGeneric: calcFreqsGeneric(); break;
 	case TypePiano: calcFreqsPiano(); break;
@@ -423,12 +426,14 @@ void Sympathetic::loadpreset(unsigned char npreset)
 		npreset = presets_num;
 
 	for (int n = 0; n < ParameterCount; n++)
-		changepar(n, presets[npreset][n]);
+		changepar(n, presets[npreset][n], false);
+
+	calcFreqs(true);
 
 	cleanup();
 }
 
-void Sympathetic::changepar(int npar, unsigned char value)
+void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 {
 	switch(npar) {
 	case ParameterMix: setmix(value); break;
@@ -455,7 +460,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		if (Ptype != value)
 		{
 			Ptype = value;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	break;
 	case ParameterUnisonSize:
@@ -465,7 +470,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		if(Punison_size != value)
 		{
 			Punison_size = value;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	}
 	break;
@@ -473,7 +478,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		if(Punison_spread != value)
 		{
 			Punison_spread = value;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	break;
 	case ParameterStrings:
@@ -483,7 +488,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		if (Pstrings != value)
 		{
 			Pstrings = value;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	}
 	break;
@@ -494,7 +499,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		if (Pinterval != value)
 		{
 			Pinterval = value;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	}
 	break;
@@ -503,7 +508,7 @@ void Sympathetic::changepar(int npar, unsigned char value)
 		{
 			Pbasenote = value;
 			baseFreq = powf(2.0f, ((float)Pbasenote - 69.0f) / 12.0f) * 440.0f;
-			calcFreqs();
+			calcFreqs(updateFreqs);
 		}
 	break;
 	case ParameterLowcut: setlowcut(value); break;

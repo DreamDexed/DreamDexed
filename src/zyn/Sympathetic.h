@@ -27,7 +27,7 @@ public:
 	Sympathetic(float samplerate);
 	void process(float* inputL, float *inputR, uint16_t period);
 	void loadpreset(unsigned char npreset);
-	void changepar(int npar, unsigned char value);
+	void changepar(int npar, unsigned char value, bool updateFreqs);
 	unsigned char getpar(int npar) const;
 	void cleanup();
 
@@ -96,7 +96,7 @@ private:
 	void setlevel(unsigned char _Plevel);
 	void setlowcut(unsigned char _Plowcut);
 	void sethighcut(unsigned char _Phighcut);
-	void calcFreqs();
+	void calcFreqs(bool update);
 	void calcFreqsGeneric();
 	void calcFreqsPiano();
 	void calcFreqsGuitar();
