@@ -139,11 +139,8 @@ void Sympathetic::sethighcut(unsigned char _Phighcut)
 	lpf.setfreq(fr);
 }
 
-void Sympathetic::calcFreqs(bool update)
+void Sympathetic::calcFreqs()
 {
-	if (!update)
-		return;
-
 	switch (Ptype) {
 	case TypeGeneric: calcFreqsGeneric(); break;
 	case TypePiano: calcFreqsPiano(); break;
@@ -428,13 +425,15 @@ void Sympathetic::loadpreset(unsigned char npreset)
 	for (int n = 0; n < ParameterCount; n++)
 		changepar(n, presets[npreset][n], false);
 
-	calcFreqs(true);
+	calcFreqs();
 
 	cleanup();
 }
 
 void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 {
+	bool needUpdate = false;
+
 	switch(npar) {
 	case ParameterMix: setmix(value); break;
 	case ParameterPanning: setpanning(value); break;
@@ -460,7 +459,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		if (Ptype != value)
 		{
 			Ptype = value;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	break;
 	case ParameterUnisonSize:
@@ -470,7 +469,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		if(Punison_size != value)
 		{
 			Punison_size = value;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	}
 	break;
@@ -478,7 +477,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		if(Punison_spread != value)
 		{
 			Punison_spread = value;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	break;
 	case ParameterStrings:
@@ -488,7 +487,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		if (Pstrings != value)
 		{
 			Pstrings = value;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	}
 	break;
@@ -499,7 +498,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		if (Pinterval != value)
 		{
 			Pinterval = value;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	}
 	break;
@@ -508,7 +507,7 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 		{
 			Pbasenote = value;
 			baseFreq = powf(2.0f, ((float)Pbasenote - 69.0f) / 12.0f) * 440.0f;
-			calcFreqs(updateFreqs);
+			needUpdate = true;
 		}
 	break;
 	case ParameterLowcut: setlowcut(value); break;
@@ -516,6 +515,9 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 	case ParameterNegate: Pnegate = value > 1 ? 1 : value; break;
 	default: assert(false);
 	}
+
+	if (updateFreqs && needUpdate)
+		calcFreqs();
 }
 
 unsigned char Sympathetic::getpar(int npar) const

@@ -96,7 +96,7 @@ private:
 	void setlevel(unsigned char _Plevel);
 	void setlowcut(unsigned char _Plowcut);
 	void sethighcut(unsigned char _Phighcut);
-	void calcFreqs(bool update);
+	void calcFreqs();
 	void calcFreqsGeneric();
 	void calcFreqsPiano();
 	void calcFreqsGuitar();
