@@ -40,8 +40,8 @@ public:
 	enum Parameter {
 		ParameterMix,
 		ParameterPanning,
-		ParameterUseSustain,
 		ParameterQ,
+		ParameterQSustain,
 		ParameterDrive,
 		ParameterLevel,
 		ParameterType,
@@ -74,8 +74,8 @@ private:
 	//Parameters
 	unsigned char Pmix;
 	unsigned char Ppanning;
-	unsigned char Puse_sustain;
 	unsigned char Pq; //0=0.95 ... 127=1.05
+	unsigned char Pq_sustain; //0=0.95 ... 127=1.05
 	unsigned char Pdrive; //the input amplification
 	unsigned char Plevel; //the output amplification
 	unsigned char Ptype; //type (generic/piano/guitar)
