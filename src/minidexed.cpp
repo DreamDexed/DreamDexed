@@ -1238,8 +1238,8 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 
 	case FX::FXParameterZynSympatheticMix:
 	case FX::FXParameterZynSympatheticPanning:
-	case FX::FXParameterZynSympatheticUseSustain:
 	case FX::FXParameterZynSympatheticQ:
+	case FX::FXParameterZynSympatheticQSustain:
 	case FX::FXParameterZynSympatheticDrive:
 	case FX::FXParameterZynSympatheticLevel:
 	case FX::FXParameterZynSympatheticType:
