@@ -371,11 +371,8 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 					if (nLength == 7 && pMessage[3] == 0x04)
 					{
 						// TX816/TX216 Performance SysEx message
-						uint8_t mTG = pMessage[2] & 0x0F; // mTG = module/tone generator number (0-7)
 						uint8_t par = pMessage[4];
 						uint8_t val = pMessage[5];
-
-						if (!(m_ChannelMap[nTG] == mTG || m_ChannelMap[nTG] == OmniMode)) continue;
 
 						LOGNOTE("MIDI-SYSEX: Assuming TX216/TX816 style performance sysex message because 4th byte is 0x04");
 
