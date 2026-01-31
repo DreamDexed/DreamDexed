@@ -108,6 +108,10 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nCutoff[i] = 99;
 		m_nResonance[i] = 0;
 		m_nMIDIChannel[i] = CMIDIDevice::Disabled;
+		m_bMIDIRxSustain[i] = 1;
+		m_bMIDIRxPortamento[i] = 1;
+		m_bMIDIRxSostenuto[i] = 1;
+		m_bMIDIRxHold2[i] = 1;
 		m_nPitchBendRange[i] = 2;
 		m_nPitchBendStep[i] = 0;
 		m_nPortamentoMode[i] = 0;
@@ -918,6 +922,47 @@ void CMiniDexed::SetMIDIChannel (uint8_t uchChannel, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
+void CMiniDexed::SetMIDIRxSustain (bool value, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	m_bMIDIRxSustain[nTG] = value;
+
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetMIDIRxPortamento (bool value, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	m_bMIDIRxPortamento[nTG] = value;
+
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetMIDIRxSostenuto (bool value, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	m_bMIDIRxSostenuto[nTG] = value;
+
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetMIDIRxHold2 (bool value, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	m_bMIDIRxHold2[nTG] = value;
+
+	m_UI.ParameterChanged ();
+}
+
+
 void CMiniDexed::keyup (int16_t pitch, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -979,9 +1024,8 @@ void CMiniDexed::setSustain(bool sustain, unsigned nTG)
 	m_pTG[nTG]->setSustain (sustain);
 
 	// TODO: use the bus MIDI channel for sustain
-	if (nTG == 0)
-		for (unsigned i = 0; i < CConfig::FXChains; ++i)
-			fx_chain[i]->zyn_sympathetic.sustain(sustain);
+	for (unsigned i = 0; i < CConfig::FXChains; ++i)
+		fx_chain[i]->zyn_sympathetic.sustain(sustain);
 }
 
 void CMiniDexed::setSostenuto(bool sostenuto, unsigned nTG)
@@ -1707,6 +1751,11 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 			SetMIDIChannel ((uint8_t) nValue, i);
 			break;
 
+		case TGParameterMIDIRxSustain:		SetMIDIRxSustain (nValue, i); break;
+		case TGParameterMIDIRxPortamento:	SetMIDIRxPortamento (nValue, i); break;
+		case TGParameterMIDIRxSostenuto:	SetMIDIRxSostenuto (nValue, i); break;
+		case TGParameterMIDIRxHold2:		SetMIDIRxHold2 (nValue, i); break;
+
 		case TGParameterFX1Send:			SetFX1Send (nValue, i); break;
 		case TGParameterFX2Send:			SetFX2Send (nValue, i); break;
 
@@ -1750,6 +1799,10 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterCutoff:		return m_nCutoff[nTG];
 	case TGParameterResonance:	return m_nResonance[nTG];
 	case TGParameterMIDIChannel:	return m_nMIDIChannel[nTG];
+	case TGParameterMIDIRxSustain:	return m_bMIDIRxSustain[nTG];
+	case TGParameterMIDIRxPortamento:	return m_bMIDIRxPortamento[nTG];
+	case TGParameterMIDIRxSostenuto:	return m_bMIDIRxSostenuto[nTG];
+	case TGParameterMIDIRxHold2:	return m_bMIDIRxHold2[nTG];
 	case TGParameterFX1Send:	return m_nFX1Send[nTG];
 	case TGParameterFX2Send:	return m_nFX2Send[nTG];
 	case TGParameterPitchBendRange:	return m_nPitchBendRange[nTG];
@@ -2174,6 +2227,10 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetBankNumber (m_nVoiceBankID[nTG], nTG);
 		m_PerformanceConfig.SetVoiceNumber (m_nProgram[nTG], nTG);
 		m_PerformanceConfig.SetMIDIChannel (m_nMIDIChannel[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxSustain (m_bMIDIRxSustain[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxPortamento (m_bMIDIRxPortamento[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxSostenuto (m_bMIDIRxSostenuto[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxHold2 (m_bMIDIRxHold2[nTG], nTG);
 		m_PerformanceConfig.SetVolume (m_nVolume[nTG], nTG);
 		m_PerformanceConfig.SetPan (m_nPan[nTG], nTG);
 		m_PerformanceConfig.SetDetune (m_nMasterTune[nTG], nTG);
@@ -2906,6 +2963,10 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		BankSelect (m_PerformanceConfig.GetBankNumber (nTG), nTG);
 		ProgramChange (m_PerformanceConfig.GetVoiceNumber (nTG), nTG);
 		SetMIDIChannel (m_PerformanceConfig.GetMIDIChannel (nTG), nTG);
+		SetMIDIRxSustain (m_PerformanceConfig.GetMIDIRxSustain (nTG), nTG);
+		SetMIDIRxPortamento (m_PerformanceConfig.GetMIDIRxPortamento (nTG), nTG);
+		SetMIDIRxSostenuto (m_PerformanceConfig.GetMIDIRxSostenuto (nTG), nTG);
+		SetMIDIRxHold2 (m_PerformanceConfig.GetMIDIRxHold2 (nTG), nTG);
 		SetVolume (m_PerformanceConfig.GetVolume (nTG), nTG);
 		SetPan (m_PerformanceConfig.GetPan (nTG), nTG);
 		SetMasterTune (m_PerformanceConfig.GetDetune (nTG), nTG);

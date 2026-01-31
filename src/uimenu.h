@@ -222,6 +222,8 @@ private:
 	static const TMenuItem s_ModulationMenu[];
 	static const TMenuItem s_ModulationMenuParameters[];
 			
+	static const TMenuItem s_MIDIMenu[];
+
 	static TParameter s_GlobalParameter[];
 	static TParameter s_TGParameter[];
 	static const TParameter s_VoiceParameter[];

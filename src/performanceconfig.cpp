@@ -36,6 +36,7 @@ LOGMODULE ("Performance");
 #define DEFAULT_PERFORMANCE_FILENAME "performance.ini"
 #define DEFAULT_PERFORMANCE_NAME "Default"
 
+
 CPerformanceConfig::CPerformanceConfig (FATFS *pFileSystem)
 :	m_Properties (DEFAULT_PERFORMANCE_FILENAME, pFileSystem)
 {
@@ -138,6 +139,18 @@ bool CPerformanceConfig::Load (void)
 			m_nMIDIChannel[nTG] = CMIDIDevice::OmniMode;
 			bResult = true;
 		}
+
+		PropertyName.Format ("MIDIRxSustain%u", nTG+1);
+		m_bMIDIRxSustain[nTG] = m_Properties.GetNumber (PropertyName, 1);
+
+		PropertyName.Format ("MIDIRxPortamento%u", nTG+1);
+		m_bMIDIRxPortamento[nTG] = m_Properties.GetNumber (PropertyName, 1);
+
+		PropertyName.Format ("MIDIRxSostenuto%u", nTG+1);
+		m_bMIDIRxSostenuto[nTG] = m_Properties.GetNumber (PropertyName, 1);
+
+		PropertyName.Format ("MIDIRxHold2%u", nTG+1);
+		m_bMIDIRxHold2[nTG] = m_Properties.GetNumber (PropertyName, 1);
 
 		PropertyName.Format ("Volume%u", nTG+1);
 		m_nVolume[nTG] = m_Properties.GetNumber (PropertyName, 100);
@@ -362,6 +375,30 @@ bool CPerformanceConfig::Save (void)
 		}
 		m_Properties.SetNumber (PropertyName, nMIDIChannel);
 
+		if (!m_bMIDIRxSustain[nTG])
+		{
+			PropertyName.Format ("MIDIRxSustain%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bMIDIRxSustain[nTG]);
+		}
+
+		if (!m_bMIDIRxPortamento[nTG])
+		{
+			PropertyName.Format ("MIDIRxPortamento%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bMIDIRxPortamento[nTG]);
+		}
+
+		if (!m_bMIDIRxSostenuto[nTG])
+		{
+			PropertyName.Format ("MIDIRxSostenuto%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bMIDIRxSostenuto[nTG]);
+		}
+
+		if (!m_bMIDIRxHold2[nTG])
+		{
+			PropertyName.Format ("MIDIRxHold2%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bMIDIRxHold2[nTG]);
+		}
+
 		PropertyName.Format ("Volume%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nVolume[nTG]);
 
@@ -561,6 +598,30 @@ unsigned CPerformanceConfig::GetMIDIChannel (unsigned nTG) const
 	return m_nMIDIChannel[nTG];
 }
 
+bool CPerformanceConfig::GetMIDIRxSustain (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxSustain[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxPortamento (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxPortamento[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxSostenuto (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxSostenuto[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxHold2 (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxHold2[nTG];
+}
+
 unsigned CPerformanceConfig::GetVolume (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -637,6 +698,30 @@ void CPerformanceConfig::SetMIDIChannel (unsigned nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nMIDIChannel[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetMIDIRxSustain (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxSustain[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxPortamento (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxPortamento[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxSostenuto (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxSostenuto[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxHold2 (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxHold2[nTG] = bValue;
 }
 
 void CPerformanceConfig::SetVolume (unsigned nValue, unsigned nTG)

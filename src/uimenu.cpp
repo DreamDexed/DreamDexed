@@ -91,7 +91,7 @@ const CUIMenu::TMenuItem CUIMenu::s_TGMenu[] =
 	{"Poly/Mono",		EditTGParameter,	0,	CMiniDexed::TGParameterMonoMode}, 
 	{"TG-Link",		EditTGParameter,	0,	CMiniDexed::TGParameterTGLink},
 	{"Modulation",		MenuHandler,		s_ModulationMenu},
-	{"Channel",	EditTGParameter,	0,	CMiniDexed::TGParameterMIDIChannel},
+	{"MIDI",		MenuHandler,		s_MIDIMenu},
 	{"EQ",		MenuHandler,		s_EQMenu},
 	{"Compressor",	MenuHandler,		s_EditCompressorMenu},
 	{"Edit Voice",	MenuHandler,		s_EditVoiceMenu},
@@ -148,6 +148,16 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 	{"Pitch",		EditTGParameterModulation,	0, 1},
 	{"Amplitude",	EditTGParameterModulation,	0, 2},
 	{"EG Bias",		EditTGParameterModulation,	0, 3},
+	{0}
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_MIDIMenu[] =
+{
+	{"Channel",		EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIChannel},
+	{"Sustain Rx",		EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxSustain},
+	{"Portamento Rx",	EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxPortamento},
+	{"Sostenuto Rx",	EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxSostenuto},
+	{"Hold2 Rx",		EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxHold2},
 	{0}
 };
 
@@ -580,6 +590,10 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	99,					1},			// TGParameterCutoff
 	{0,	99,					1},			// TGParameterResonance
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// TGParameterMIDIChannel
+	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxSustain
+	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxPortamento
+	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxSostenuto
+	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxHold2
 	{0,	99,					1},			// TGParameterFX1Send
 	{0,	99,					1},			// TGParameterFX2Send
 	{0,	12,					1},			// TGParameterPitchBendRange
