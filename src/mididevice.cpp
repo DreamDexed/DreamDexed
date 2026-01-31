@@ -542,7 +542,8 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 
 						case MIDI_CC_PORTAMENTO_TIME:
-							m_pSynthesizer->setPortamentoTime (maplong (pMessage[2], 0, 127, 0, 99), nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxPortamento, nTG))
+								m_pSynthesizer->setPortamentoTime (maplong (pMessage[2], 0, 127, 0, 99), nTG);
 							break;
 
 						case MIDI_CC_BREATH_CONTROLLER:
@@ -577,19 +578,23 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 		
 						case MIDI_CC_SUSTAIN:
-							m_pSynthesizer->setSustain (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxSustain, nTG))
+								m_pSynthesizer->setSustain (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_SOSTENUTO:
-							m_pSynthesizer->setSostenuto (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxSostenuto, nTG))
+								m_pSynthesizer->setSostenuto (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_PORTAMENTO:
-							m_pSynthesizer->setPortamentoMode (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxPortamento, nTG))
+								m_pSynthesizer->setPortamentoMode (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_HOLD2:
-							m_pSynthesizer->setHoldMode (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxHold2, nTG))
+								m_pSynthesizer->setHoldMode (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_RESONANCE:
