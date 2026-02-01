@@ -89,10 +89,15 @@ public:
 	void SetCutoff (int nCutoff, unsigned nTG);			// 0 .. 99
 	void SetResonance (int nResonance, unsigned nTG);		// 0 .. 99
 	void SetMIDIChannel (uint8_t uchChannel, unsigned nTG);
+	void SetSysExChannel (uint8_t uchChannel, unsigned nTG);
+	void SetSysExEnable (bool value, unsigned nTG);
 	void SetMIDIRxSustain (bool value, unsigned nTG);
 	void SetMIDIRxPortamento (bool value, unsigned nTG);
 	void SetMIDIRxSostenuto (bool value, unsigned nTG);
 	void SetMIDIRxHold2 (bool value, unsigned nTG);
+
+	uint8_t GetSysExChannel (unsigned nTG);
+	bool GetSysExEnable (unsigned nTG);
 
 	void keyup (int16_t pitch, unsigned nTG);
 	void keydown (int16_t pitch, uint8_t velocity, unsigned nTG);
@@ -225,6 +230,8 @@ public:
 		TGParameterCutoff,
 		TGParameterResonance,
 		TGParameterMIDIChannel,
+		TGParameterSysExChannel,
+		TGParameterSysExEnable,
 		TGParameterMIDIRxSustain,
 		TGParameterMIDIRxPortamento,
 		TGParameterMIDIRxSostenuto,
@@ -342,6 +349,8 @@ private:
 	int m_nCutoff[CConfig::AllToneGenerators];
 	int m_nResonance[CConfig::AllToneGenerators];
 	unsigned m_nMIDIChannel[CConfig::AllToneGenerators];
+	unsigned m_nSysExChannel[CConfig::AllToneGenerators];
+	bool m_bSysExEnable[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSustain[CConfig::AllToneGenerators];
 	bool m_bMIDIRxPortamento[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSostenuto[CConfig::AllToneGenerators];

@@ -154,6 +154,8 @@ const CUIMenu::TMenuItem CUIMenu::s_ModulationMenuParameters[] =
 const CUIMenu::TMenuItem CUIMenu::s_MIDIMenu[] =
 {
 	{"Channel",		EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIChannel},
+	{"SysEx Channel",	EditTGParameter2,	0,	CMiniDexed::TGParameterSysExChannel},
+	{"SysEx Enable",	EditTGParameter2,	0,	CMiniDexed::TGParameterSysExEnable},
 	{"Sustain Rx",		EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxSustain},
 	{"Portamento Rx",	EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxPortamento},
 	{"Sostenuto Rx",	EditTGParameter2,	0,	CMiniDexed::TGParameterMIDIRxSostenuto},
@@ -590,6 +592,8 @@ CUIMenu::TParameter CUIMenu::s_TGParameter[CMiniDexed::TGParameterUnknown] =
 	{0,	99,					1},			// TGParameterCutoff
 	{0,	99,					1},			// TGParameterResonance
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// TGParameterMIDIChannel
+	{0,	CMIDIDevice::Channels-1,		1, ToMIDIChannel}, 	// TGParameterSysExChannel
+	{0,	1,					1, ToOnOff},		// TGParameterSysExEnable
 	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxSustain
 	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxPortamento
 	{0,	1,					1, ToOnOff},		// TGParameterMIDIRxSostenuto

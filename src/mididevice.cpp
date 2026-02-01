@@ -363,8 +363,8 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 		if (ucStatus == MIDI_SYSTEM_EXCLUSIVE_BEGIN) {
 			uint8_t ucSysExChannel = (pMessage[2] & 0x0F);
 			for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators(); nTG++) {
-				if (m_ChannelMap[nTG] == ucSysExChannel || m_ChannelMap[nTG] == OmniMode) {
-					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",m_ChannelMap[nTG],nLength,nTG);
+				if (m_pSynthesizer->GetSysExEnable (nTG) && m_pSynthesizer->GetSysExChannel (nTG) == ucSysExChannel) {
+					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",ucSysExChannel,nLength,nTG);
 
 					// Check for TX216/TX816 style performance sysex messages
 					

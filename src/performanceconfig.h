@@ -47,6 +47,8 @@ public:
 	unsigned GetBankNumber (unsigned nTG) const;		// 0 .. 127
 	unsigned GetVoiceNumber (unsigned nTG) const;		// 0 .. 31
 	unsigned GetMIDIChannel (unsigned nTG) const;		// 0 .. 15, omni, off
+	unsigned GetSysExChannel (unsigned nTG) const;		// 0 .. 15
+	bool GetSysExEnable (unsigned nTG) const;
 	bool GetMIDIRxSustain (unsigned nTG) const;
 	bool GetMIDIRxPortamento (unsigned nTG) const;
 	bool GetMIDIRxSostenuto (unsigned nTG) const;
@@ -89,6 +91,8 @@ public:
 	void SetBankNumber (unsigned nValue, unsigned nTG);
 	void SetVoiceNumber (unsigned nValue, unsigned nTG);
 	void SetMIDIChannel (unsigned nValue, unsigned nTG);
+	void SetSysExChannel (unsigned nValue, unsigned nTG);
+	void SetSysExEnable (bool bValue, unsigned nTG);
 	void SetMIDIRxSustain (bool bValue, unsigned nTG);
 	void SetMIDIRxPortamento (bool bValue, unsigned nTG);
 	void SetMIDIRxSostenuto (bool bValue, unsigned nTG);
@@ -195,6 +199,8 @@ private:
 	unsigned m_nBankNumber[CConfig::AllToneGenerators];
 	unsigned m_nVoiceNumber[CConfig::AllToneGenerators];
 	unsigned m_nMIDIChannel[CConfig::AllToneGenerators];
+	unsigned m_nSysExChannel[CConfig::AllToneGenerators];
+	bool m_bSysExEnable[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSustain[CConfig::AllToneGenerators];
 	bool m_bMIDIRxPortamento[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSostenuto[CConfig::AllToneGenerators];
