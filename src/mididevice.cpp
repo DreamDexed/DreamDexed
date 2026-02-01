@@ -363,19 +363,16 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 		if (ucStatus == MIDI_SYSTEM_EXCLUSIVE_BEGIN) {
 			uint8_t ucSysExChannel = (pMessage[2] & 0x0F);
 			for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators(); nTG++) {
-				if (m_ChannelMap[nTG] == ucSysExChannel || m_ChannelMap[nTG] == OmniMode) {
-					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",m_ChannelMap[nTG],nLength,nTG);
+				if (m_pSynthesizer->GetSysExEnable (nTG) && m_pSynthesizer->GetSysExChannel (nTG) == ucSysExChannel) {
+					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",ucSysExChannel,nLength,nTG);
 
 					// Check for TX216/TX816 style performance sysex messages
 					
 					if (nLength == 7 && pMessage[3] == 0x04)
 					{
 						// TX816/TX216 Performance SysEx message
-						uint8_t mTG = pMessage[2] & 0x0F; // mTG = module/tone generator number (0-7)
 						uint8_t par = pMessage[4];
 						uint8_t val = pMessage[5];
-
-						if (!(m_ChannelMap[nTG] == mTG || m_ChannelMap[nTG] == OmniMode)) continue;
 
 						LOGNOTE("MIDI-SYSEX: Assuming TX216/TX816 style performance sysex message because 4th byte is 0x04");
 
@@ -542,7 +539,8 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 
 						case MIDI_CC_PORTAMENTO_TIME:
-							m_pSynthesizer->setPortamentoTime (maplong (pMessage[2], 0, 127, 0, 99), nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxPortamento, nTG))
+								m_pSynthesizer->setPortamentoTime (maplong (pMessage[2], 0, 127, 0, 99), nTG);
 							break;
 
 						case MIDI_CC_BREATH_CONTROLLER:
@@ -577,19 +575,23 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 		
 						case MIDI_CC_SUSTAIN:
-							m_pSynthesizer->setSustain (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxSustain, nTG))
+								m_pSynthesizer->setSustain (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_SOSTENUTO:
-							m_pSynthesizer->setSostenuto (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxSostenuto, nTG))
+								m_pSynthesizer->setSostenuto (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_PORTAMENTO:
-							m_pSynthesizer->setPortamentoMode (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxPortamento, nTG))
+								m_pSynthesizer->setPortamentoMode (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_HOLD2:
-							m_pSynthesizer->setHoldMode (pMessage[2] >= 64, nTG);
+							if (m_pSynthesizer->GetTGParameter (CMiniDexed::TGParameterMIDIRxHold2, nTG))
+								m_pSynthesizer->setHoldMode (pMessage[2] >= 64, nTG);
 							break;
 
 						case MIDI_CC_RESONANCE:

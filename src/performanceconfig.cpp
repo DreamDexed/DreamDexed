@@ -36,6 +36,11 @@ LOGMODULE ("Performance");
 #define DEFAULT_PERFORMANCE_FILENAME "performance.ini"
 #define DEFAULT_PERFORMANCE_NAME "Default"
 
+#define MIDIRX_SUSTAIN_POS 0
+#define MIDIRX_PORTAMENTO_POS 1
+#define MIDIRX_SOSTENUTO_POS 2
+#define MIDIRX_HOLD2_POS 3
+
 CPerformanceConfig::CPerformanceConfig (FATFS *pFileSystem)
 :	m_Properties (DEFAULT_PERFORMANCE_FILENAME, pFileSystem)
 {
@@ -138,6 +143,27 @@ bool CPerformanceConfig::Load (void)
 			m_nMIDIChannel[nTG] = CMIDIDevice::OmniMode;
 			bResult = true;
 		}
+
+		PropertyName.Format ("SysExChannel%u", nTG+1);
+		unsigned nSysExChannel = m_Properties.GetNumber (PropertyName, 1);
+		if (nSysExChannel > 0 && nSysExChannel <= CMIDIDevice::Channels)
+		{
+			m_nSysExChannel[nTG] = nSysExChannel-1;
+		}
+		else
+		{
+			m_nSysExChannel[nTG] = 0;
+		}
+
+		PropertyName.Format ("SysExEnable%u", nTG+1);
+		m_bSysExEnable[nTG]  = m_Properties.GetNumber (PropertyName, 1);
+
+		PropertyName.Format ("MIDIRx%u", nTG+1);
+		unsigned nMIDIRx = m_Properties.GetNumber (PropertyName, 0x7F);
+		m_bMIDIRxSustain[nTG] = nMIDIRx & (1 << MIDIRX_SUSTAIN_POS);
+		m_bMIDIRxPortamento[nTG] = nMIDIRx & (1 << MIDIRX_PORTAMENTO_POS);
+		m_bMIDIRxSostenuto[nTG] = nMIDIRx & (1 << MIDIRX_SOSTENUTO_POS);
+		m_bMIDIRxHold2[nTG] = nMIDIRx & (1 << MIDIRX_HOLD2_POS);
 
 		PropertyName.Format ("Volume%u", nTG+1);
 		m_nVolume[nTG] = m_Properties.GetNumber (PropertyName, 100);
@@ -362,6 +388,22 @@ bool CPerformanceConfig::Save (void)
 		}
 		m_Properties.SetNumber (PropertyName, nMIDIChannel);
 
+		PropertyName.Format ("SysExChannel%u", nTG+1);
+		m_Properties.SetNumber (PropertyName, m_nSysExChannel[nTG]+1);
+
+		if (!m_bSysExEnable[nTG])
+		{
+			PropertyName.Format ("SysExEnable%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bSysExEnable[nTG]);
+		}
+
+		PropertyName.Format ("MIDIRx%u", nTG+1);
+		unsigned nMIDIRx = m_bMIDIRxSustain[nTG] << MIDIRX_SUSTAIN_POS;
+		nMIDIRx |= m_bMIDIRxPortamento[nTG] << MIDIRX_PORTAMENTO_POS;
+		nMIDIRx |= m_bMIDIRxSostenuto[nTG] << MIDIRX_SOSTENUTO_POS;
+		nMIDIRx |= m_bMIDIRxHold2[nTG] << MIDIRX_HOLD2_POS;
+		m_Properties.SetNumber (PropertyName, nMIDIRx);
+
 		PropertyName.Format ("Volume%u", nTG+1);
 		m_Properties.SetNumber (PropertyName, m_nVolume[nTG]);
 
@@ -561,6 +603,42 @@ unsigned CPerformanceConfig::GetMIDIChannel (unsigned nTG) const
 	return m_nMIDIChannel[nTG];
 }
 
+unsigned CPerformanceConfig::GetSysExChannel (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nSysExChannel[nTG];
+}
+
+bool CPerformanceConfig::GetSysExEnable (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bSysExEnable[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxSustain (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxSustain[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxPortamento (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxPortamento[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxSostenuto (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxSostenuto[nTG];
+}
+
+bool CPerformanceConfig::GetMIDIRxHold2 (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bMIDIRxHold2[nTG];
+}
+
 unsigned CPerformanceConfig::GetVolume (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -637,6 +715,42 @@ void CPerformanceConfig::SetMIDIChannel (unsigned nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nMIDIChannel[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetSysExChannel (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nSysExChannel[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetSysExEnable (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bSysExEnable[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxSustain (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxSustain[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxPortamento (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxPortamento[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxSostenuto (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxSostenuto[nTG] = bValue;
+}
+
+void CPerformanceConfig::SetMIDIRxHold2 (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bMIDIRxHold2[nTG] = bValue;
 }
 
 void CPerformanceConfig::SetVolume (unsigned nValue, unsigned nTG)
