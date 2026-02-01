@@ -140,6 +140,20 @@ bool CPerformanceConfig::Load (void)
 			bResult = true;
 		}
 
+		PropertyName.Format ("SysExChannel%u", nTG+1);
+		unsigned nSysExChannel = m_Properties.GetNumber (PropertyName, 1);
+		if (nSysExChannel > 0 && nSysExChannel <= CMIDIDevice::Channels)
+		{
+			m_nSysExChannel[nTG] = nSysExChannel-1;
+		}
+		else
+		{
+			m_nSysExChannel[nTG] = 0;
+		}
+
+		PropertyName.Format ("SysExEnable%u", nTG+1);
+		m_bSysExEnable[nTG]  = m_Properties.GetNumber (PropertyName, 1);
+
 		PropertyName.Format ("MIDIRxSustain%u", nTG+1);
 		m_bMIDIRxSustain[nTG] = m_Properties.GetNumber (PropertyName, 1);
 
@@ -375,6 +389,18 @@ bool CPerformanceConfig::Save (void)
 		}
 		m_Properties.SetNumber (PropertyName, nMIDIChannel);
 
+		if (m_nSysExChannel[nTG])
+		{
+			PropertyName.Format ("SysExChannel%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_nSysExChannel[nTG]+1);
+		}
+
+		if (!m_bSysExEnable[nTG])
+		{
+			PropertyName.Format ("SysExEnable%u", nTG+1);
+			m_Properties.SetNumber (PropertyName, m_bSysExEnable[nTG]);
+		}
+
 		if (!m_bMIDIRxSustain[nTG])
 		{
 			PropertyName.Format ("MIDIRxSustain%u", nTG+1);
@@ -598,6 +624,18 @@ unsigned CPerformanceConfig::GetMIDIChannel (unsigned nTG) const
 	return m_nMIDIChannel[nTG];
 }
 
+unsigned CPerformanceConfig::GetSysExChannel (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nSysExChannel[nTG];
+}
+
+bool CPerformanceConfig::GetSysExEnable (unsigned nTG) const
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bSysExEnable[nTG];
+}
+
 bool CPerformanceConfig::GetMIDIRxSustain (unsigned nTG) const
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -698,6 +736,18 @@ void CPerformanceConfig::SetMIDIChannel (unsigned nValue, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
 	m_nMIDIChannel[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetSysExChannel (unsigned nValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_nSysExChannel[nTG] = nValue;
+}
+
+void CPerformanceConfig::SetSysExEnable (bool bValue, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	m_bSysExEnable[nTG] = bValue;
 }
 
 void CPerformanceConfig::SetMIDIRxSustain (bool bValue, unsigned nTG)
