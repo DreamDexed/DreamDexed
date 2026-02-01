@@ -243,20 +243,27 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 
 	// GLOBAL MIDI SYSEX
 
-	// Set MIDI Channel for TX816/TX216 SysEx; in MiniDexed, we interpret the device parameter as the number of the TG (unlike the TX816/TX216 which has a hardware switch to select the TG)
+	// Set MIDI Channel for TX816/TX216 SysEx
 	if (nLength == 7 &&
 	    pMessage[0] == MIDI_SYSTEM_EXCLUSIVE_BEGIN &&
 	    pMessage[1] == 0x43 &&
-	    // pMessage[2] & 0x0F = TG number
+	    // pMessage[2] & 0x0F = SysEx channel
 	    pMessage[3] == 0x04 &&
 	    pMessage[4] == 0x01 &&
 	    // pMessage[5] = target MIDI channel (0-15)
 	    pMessage[6] == MIDI_SYSTEM_EXCLUSIVE_END)
 	{
-		uint8_t mTG = pMessage[2] & 0x0F;
-		uint8_t val = pMessage[5];
-		LOGNOTE("MIDI-SYSEX: Set TG%d to MIDI Channel %d", mTG + 1, val & 0x0F);
-		m_pSynthesizer->SetMIDIChannel(val & 0x0F, mTG);
+		uint8_t ucSysExChannel = (pMessage[2] & 0x0F);
+
+		for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators(); nTG++)
+		{
+			if (!m_pSynthesizer->GetSysExEnable (nTG) || m_pSynthesizer->GetSysExChannel (nTG) != ucSysExChannel)
+				continue;
+
+			uint8_t channel = pMessage[5] & 0x0F;
+			LOGNOTE("MIDI-SYSEX: Set TG%d to MIDI Channel %d", nTG + 1, channel);
+			m_pSynthesizer->SetMIDIChannel(channel, nTG);
+		}
 	}
 	// Master Volume is set using a MIDI SysEx message as follows:
 	//   F0  Start of SysEx
@@ -363,8 +370,8 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 		if (ucStatus == MIDI_SYSTEM_EXCLUSIVE_BEGIN) {
 			uint8_t ucSysExChannel = (pMessage[2] & 0x0F);
 			for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators(); nTG++) {
-				if (m_ChannelMap[nTG] == ucSysExChannel || m_ChannelMap[nTG] == OmniMode) {
-					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",m_ChannelMap[nTG],nLength,nTG);
+				if (m_pSynthesizer->GetSysExEnable (nTG) && m_pSynthesizer->GetSysExChannel (nTG) == ucSysExChannel) {
+					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",ucSysExChannel,nLength,nTG);
 
 					// Check for TX216/TX816 style performance sysex messages
 					

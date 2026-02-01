@@ -108,6 +108,8 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nCutoff[i] = 99;
 		m_nResonance[i] = 0;
 		m_nMIDIChannel[i] = CMIDIDevice::Disabled;
+		m_nSysExChannel[i] = 0;
+		m_bSysExEnable[i] = 1;
 		m_bMIDIRxSustain[i] = 1;
 		m_bMIDIRxPortamento[i] = 1;
 		m_bMIDIRxSostenuto[i] = 1;
@@ -724,9 +726,9 @@ void CMiniDexed::ProgramChange (unsigned nProgram, unsigned nTG)
 
 	if (m_pConfig->GetMIDIAutoVoiceDumpOnPC())
 	{
-		// Only do the voice dump back out over MIDI if we have a specific
-		// MIDI channel configured for this TG
-		if (m_nMIDIChannel[nTG] < CMIDIDevice::Channels)
+		// Only do the voice dump back out over MIDI if we have enabled
+		// the SysEx for this TG
+		if (m_bSysExEnable[nTG])
 		{
 			m_SerialMIDI.SendSystemExclusiveVoice(nProgram, m_SerialMIDI.GetDeviceName(), 0, nTG);
 		}
@@ -922,6 +924,28 @@ void CMiniDexed::SetMIDIChannel (uint8_t uchChannel, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
+void CMiniDexed::SetSysExChannel (uint8_t uchChannel, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	assert (uchChannel < CMIDIDevice::Channels);
+
+	m_nSysExChannel[nTG] = uchChannel;
+
+	m_UI.ParameterChanged ();
+}
+
+void CMiniDexed::SetSysExEnable (bool value, unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+
+	m_bSysExEnable[nTG] = value;
+
+	m_UI.ParameterChanged ();
+}
+
 void CMiniDexed::SetMIDIRxSustain (bool value, unsigned nTG)
 {
 	assert (nTG < CConfig::AllToneGenerators);
@@ -962,6 +986,17 @@ void CMiniDexed::SetMIDIRxHold2 (bool value, unsigned nTG)
 	m_UI.ParameterChanged ();
 }
 
+uint8_t CMiniDexed::GetSysExChannel (unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_nSysExChannel[nTG];
+}
+
+bool CMiniDexed::GetSysExEnable (unsigned nTG)
+{
+	assert (nTG < CConfig::AllToneGenerators);
+	return m_bSysExEnable[nTG];
+}
 
 void CMiniDexed::keyup (int16_t pitch, unsigned nTG)
 {
@@ -1751,6 +1786,9 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 			SetMIDIChannel ((uint8_t) nValue, i);
 			break;
 
+		case TGParameterSysExChannel:		SetSysExChannel (nValue, i); break;
+		case TGParameterSysExEnable:		SetSysExEnable (nValue, i); break;
+
 		case TGParameterMIDIRxSustain:		SetMIDIRxSustain (nValue, i); break;
 		case TGParameterMIDIRxPortamento:	SetMIDIRxPortamento (nValue, i); break;
 		case TGParameterMIDIRxSostenuto:	SetMIDIRxSostenuto (nValue, i); break;
@@ -1799,6 +1837,8 @@ int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
 	case TGParameterCutoff:		return m_nCutoff[nTG];
 	case TGParameterResonance:	return m_nResonance[nTG];
 	case TGParameterMIDIChannel:	return m_nMIDIChannel[nTG];
+	case TGParameterSysExChannel:	return m_nSysExChannel[nTG];
+	case TGParameterSysExEnable:	return m_bSysExEnable[nTG];
 	case TGParameterMIDIRxSustain:	return m_bMIDIRxSustain[nTG];
 	case TGParameterMIDIRxPortamento:	return m_bMIDIRxPortamento[nTG];
 	case TGParameterMIDIRxSostenuto:	return m_bMIDIRxSostenuto[nTG];
@@ -2227,6 +2267,8 @@ bool CMiniDexed::DoSavePerformance (void)
 		m_PerformanceConfig.SetBankNumber (m_nVoiceBankID[nTG], nTG);
 		m_PerformanceConfig.SetVoiceNumber (m_nProgram[nTG], nTG);
 		m_PerformanceConfig.SetMIDIChannel (m_nMIDIChannel[nTG], nTG);
+		m_PerformanceConfig.SetSysExChannel (m_nSysExChannel[nTG], nTG);
+		m_PerformanceConfig.SetSysExEnable (m_bSysExEnable[nTG], nTG);
 		m_PerformanceConfig.SetMIDIRxSustain (m_bMIDIRxSustain[nTG], nTG);
 		m_PerformanceConfig.SetMIDIRxPortamento (m_bMIDIRxPortamento[nTG], nTG);
 		m_PerformanceConfig.SetMIDIRxSostenuto (m_bMIDIRxSostenuto[nTG], nTG);
@@ -2787,7 +2829,7 @@ void CMiniDexed::getSysExVoiceDump(uint8_t* dest, uint8_t nTG)
 
 	dest[0] = 0xF0; // SysEx start
 	dest[1] = 0x43; // ID=Yamaha
-	dest[2] = 0x00 | m_nMIDIChannel[nTG]; // 0x0c Sub-status 0 and MIDI channel
+	dest[2] = 0x00 | m_nSysExChannel[nTG]; // 0x0c Sub-status 0 and MIDI channel
 	dest[3] = 0x00; // Format number (0=1 voice)
 	dest[4] = 0x01; // Byte count MSB
 	dest[5] = 0x1B; // Byte count LSB
@@ -2963,6 +3005,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		BankSelect (m_PerformanceConfig.GetBankNumber (nTG), nTG);
 		ProgramChange (m_PerformanceConfig.GetVoiceNumber (nTG), nTG);
 		SetMIDIChannel (m_PerformanceConfig.GetMIDIChannel (nTG), nTG);
+		SetSysExChannel (m_PerformanceConfig.GetSysExChannel (nTG), nTG);
+		SetSysExEnable (m_PerformanceConfig.GetSysExEnable (nTG), nTG);
 		SetMIDIRxSustain (m_PerformanceConfig.GetMIDIRxSustain (nTG), nTG);
 		SetMIDIRxPortamento (m_PerformanceConfig.GetMIDIRxPortamento (nTG), nTG);
 		SetMIDIRxSostenuto (m_PerformanceConfig.GetMIDIRxSostenuto (nTG), nTG);
