@@ -24,6 +24,7 @@
 #include "minidexed.h"
 #include "mididevice.h"
 #include "userinterface.h"
+#include "sdfilter.h"
 #include "sysexfileloader.h"
 #include "config.h"
 #include <cmath>
@@ -575,6 +576,7 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0,	CMIDIDevice::ChannelUnknown-1,		1, ToMIDIChannel}, 	// ParameterPerformanceSelectChannel
 	{0, NUM_PERFORMANCE_BANKS, 1},			// ParameterPerformanceBank
 	{0,	127,	8,	ToVolume},		// ParameterMasterVolume
+	{0,	SDFilter::get_maximum(CConfig::AllToneGenerators),	1,	ToSDFilter},		// ParameterSDFilter (Maximum updated in the constructor)
 	{0,	99,	1},				// ParameterMixerDryLevel
 	{0,	1,	1,	ToOnOff},		// ParameterFXBypass
 };
@@ -742,6 +744,7 @@ const CUIMenu::TMenuItem CUIMenu::s_PerformanceMenu[] =
 	{"Delete",	PerformanceMenu, 0, 1},
 	{"Bank",	EditPerformanceBankNumber, 0, 0},
 	{"PCCH",	EditGlobalParameter,	0,	CMiniDexed::ParameterPerformanceSelectChannel},
+	{"Design Filter",	EditGlobalParameter,	0,	CMiniDexed::ParameterSDFilter},
 	{0}
 };
 
@@ -895,6 +898,8 @@ CUIMenu::CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig)
 		s_TGParameter[CMiniDexed::TGParameterVolume].Increment = 1;
 		s_TGParameter[CMiniDexed::TGParameterPan].Increment = 1;
 	}
+
+	s_GlobalParameter[CMiniDexed::ParameterSDFilter].Maximum = SDFilter::get_maximum(m_nToneGenerators);
 }
 
 void CUIMenu::EventHandler (TMenuEvent Event)
@@ -1969,6 +1974,13 @@ std::string CUIMenu::ToTGLinkName (int nValue, int nWidth)
 {
 	if (nValue == 0) return "-";
 	return std::string{(char)(nValue + 'A' - 1)};
+}
+
+std::string CUIMenu::ToSDFilter (int nValue, int nWidth)
+{
+	int nTG = s_GlobalParameter[CMiniDexed::ParameterSDFilter].Maximum - SDFilter::get_maximum(0);
+
+	return SDFilter::to_filter(nValue, nTG).to_string();
 }
 
 std::string CUIMenu::TodB (int nValue, int nWidth)

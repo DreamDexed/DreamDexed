@@ -55,6 +55,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	m_SerialMIDI (this, pInterrupt, pConfig, &m_UI),
 	m_fMasterVolume{},
 	m_fMasterVolumeW(0),
+	m_SDFilter{},
 	m_bUseSerial (false),
 	m_bQuadDAC8Chan (false),
 	m_pSoundDevice (nullptr),
@@ -1175,6 +1176,11 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 	case ParameterMasterVolume:
 		nValue=constrain((int)nValue,0,127);
 		setMasterVolume (nValue / 127.0f);
+		m_UI.ParameterChanged ();
+		break;
+
+	case ParameterSDFilter:
+		m_SDFilter = SDFilter::to_filter(nValue, m_pConfig->GetToneGenerators());
 		m_UI.ParameterChanged ();
 		break;
 
@@ -2860,6 +2866,17 @@ void CMiniDexed::setMasterVolume(float32_t vol)
     vol = powf(vol, 2.0f);
 
     m_fMasterVolumeW = vol;
+}
+
+bool CMiniDexed::SDFilterOut (uint8_t nTG)
+{
+	switch (m_SDFilter.type)
+	{
+	case SDFilter::Type::TGLink: return m_nTGLink[nTG] != m_SDFilter.param;
+	case SDFilter::Type::TG: return nTG != m_SDFilter.param;
+	case SDFilter::Type::MIDIChannel: return m_nMIDIChannel[nTG] != m_SDFilter.param;
+	default: return false;
+	}
 }
 
 std::string CMiniDexed::GetPerformanceFileName(unsigned nID)

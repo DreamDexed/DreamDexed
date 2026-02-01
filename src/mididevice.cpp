@@ -370,6 +370,10 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 		if (ucStatus == MIDI_SYSTEM_EXCLUSIVE_BEGIN) {
 			uint8_t ucSysExChannel = (pMessage[2] & 0x0F);
 			for (unsigned nTG = 0; nTG < m_pConfig->GetToneGenerators(); nTG++) {
+
+				if (m_pSynthesizer->SDFilterOut (nTG))
+					continue;
+
 				if (m_pSynthesizer->GetSysExEnable (nTG) && m_pSynthesizer->GetSysExChannel (nTG) == ucSysExChannel) {
 					LOGNOTE("MIDI-SYSEX: channel: %u, len: %u, TG: %u",ucSysExChannel,nLength,nTG);
 
@@ -556,6 +560,9 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 								
 						case MIDI_CC_VOLUME:
+							if (m_pSynthesizer->SDFilterOut (nTG))
+								break;
+
 							m_pSynthesizer->SetVolume (pMessage[2], nTG);
 							break;
 		
@@ -602,10 +609,16 @@ void CMIDIDevice::MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsign
 							break;
 
 						case MIDI_CC_RESONANCE:
+							if (m_pSynthesizer->SDFilterOut (nTG))
+								break;
+
 							m_pSynthesizer->SetResonance (maplong (pMessage[2], 0, 127, 0, 99), nTG);
 							break;
 							
 						case MIDI_CC_FREQUENCY_CUTOFF:
+							if (m_pSynthesizer->SDFilterOut (nTG))
+								break;
+
 							m_pSynthesizer->SetCutoff (maplong (pMessage[2], 0, 127, 0, 99), nTG);
 							break;
 

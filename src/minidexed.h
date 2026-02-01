@@ -27,6 +27,7 @@
 #include "performanceconfig.h"
 #include "midikeyboard.h"
 #include "pckeyboard.h"
+#include "sdfilter.h"
 #include "serialmididevice.h"
 #include "perftimer.h"
 #include <fatfs/ff.h>
@@ -198,6 +199,7 @@ public:
 		ParameterPerformanceSelectChannel,
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
+		ParameterSDFilter,
 		ParameterMixerDryLevel,
 		ParameterFXBypass,
 		ParameterUnknown
@@ -304,6 +306,8 @@ public:
 
 	void setMasterVolume (float32_t vol);
 
+	bool SDFilterOut (uint8_t nTG);
+
 	bool InitNetwork();
 	void UpdateNetwork();
 	const CIPAddress& GetNetworkIPAddress();
@@ -409,6 +413,9 @@ private:
 	CSerialMIDIDevice m_SerialMIDI;
 	float32_t m_fMasterVolume[8];
 	float32_t m_fMasterVolumeW;
+
+	SDFilter m_SDFilter;
+
 	bool m_bUseSerial;
 	bool m_bQuadDAC8Chan;
 
