@@ -56,11 +56,46 @@ public:
 		MenuEventUnknown
 	};
 
+	typedef std::string TToString (int nValue, int nWidth);
+
+	enum TCPageType
+	{
+		PageMain,
+		PageEffect,
+		PageTG,
+		PageVoice,
+		PageOP,
+	};
+
+	enum TCParameterType
+	{
+		ParameterNone,
+		ParameterGlobal,
+		ParameterTG,
+		ParameterVoice,
+		ParameterOP,
+	};
+
+	struct TCParameterInfo {
+		TCParameterType Type;
+		unsigned Parameter;
+		const char* Name;
+		const char* Short;
+		u8 ChG;
+		u8 TG;
+		u8 OP;
+		int Min;
+		int Max;
+		TToString *ToString;
+	};
+
 public:
 	CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig);
 
 	void EventHandler (TMenuEvent Event);
 	
+	const void GetParameterInfos (CUIMenu::TCParameterInfo *pParamInfo, size_t n);
+
 private:
 	typedef void TMenuHandler (CUIMenu *pUIMenu, TMenuEvent Event);
 
@@ -70,14 +105,13 @@ private:
 		TMenuHandler *Handler;
 		const TMenuItem *MenuItem;
 		unsigned Parameter;
+		const char *Short;
 		TMenuHandler* OnSelect;
 		TMenuHandler* StepDown;
 		TMenuHandler* StepUp;
 		unsigned Parameter2;
 		bool ShowDirect;
 	};
-
-	typedef std::string TToString (int nValue, int nWidth);
 
 	struct TParameter
 	{
@@ -161,7 +195,8 @@ private:
 	static void StepDownEffect (CUIMenu *pUIMenu, TMenuEvent Event);
 	static void StepUpEffect (CUIMenu *pUIMenu, TMenuEvent Event);
 	static bool FXSlotFilter (CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
-
+	 
+	const void GetParameterInfo (TCParameterInfo *pParam);
 private:
 	CUserInterface *m_pUI;
 	CMiniDexed *m_pMiniDexed;

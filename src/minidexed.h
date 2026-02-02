@@ -137,8 +137,8 @@ public:
 	void SetEQPreHighcut (unsigned nValue, unsigned nTG);
 
 	void setMonoMode(uint8_t mono, uint8_t nTG);
-
 	void setTGLink(uint8_t nTGLink, uint8_t nTG);
+	void setEnabled(uint8_t enabled, uint8_t nTG);
 
 	void setPitchbendRange(uint8_t range, uint8_t nTG);
 	void setPitchbendStep(uint8_t step, uint8_t nTG);
@@ -250,7 +250,8 @@ public:
 		TGParameterNoteShift,
 		TGParameterMonoMode,  
 		TGParameterTGLink,
-				
+		TGParameterEnabled,
+		
 		TGParameterMWRange,
 		TGParameterMWPitch,
 		TGParameterMWAmplitude,
@@ -312,6 +313,12 @@ public:
 	void UpdateNetwork();
 	const CIPAddress& GetNetworkIPAddress();
 
+	void DisplayWrite (const char *pMenu, const char *pParam, const char *pValue,
+			   bool bArrowDown, bool bArrowUp);
+
+	void UpdateDAWState ();
+	void UpdateDAWMenu (CUIMenu::TCPageType Type, s8 ucPage, u8 ucOP, u8 ucTG);
+
 private:
 	int16_t ApplyNoteLimits (int16_t pitch, unsigned nTG);	// returns < 0 to ignore note
 	uint8_t m_uchOPMask[CConfig::AllToneGenerators];
@@ -365,9 +372,9 @@ private:
 	unsigned m_nPortamentoGlissando[CConfig::AllToneGenerators];	
 	unsigned m_nPortamentoTime[CConfig::AllToneGenerators];	
 	bool m_bMonoMode[CConfig::AllToneGenerators]; 
-
 	unsigned m_nTGLink[CConfig::AllToneGenerators];
-				
+	bool m_bEnabled[CConfig::AllToneGenerators];
+
 	unsigned m_nModulationWheelRange[CConfig::AllToneGenerators];
 	unsigned m_nModulationWheelTarget[CConfig::AllToneGenerators];
 	unsigned m_nFootControlRange[CConfig::AllToneGenerators];
