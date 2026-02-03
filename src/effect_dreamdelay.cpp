@@ -28,8 +28,8 @@ tempo{120}
 
 AudioEffectDreamDelay::~AudioEffectDreamDelay()
 {
-    delete bufferL;
-    delete bufferR;
+    delete[] bufferL;
+    delete[] bufferR;
 }
 
 static float32_t calculateTime(AudioEffectDreamDelay::Sync sync, unsigned tempo)
