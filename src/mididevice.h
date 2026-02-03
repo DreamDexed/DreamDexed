@@ -20,8 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _mididevice_h
-#define _mididevice_h
+#pragma once
 
 #include "config.h"
 #include <string>
@@ -87,5 +86,3 @@ private:
 
 	CSpinLock m_MIDISpinLock;
 };
-
-#endif

@@ -17,8 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _perftimer_h
-#define _perftimer_h
+#pragma once
 
 #include <string>
 #include <circle/timer.h>
@@ -43,5 +42,3 @@ private:
 
 	unsigned m_nLastDumpTicks;
 };
-
-#endif

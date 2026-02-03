@@ -21,8 +21,8 @@
     ==============================================================================
  */
 
-#if !defined(__Chorus_h)
-#define __Chorus_h
+#pragma once
+
 
 #include "OnePoleLP.h"
 #include "math.h"
@@ -139,5 +139,3 @@ public:
         return lfoPhase;
     }
 };
-
-#endif

@@ -20,8 +20,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _byteorder_h
-#define _byteorder_h
+#pragma once
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define htons(VALUE)  (VALUE)
@@ -37,6 +36,4 @@
 #define ntohs(VALUE)  __builtin_bswap16(VALUE)
 #define ntohl(VALUE)  __builtin_bswap32(VALUE)
 #define ntohll(VALUE) __builtin_bswap64(VALUE)
-#endif
-
 #endif

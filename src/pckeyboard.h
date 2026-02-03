@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _pckeyboard_h
-#define _pckeyboard_h
+#pragma once
+
 
 #include "mididevice.h"
 #include "config.h"
@@ -52,5 +52,3 @@ private:
 
 	static CPCKeyboard *s_pThis;
 };
-
-#endif

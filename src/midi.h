@@ -17,8 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _midi_h
-#define _midi_h
+#pragma once
+
+#include <cstdint>
 
 #define MIDI_NOTE_OFF		0b1000
 #define MIDI_NOTE_ON		0b1001
@@ -63,5 +64,3 @@ static const uint16_t MIDI_EQ_HZ[] = {
         6300, 7000, 8000, 9000, 10000, 11000, 12000, 14000, 16000, 18000,
         20000
 };
-
-#endif

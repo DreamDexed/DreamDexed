@@ -17,8 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_mdnspublisher_h
-#define _circle_net_mdnspublisher_h
+#pragma once
 #include <circle/sched/task.h>
 #include <circle/sched/mutex.h>
 #include <circle/sched/synchronizationevent.h>
@@ -94,4 +93,3 @@ private:
 	u8 *m_pWritePtr;
 	u8 *m_pDataLen;
 };
-#endif

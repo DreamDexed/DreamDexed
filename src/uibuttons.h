@@ -17,8 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _uibuttons_h
-#define _uibuttons_h
+#pragma once
 
 #include <circle/gpiopin.h>
 #include <circle/types.h>
@@ -202,5 +201,3 @@ private:
 
 	void bindButton(unsigned pinNumber, CUIButton::BtnTrigger trigger, CUIButton::BtnEvent event);
 };
-
-#endif

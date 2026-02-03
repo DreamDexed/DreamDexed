@@ -21,8 +21,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _utility_h
-#define _utility_h
+#pragma once
 
 #include <circle/string.h>
 #include <circle/util.h>
@@ -189,5 +188,3 @@ namespace Utility
 		}
 	}
 }
-
-#endif
