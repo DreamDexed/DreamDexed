@@ -21,8 +21,7 @@
     ==============================================================================
  */
 
-#if !defined(__ChorusEngine_h)
-#define __ChorusEngine_h
+#pragma once
 
 #include "Chorus.h"
 #include "DCBlock.h"
@@ -110,5 +109,3 @@ public:
         *sampleR = dry * *sampleR + wet * resultR * 1.4f;
     }
 };
-
-#endif

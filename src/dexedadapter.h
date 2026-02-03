@@ -18,8 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _dexedadapter_h
-#define _dexedadapter_h
+#pragma once
 
 #include <synth_dexed.h>
 #include <circle/spinlock.h>
@@ -115,5 +114,3 @@ private:
 	CSpinLock m_SpinLock;
 	bool m_bCompressorEnable;
 };
-
-#endif

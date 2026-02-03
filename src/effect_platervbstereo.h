@@ -41,8 +41,7 @@
  * 
  */
 
-#ifndef _EFFECT_PLATERVBSTEREO_H
-#define _EFFECT_PLATERVBSTEREO_H
+#pragma once
 
 #include <atomic>
 #include <cstdint>
@@ -204,5 +203,3 @@ private:
     uint32_t lfo2_phase_acc;    // LFO 2
     uint32_t lfo2_adder;
 };
-
-#endif // _EFFECT_PLATEREV_H

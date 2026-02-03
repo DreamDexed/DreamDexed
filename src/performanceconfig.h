@@ -20,8 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _performanceconfig_h
-#define _performanceconfig_h
+#pragma once
 
 #include "config.h"
 #include <fatfs/ff.h>
@@ -268,5 +267,3 @@ private:
 	unsigned m_nMixerDryLevel;
 	unsigned m_nFXBypass;
 };
-
-#endif

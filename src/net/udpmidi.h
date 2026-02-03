@@ -20,8 +20,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _udpmidi_h
-#define _udpmidi_h
+#pragma once
 
 #include <circle/net/ipaddress.h>
 #include <circle/net/socket.h>
@@ -53,5 +52,3 @@ private:
 	// Callback handler
 	CUDPMIDIHandler* m_pHandler;
 };
-
-#endif

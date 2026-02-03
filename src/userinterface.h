@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _userinterface_h
-#define _userinterface_h
+#pragma once
+
 
 #include "config.h"
 #include "uimenu.h"
@@ -92,5 +92,3 @@ private:
 
 	CUIMenu m_Menu;
 };
-
-#endif

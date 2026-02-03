@@ -10,8 +10,7 @@
  * Run () method. Extend the Initalize () and Cleanup ()
  * methods if necessary.
  */
-#ifndef _circle_stdlib_app_h
-#define _circle_stdlib_app_h
+#pragma once
 
 #include <circle/actled.h>
 #include <circle/string.h>
@@ -260,5 +259,3 @@ protected:
         FATFS           mFileSystem;
         CConsole        mConsole;
 };
-
-#endif

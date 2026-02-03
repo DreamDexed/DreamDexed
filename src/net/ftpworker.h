@@ -20,8 +20,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _ftpworker_h
-#define _ftpworker_h
+#pragma once
 
 #include <circle/net/ipaddress.h>
 #include <circle/net/socket.h>
@@ -158,5 +157,3 @@ private:
 	static const TFTPCommand Commands[];
 	static u8 s_nInstanceCount;
 };
-
-#endif

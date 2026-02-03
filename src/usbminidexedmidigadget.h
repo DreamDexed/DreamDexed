@@ -19,8 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbminidexedmidigadget_h
-#define _usbminidexedmidigadget_h
+#pragma once
 
 #if RASPPI==5
 #include <circle/sysconfig.h>
@@ -99,6 +98,4 @@ protected:
 		return CUSBMIDIGadget::GetDescriptor(wValue, wIndex, pLength);
 	}
 };
-#endif
-
 #endif

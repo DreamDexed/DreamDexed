@@ -17,8 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _minidexed_h
-#define _minidexed_h
+#pragma once
 
 #include "dexedadapter.h"
 #include "config.h"
@@ -470,5 +469,3 @@ private:
 
 	const float32_t m_fRamp;
 };
-
-#endif
