@@ -374,6 +374,8 @@ void CSysExFileLoader::GetVoice (unsigned nBankID, unsigned nVoiceID, uint8_t *p
 			// if the bank was not successfully loaded from disk.
 			if (nBankID == 0)
 			{
+				extern const uint8_t voices_bank[1][32][156];
+
 				memcpy (pVoiceData, voices_bank[0][nVoiceID], SizeSingleVoice);
 
 				return;
