@@ -2393,13 +2393,13 @@ void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
 
 void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
 {
-	ratio = constrain (ratio, 1u, CMiniDexed::CompressorRatioInf);
+	ratio = constrain (ratio, 1u, AudioEffectCompressor::CompressorRatioInf);
 	assert (nTG < CConfig::AllToneGenerators);
 	if (nTG >= m_nToneGenerators) return;  // Not an active TG
 
 	assert (m_pTG[nTG]);
 	m_nCompressorRatio[nTG] = ratio;
-	m_pTG[nTG]->Compr.setCompressionRatio (ratio == CompressorRatioInf ? INFINITY : ratio);
+	m_pTG[nTG]->Compr.setCompressionRatio (ratio == AudioEffectCompressor::CompressorRatioInf ? INFINITY : ratio);
 	m_UI.ParameterChanged ();
 }
 

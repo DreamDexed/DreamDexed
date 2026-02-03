@@ -115,30 +115,7 @@ private:
 	static std::string GetVoiceValueString (unsigned nVoiceParameter, int nValue, int nWidth);
 	static std::string GetOPValueString (unsigned nOPParameter, int nValue, int nWidth);
 
-	static std::string ToVolume (int nValue, int nWidth);
-	static std::string ToPan (int nValue, int nWidth);
-	static std::string ToMIDIChannel (int nValue, int nWidth);
-
-	static std::string ToAlgorithm (int nValue, int nWidth);
-	static std::string ToOnOff (int nValue, int nWidth);
-	static std::string ToLFOWaveform (int nValue, int nWidth);
-	static std::string ToTransposeNote (int nValue, int nWidth);
-	static std::string ToBreakpointNote (int nValue, int nWidth);
-	static std::string ToMIDINote (int nValue, int nWidth);
-	static std::string ToMIDINoteShift (int nValue, int nWidth);
-	static std::string ToKeyboardCurve (int nValue, int nWidth);
-	static std::string ToOscillatorMode (int nValue, int nWidth);
-	static std::string ToOscillatorDetune (int nValue, int nWidth);
-	static std::string ToPortaMode (int nValue, int nWidth);
-	static std::string ToPortaGlissando (int nValue, int nWidth);
-	static std::string ToPolyMono (int nValue, int nWidth);
-	static std::string ToTGLinkName (int nValue, int nWidth);
 	static std::string ToSDFilter (int nValue, int nWidth);
-	static std::string TodB (int nValue, int nWidth);
-	static std::string TodBFS (int nValue, int nWidth);
-	static std::string ToMillisec (int nValue, int nWidth);
-	static std::string ToRatio (int nValue, int nWidth);
-	static std::string ToHz (int nValue, int nWidth);
 
 	void GlobalShortcutHandler (TMenuEvent Event);
 	void TGShortcutHandler (TMenuEvent Event);
