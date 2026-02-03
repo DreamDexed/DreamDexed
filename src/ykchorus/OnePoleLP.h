@@ -21,8 +21,7 @@
     ==============================================================================
  */
 
-#if !defined(__OnePoleLP_h)
-#define __OnePoleLP_h
+#pragma once
 
 class OnePoleLP {
 public:
@@ -40,5 +39,3 @@ public:
         *sample = outputs;
     }
 };
-
-#endif

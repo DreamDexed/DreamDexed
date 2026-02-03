@@ -17,8 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _kernel_h
-#define _kernel_h
+#pragma once
 
 #include "circle_stdlib_app.h"
 #include <circle/cputhrottle.h>
@@ -63,5 +62,3 @@ private:
 
 	static CKernel *s_pThis;
 };
-
-#endif

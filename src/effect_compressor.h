@@ -3,6 +3,8 @@
  * https://github.com/chipaudette/OpenAudio_ArduinoLibrary/blob/master/AudioEffectCompressor_F32.h
  */
 
+#pragma once
+
 #include <atomic>
 
 #include "compressor.h"

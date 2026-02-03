@@ -20,8 +20,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _applemidi_h
-#define _applemidi_h
+#pragma once
 
 #include <circle/bcmrandom.h>
 #include <circle/net/ipaddress.h>
@@ -112,5 +111,3 @@ private:
 
 	const char* m_pSessionName;
 };
-
-#endif

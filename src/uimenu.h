@@ -20,8 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _uimenu_h
-#define _uimenu_h
+#pragma once
 
 #include <string>
 #include <circle/timer.h>
@@ -221,5 +220,3 @@ private:
 	bool m_bSplashShow=false;
 
 };
-
-#endif

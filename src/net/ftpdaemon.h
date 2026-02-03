@@ -20,8 +20,7 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _ftpdaemon_h
-#define _ftpdaemon_h
+#pragma once
 
 #include <circle/net/socket.h>
 #include <circle/sched/task.h>
@@ -47,5 +46,3 @@ private:
 	CmDNSPublisher* m_pmDNSPublisher;
 	CConfig* m_pConfig;
 };
-
-#endif

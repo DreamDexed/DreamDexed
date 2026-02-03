@@ -1,6 +1,4 @@
-
-#ifndef _common_h
-#define _common_h
+#pragma once
 
 inline long maplong(long x, long in_min, long in_max, long out_min, long out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -22,5 +20,3 @@ inline float32_t mapfloat(int val, int in_min, int in_max, float32_t out_min, fl
   __typeof__(high) _high = (high); \
   (_amt < _low) ? _low : ((_amt > _high) ? _high : _amt); \
 })
-
-#endif

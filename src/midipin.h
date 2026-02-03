@@ -17,11 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _midipin_h
-#define _midipin_h
-
-#include <circle/gpiopin.h>
-#include <circle/types.h>
+#pragma once
 
 // MIDI CC numbers go 0 to 127.
 // NB: 0 is treated as "unused" so CC=0 won't work
@@ -49,5 +45,3 @@ private:
 	unsigned m_nPinNumber;
 	unsigned m_nValue;
 };
-
-#endif

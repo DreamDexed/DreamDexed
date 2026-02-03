@@ -1,8 +1,7 @@
 // Taken from https://github.com/manicken/Audio/tree/templateMixer
 // Adapted for MiniDexed by Holger Wirtz <dcoredump@googlemail.com>
 
-#ifndef effect_mixer_h_
-#define effect_mixer_h_
+#pragma once
 
 #include <cstdint>
 #include <cassert>
@@ -255,5 +254,3 @@ protected:
 	float32_t mp_w[NN][2];
 	float32_t* sumbufR;
 };
-
-#endif

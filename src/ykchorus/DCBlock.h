@@ -21,8 +21,7 @@
     ==============================================================================
  */
 
-#if !defined(__DCBlock_h)
-#define __DCBlock_h
+#pragma once
 
 class DCBlock {
 public:
@@ -41,5 +40,3 @@ public:
         *sample     = lastOutput;
     }
 };
-
-#endif
