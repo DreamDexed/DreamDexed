@@ -242,8 +242,7 @@ void waveShapeSmps(int n,
 			float tmpo = offs * ws;
 			if (tmpo < -10.0f)
 				tmpo = -10.0f;
-			else
-			if (tmpo > 10.0f)
+			else if (tmpo > 10.0f)
 				tmpo = 10.0f;
 			tmpo = 0.5f - 1.0f / (expf(tmpo) + 1.0f);
 
