@@ -39,6 +39,7 @@
 #include <wlan/bcm4343.h>
 #include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
 
+#include "bus.h"
 #include "config.h"
 #include "dexedadapter.h"
 #include "effect.h"
@@ -203,8 +204,6 @@ public:
 		ParameterPerformanceBank,
 		ParameterMasterVolume,
 		ParameterSDFilter,
-		ParameterMixerDryLevel,
-		ParameterFXBypass,
 		ParameterUnknown
 	};
 
@@ -219,6 +218,9 @@ public:
 
 	void SetFXParameter(FX::Parameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
 	int GetFXParameter(FX::Parameter Parameter, unsigned nFX);
+
+	void SetBusParameter(Bus::Parameter Parameter, int nValue, unsigned nBus);
+	int GetBusParameter(Bus::Parameter Parameter, unsigned nBus);
 
 	// Must match the order in CUIMenu::TGParameter
 	enum TTGParameter
@@ -336,6 +338,7 @@ private:
 
 	int m_nParameter[ParameterUnknown]; // global (non-TG) parameters
 	int m_nFXParameter[CConfig::FXChains][FX::Parameter::Unknown]; // FX parameters
+	int m_nBusParameter[CConfig::Buses][Bus::Parameter::Unknown];
 
 	unsigned m_nToneGenerators;
 	unsigned m_nPolyphony;
@@ -436,7 +439,7 @@ private:
 	bool m_bProfileEnabled;
 
 	AudioFXChain *fx_chain[CConfig::FXChains];
-	AudioStereoMixer<CConfig::AllToneGenerators> *tg_mixer;
+	AudioStereoMixer<CConfig::AllToneGenerators> *bus_mixer[CConfig::Buses];
 	AudioStereoMixer<CConfig::AllToneGenerators> *sendfx_mixer[CConfig::FXMixers];
 
 	CSpinLock m_FXSpinLock;

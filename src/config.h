@@ -40,66 +40,65 @@ public:
 // Actual number in can be changed via config settings for some Pis.
 #ifndef ARM_ALLOW_MULTI_CORE
 	// Pi V1 or Zero (single core)
-	static const unsigned MinToneGenerators = 1;
-	static const unsigned AllToneGenerators = 1;
-	static const unsigned DefToneGenerators = AllToneGenerators;
-	static const unsigned FXMixers = 0;
-	static const unsigned FXChains = 0;
-	static const unsigned MasterFX = FXMixers;
+	static constexpr unsigned MinToneGenerators = 1;
+	static constexpr unsigned AllToneGenerators = 1;
+	static constexpr unsigned DefToneGenerators = AllToneGenerators;
+	static constexpr unsigned Buses = 0;
+	static constexpr unsigned BusFXMixers = 0;
+	static constexpr unsigned BusFXChains = 0;
 #else
-#if (RASPPI == 4 || RASPPI == 5)
-	// Pi 4 and 5 quad core
-	// These are max values, default is to support 8 in total with optional 16 TGs
-	static const unsigned TGsCore1 = 2; // process 2 TGs on core 1
-	static const unsigned TGsCore23 = 3; // process 3 TGs on core 2 and 3 each
-	static const unsigned TGsCore1Opt = 2; // process optional additional 2 TGs on core 1
-	static const unsigned TGsCore23Opt = 3; // process optional additional 3 TGs on core 2 and 3 each
-	static const unsigned MinToneGenerators = TGsCore1 + 2 * TGsCore23;
-	static const unsigned AllToneGenerators = TGsCore1 + TGsCore1Opt + 2 * TGsCore23 + 2 * TGsCore23Opt;
-	static const unsigned DefToneGenerators = MinToneGenerators;
-	static const unsigned FXMixers = 2;
-	static const unsigned FXChains = FXMixers + 1;
-	static const unsigned MasterFX = FXMixers;
-#else
-	// Pi 2 or 3 quad core
-	static const unsigned TGsCore1 = 2; // process 2 TGs on core 1
-	static const unsigned TGsCore23 = 3; // process 3 TGs on core 2 and 3 each
-	static const unsigned TGsCore1Opt = 0;
-	static const unsigned TGsCore23Opt = 0;
-	static const unsigned MinToneGenerators = TGsCore1 + 2 * TGsCore23;
-	static const unsigned AllToneGenerators = MinToneGenerators;
-	static const unsigned DefToneGenerators = AllToneGenerators;
-	static const unsigned FXMixers = 2;
-	static const unsigned FXChains = FXMixers + 1;
-	static const unsigned MasterFX = FXMixers;
+	static constexpr unsigned TGsCore1 = 2; // process 2 TGs on core 1
+	static constexpr unsigned TGsCore23 = 3; // process 3 TGs on core 2 and 3 each
+#if (RASPPI == 4)
+	static constexpr unsigned TGsCore1Opt = 4; // process optional additional 4 TGs on core 1
+	static constexpr unsigned TGsCore23Opt = 6; // process optional additional 6 TGs on core 2 and 3 each
+	static constexpr unsigned Buses = 3;
+#elif (RASPPI == 5)
+	static constexpr unsigned TGsCore1Opt = 6; // process optional additional 6 TGs on core 1
+	static constexpr unsigned TGsCore23Opt = 9; // process optional additional 9 TGs on core 2 and 3 each
+	static constexpr unsigned Buses = 4;
+#else // Pi 2 or 3 quad core
+	static constexpr unsigned TGsCore1Opt = 0;
+	static constexpr unsigned TGsCore23Opt = 0;
+	static constexpr unsigned Buses = 1;
 #endif
+	static constexpr unsigned MinToneGenerators = TGsCore1 + 2 * TGsCore23;
+	static constexpr unsigned AllToneGenerators = TGsCore1 + TGsCore1Opt + 2 * TGsCore23 + 2 * TGsCore23Opt;
+	static constexpr unsigned DefToneGenerators = MinToneGenerators;
+
+	static constexpr unsigned BusFXMixers = 2;
+	static constexpr unsigned BusFXChains = BusFXMixers + 1;
 #endif
+
+	static constexpr unsigned BusMasterFX = BusFXMixers;
+	static constexpr unsigned FXMixers = BusFXMixers * Buses;
+	static constexpr unsigned FXChains = BusFXChains * Buses;
 
 // Set maximum polyphony, depending on PI version.  This can be changed via config settings
 #if RASPPI == 1
-	static const unsigned MaxNotes = 8;
-	static const unsigned DefaultNotes = 8;
+	static constexpr unsigned MaxNotes = 8;
+	static constexpr unsigned DefaultNotes = 8;
 #elif RASPPI == 4
-	static const unsigned MaxNotes = 32;
-	static const unsigned DefaultNotes = 24;
+	static constexpr unsigned MaxNotes = 32;
+	static constexpr unsigned DefaultNotes = 24;
 #elif RASPPI == 5
-	static const unsigned MaxNotes = 32;
-	static const unsigned DefaultNotes = 32;
+	static constexpr unsigned MaxNotes = 32;
+	static constexpr unsigned DefaultNotes = 32;
 #else
-	static const unsigned MaxNotes = 16;
-	static const unsigned DefaultNotes = 16;
+	static constexpr unsigned MaxNotes = 16;
+	static constexpr unsigned DefaultNotes = 16;
 #endif
 
-	static const unsigned MaxChunkSize = 4096;
+	static constexpr unsigned MaxChunkSize = 4096;
 
 #if RASPPI <= 3
-	static const unsigned MaxUSBMIDIDevices = 2;
+	static constexpr unsigned MaxUSBMIDIDevices = 2;
 #else
-	static const unsigned MaxUSBMIDIDevices = 4;
+	static constexpr unsigned MaxUSBMIDIDevices = 4;
 #endif
 
-	static const unsigned MinLCDColumns = 15; // ST7789 240px wide LCD
-	static const unsigned MinLCDRows = 2;
+	static constexpr unsigned MinLCDColumns = 15; // ST7789 240px wide LCD
+	static constexpr unsigned MinLCDRows = 2;
 
 public:
 	CConfig(FATFS *pFileSystem);

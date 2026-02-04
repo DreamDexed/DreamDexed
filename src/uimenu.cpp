@@ -36,6 +36,7 @@
 #include <circle/sysconfig.h>
 #include <circle/timer.h>
 
+#include "bus.h"
 #include "config.h"
 #include "dexed.h"
 #include "dexedadapter.h"
@@ -70,7 +71,6 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 	{"TG6", MenuHandler, s_TGMenu, 5},
 	{"TG7", MenuHandler, s_TGMenu, 6},
 	{"TG8", MenuHandler, s_TGMenu, 7},
-#if (RASPPI == 4 || RASPPI == 5)
 	{"TG9", MenuHandler, s_TGMenu, 8},
 	{"TG10", MenuHandler, s_TGMenu, 9},
 	{"TG11", MenuHandler, s_TGMenu, 10},
@@ -79,12 +79,30 @@ const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 	{"TG14", MenuHandler, s_TGMenu, 13},
 	{"TG15", MenuHandler, s_TGMenu, 14},
 	{"TG16", MenuHandler, s_TGMenu, 15},
-#endif
+	{"TG17", MenuHandler, s_TGMenu, 16},
+	{"TG18", MenuHandler, s_TGMenu, 17},
+	{"TG19", MenuHandler, s_TGMenu, 18},
+	{"TG20", MenuHandler, s_TGMenu, 19},
+	{"TG21", MenuHandler, s_TGMenu, 20},
+	{"TG22", MenuHandler, s_TGMenu, 21},
+	{"TG23", MenuHandler, s_TGMenu, 22},
+	{"TG24", MenuHandler, s_TGMenu, 23},
+	{"TG25", MenuHandler, s_TGMenu, 24},
+	{"TG26", MenuHandler, s_TGMenu, 25},
+	{"TG27", MenuHandler, s_TGMenu, 26},
+	{"TG28", MenuHandler, s_TGMenu, 27},
+	{"TG29", MenuHandler, s_TGMenu, 28},
+	{"TG30", MenuHandler, s_TGMenu, 29},
+	{"TG31", MenuHandler, s_TGMenu, 30},
+	{"TG32", MenuHandler, s_TGMenu, 31},
 #endif
 	{"Status", MenuHandler, s_StatusMenu},
 	{"Mixer", MenuHandler, s_MixerMenu},
 #ifdef ARM_ALLOW_MULTI_CORE
-	{"Effects", MenuHandler, s_EffectsMenu},
+	{"Bus1", MenuHandler, s_BusMenu, 0},
+	{"Bus2", MenuHandler, s_BusMenu, 1},
+	{"Bus3", MenuHandler, s_BusMenu, 2},
+	{"Bus4", MenuHandler, s_BusMenu, 3},
 #endif
 	{"Performance", MenuHandler, s_PerformanceMenu},
 	{0},
@@ -194,43 +212,51 @@ const CUIMenu::TMenuItem CUIMenu::s_EQMenu[] =
 	{0},
 };
 
-const CUIMenu::TMenuItem CUIMenu::s_MixerMenu[] =
+CUIMenu::TMenuItem CUIMenu::s_MixerMenu[] =
 {
 	{"Master Volume", EditGlobalParameter, 0, CMiniDexed::ParameterMasterVolume},
 #ifdef ARM_ALLOW_MULTI_CORE
-	{"Dry Level", EditGlobalParameter, 0, CMiniDexed::ParameterMixerDryLevel},
-	{"FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .Parameter2 = 0},
-	{"FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .Parameter2 = 1},
+	{"B1 Dry Level", EditBusParameterG, 0, Bus::Parameter::MixerDryLevel, .nBus = 0},
+	{"B1 FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 0, .idFX = 0},
+	{"B1 FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 0, .idFX = 1},
+	{"B1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 0, .idFX = CConfig::BusMasterFX},
+	{"B2 Dry Level", EditBusParameterG, 0, Bus::Parameter::MixerDryLevel, .nBus = 1},
+	{"B2 FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 1, .idFX = 0},
+	{"B2 FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 1, .idFX = 1},
+	{"B2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 1, .idFX = CConfig::BusMasterFX},
+	{"B3 Dry Level", EditBusParameterG, 0, Bus::Parameter::MixerDryLevel, .nBus = 2},
+	{"B3 FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 2, .idFX = 0},
+	{"B3 FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 2, .idFX = 1},
+	{"B3 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 2, .idFX = CConfig::BusMasterFX},
+	{"B4 Dry Level", EditBusParameterG, 0, Bus::Parameter::MixerDryLevel, .nBus = 3},
+	{"B4 FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 3, .idFX = 0},
+	{"B4 FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 3, .idFX = 1},
+	{"B4 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .nBus = 3, .idFX = CConfig::BusMasterFX},
+#endif
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_BusMenu[] =
+{
+#ifdef ARM_ALLOW_MULTI_CORE
+	{"Dry Level", EditBusParameter, 0, Bus::Parameter::MixerDryLevel},
+	{"SendFX1", MenuHandler, s_FXMenu, 0},
+	{"SendFX2", MenuHandler, s_FXMenu, 1},
+	{"MasterFX", MenuHandler, s_FXMenu, CConfig::BusMasterFX},
+	{"Return Level", EditFXParameter2, 0, FX::Parameter::ReturnLevel, .idFX = CConfig::BusMasterFX},
+	{"FX Bypass", EditBusParameter, 0, Bus::Parameter::FXBypass},
 #endif
 	{0},
 };
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
-const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
-{
-	{"SendFX1", MenuHandler, s_SendFXMenu, 0},
-	{"SendFX2", MenuHandler, s_SendFXMenu, 1},
-	{"MasterFX", MenuHandler, s_MasterFXMenu, CConfig::MasterFX},
-	{"Bypass", EditGlobalParameter, 0, CMiniDexed::ParameterFXBypass},
-	{0},
-};
-
-const CUIMenu::TMenuItem CUIMenu::s_SendFXMenu[] =
+const CUIMenu::TMenuItem CUIMenu::s_FXMenu[] =
 {
 	{"Slot1", MenuHandler, s_FXListMenu, FX::Parameter::Slot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
 	{"Slot2", MenuHandler, s_FXListMenu, FX::Parameter::Slot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
 	{"Slot3", MenuHandler, s_FXListMenu, FX::Parameter::Slot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
 	{"Return Level", EditFXParameter2, 0, FX::Parameter::ReturnLevel},
-	{"Bypass", EditFXParameter2, 0, FX::Parameter::Bypass},
-	{0},
-};
-
-const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
-{
-	{"Slot1", MenuHandler, s_FXListMenu, FX::Parameter::Slot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot2", MenuHandler, s_FXListMenu, FX::Parameter::Slot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot3", MenuHandler, s_FXListMenu, FX::Parameter::Slot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
 	{"Bypass", EditFXParameter2, 0, FX::Parameter::Bypass},
 	{0},
 };
@@ -594,8 +620,6 @@ CUIMenu::TParameter CUIMenu::s_GlobalParameter[CMiniDexed::ParameterUnknown] =
 	{0, NUM_PERFORMANCE_BANKS, 1}, // ParameterPerformanceBank
 	{0, 127, 8, ToVolume}, // ParameterMasterVolume
 	{0, SDFilter::get_maximum(CConfig::AllToneGenerators), 1, ToSDFilter}, // ParameterSDFilter (Maximum updated in the constructor)
-	{0, 99, 1}, // ParameterMixerDryLevel
-	{0, 1, 1, ToOnOff}, // ParameterFXBypass
 };
 
 // must match CMiniDexed::TTGParameter
@@ -1408,7 +1432,9 @@ void CUIMenu::EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 	const FX::ParameterType &rParam = FX::s_Parameter[Param];
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+	unsigned idFX = pUIMenu->m_nCurrentMenuDepth >= 3 ? pUIMenu->m_nMenuStackParameter[2] : pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].idFX;
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
 
@@ -1441,10 +1467,10 @@ void CUIMenu::EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event)
 	}
 
 	std::string FX;
-	if (nFX == CConfig::MasterFX)
+	if (idFX == CConfig::BusMasterFX)
 		FX = "MFX";
 	else
-		FX = std::string("FX") + std::to_string(nFX + 1);
+		FX = std::string("FX") + std::to_string(idFX + 1);
 
 	std::string Value = GetFXValueString(Param,
 					     pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX),
@@ -1460,7 +1486,9 @@ void CUIMenu::EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 	const FX::ParameterType &rParam = FX::s_Parameter[Param];
-	unsigned nFX = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Parameter2;
+	unsigned nBus = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].nBus;
+	unsigned idFX = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].idFX;
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
 
@@ -1493,16 +1521,112 @@ void CUIMenu::EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event)
 	}
 
 	std::string FX;
-	if (nFX == CConfig::MasterFX)
+	if (idFX == CConfig::BusMasterFX)
 		FX = "MFX";
 	else
-		FX = std::string("FX") + std::to_string(nFX + 1);
+		FX = std::string("FX") + std::to_string(idFX + 1);
 
 	std::string Value = GetFXValueString(Param,
 					     pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX),
 					     pUIMenu->m_pConfig->GetLCDColumns() - 2);
 
 	pUIMenu->m_pUI->DisplayWrite(FX.c_str(),
+				     pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				     Value.c_str(),
+				     nValue > rParam.Minimum, nValue < rParam.Maximum);
+}
+
+void CUIMenu::EditBusParameter(CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	Bus::Parameter Param = (Bus::Parameter)pUIMenu->m_nCurrentParameter;
+	const Bus::ParameterType &rParam = Bus::s_Parameter[Param];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+
+	int nValue = pUIMenu->m_pMiniDexed->GetBusParameter(Param, nBus);
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	case MenuEventStepDown:
+		nValue -= rParam.Increment;
+		if (nValue < rParam.Minimum)
+		{
+			nValue = rParam.Minimum;
+		}
+		pUIMenu->m_pMiniDexed->SetBusParameter(Param, nValue, nBus);
+		break;
+
+	case MenuEventStepUp:
+		nValue += rParam.Increment;
+		if (nValue > rParam.Maximum)
+		{
+			nValue = rParam.Maximum;
+		}
+		pUIMenu->m_pMiniDexed->SetBusParameter(Param, nValue, nBus);
+		break;
+
+	default:
+		return;
+	}
+
+	std::string Bus = std::string("Bus") + std::to_string(nBus + 1);
+
+	std::string Value = GetBusValueString(Param,
+					      pUIMenu->m_pMiniDexed->GetBusParameter(Param, nBus),
+					      pUIMenu->m_pConfig->GetLCDColumns() - 2);
+
+	pUIMenu->m_pUI->DisplayWrite(Bus.c_str(),
+				     pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
+				     Value.c_str(),
+				     nValue > rParam.Minimum, nValue < rParam.Maximum);
+}
+
+void CUIMenu::EditBusParameterG(CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	Bus::Parameter Param = (Bus::Parameter)pUIMenu->m_nCurrentParameter;
+	const Bus::ParameterType &rParam = Bus::s_Parameter[Param];
+	unsigned nBus = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].nBus;
+
+	int nValue = pUIMenu->m_pMiniDexed->GetBusParameter(Param, nBus);
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+	case MenuEventUpdateParameter:
+		break;
+
+	case MenuEventStepDown:
+		nValue -= rParam.Increment;
+		if (nValue < rParam.Minimum)
+		{
+			nValue = rParam.Minimum;
+		}
+		pUIMenu->m_pMiniDexed->SetBusParameter(Param, nValue, nBus);
+		break;
+
+	case MenuEventStepUp:
+		nValue += rParam.Increment;
+		if (nValue > rParam.Maximum)
+		{
+			nValue = rParam.Maximum;
+		}
+		pUIMenu->m_pMiniDexed->SetBusParameter(Param, nValue, nBus);
+		break;
+
+	default:
+		return;
+	}
+
+	std::string Bus = std::string("Bus") + std::to_string(nBus + 1);
+
+	std::string Value = GetBusValueString(Param,
+					      pUIMenu->m_pMiniDexed->GetBusParameter(Param, nBus),
+					      pUIMenu->m_pConfig->GetLCDColumns() - 2);
+
+	pUIMenu->m_pUI->DisplayWrite(Bus.c_str(),
 				     pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name,
 				     Value.c_str(),
 				     nValue > rParam.Minimum, nValue < rParam.Maximum);
@@ -1734,6 +1858,25 @@ std::string CUIMenu::GetFXValueString(unsigned nFXParameter, int nValue, int nWi
 	assert(nFXParameter < FX::Parameter::Unknown);
 
 	CUIMenu::TToString *pToString = FX::s_Parameter[nFXParameter].ToString;
+	if (pToString)
+	{
+		Result = (*pToString)(nValue, nWidth);
+	}
+	else
+	{
+		Result = std::to_string(nValue);
+	}
+
+	return Result;
+}
+
+std::string CUIMenu::GetBusValueString(unsigned nBusParameter, int nValue, int nWidth)
+{
+	std::string Result;
+
+	assert(nBusParameter < Bus::Parameter::Unknown);
+
+	CUIMenu::TToString *pToString = Bus::s_Parameter[nBusParameter].ToString;
 	if (pToString)
 	{
 		Result = (*pToString)(nValue, nWidth);
@@ -2210,7 +2353,9 @@ void CUIMenu::SelectCurrentEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 	assert(pUIMenu);
 
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+	unsigned idFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
 
 	if (!nValue) return;
@@ -2225,7 +2370,9 @@ void CUIMenu::StepDownEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 	assert(pUIMenu);
 
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+	unsigned idFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nValue = pUIMenu->m_nCurrentSelection;
 	int increment = rParam.Increment;
@@ -2254,7 +2401,9 @@ void CUIMenu::StepUpEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 	assert(pUIMenu);
 
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+	unsigned idFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nValue = pUIMenu->m_nCurrentSelection;
 	int increment = rParam.Increment;
@@ -2283,7 +2432,9 @@ bool CUIMenu::FXSlotFilter(CUIMenu *pUIMenu, TMenuEvent Event, int nValue)
 	assert(pUIMenu);
 	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 
-	unsigned nFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nBus = pUIMenu->m_nMenuStackParameter[1];
+	unsigned idFX = pUIMenu->m_nMenuStackParameter[2];
+	unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 
 	if (nValue == 0) return false;
 

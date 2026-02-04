@@ -22,6 +22,7 @@
 //
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include <circle/timer.h>
@@ -74,7 +75,8 @@ private:
 		TMenuHandler *OnSelect;
 		TMenuHandler *StepDown;
 		TMenuHandler *StepUp;
-		unsigned Parameter2;
+		uint8_t nBus;
+		uint8_t idFX;
 		bool ShowDirect;
 	};
 
@@ -96,6 +98,8 @@ private:
 	static void EditTGParameter(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusParameterG(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditVoiceParameter(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditOPParameter(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformance(CUIMenu *pUIMenu, TMenuEvent Event);
@@ -112,6 +116,7 @@ private:
 	static std::string GetGlobalValueString(unsigned nParameter, int nValue, int nWidth);
 	static std::string GetTGValueString(unsigned nTGParameter, int nValue, int nWidth);
 	static std::string GetFXValueString(unsigned nFXParameter, int nValue, int nWidth);
+	static std::string GetBusValueString(unsigned nFXParameter, int nValue, int nWidth);
 	static std::string GetVoiceValueString(unsigned nVoiceParameter, int nValue, int nWidth);
 	static std::string GetOPValueString(unsigned nOPParameter, int nValue, int nWidth);
 
@@ -162,11 +167,10 @@ private:
 	static const TMenuItem s_MenuRoot[];
 	static const TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
-	static const TMenuItem s_SendFXMenu[];
-	static const TMenuItem s_MasterFXMenu[];
+	static const TMenuItem s_BusMenu[];
+	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_FXListMenu[];
 	static const TMenuItem s_MixerMenu[];
-	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ZynDistortionMenu[];
 	static const TMenuItem s_YKChorusMenu[];

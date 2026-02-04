@@ -53,6 +53,7 @@
 #include "arm/arm_float_to_q23.h"
 #include "arm/arm_scale_zip_f32.h"
 #include "arm/arm_zip_f32.h"
+#include "bus.h"
 #include "common.h"
 #include "config.h"
 #include "dexedadapter.h"
@@ -105,7 +106,7 @@ m_nLastKeyDown{},
 m_GetChunkTimer("GetChunk", 1000000U * pConfig->GetChunkSize() / 2 / pConfig->GetSampleRate()),
 m_bProfileEnabled(m_pConfig->GetProfileEnabled()),
 fx_chain{},
-tg_mixer{},
+bus_mixer{},
 sendfx_mixer{},
 m_pNet(nullptr),
 m_pNetDevice(nullptr),
@@ -308,13 +309,20 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 	}
 #endif
 
-	// BEGIN setup tg_mixer
-	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
-	// END setup tgmixer
-
-	for (unsigned nFX = 0; nFX < CConfig::FXMixers; nFX++)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
-		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
+		bus_mixer[nBus] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
+
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
+			SetBusParameter(Bus::Parameter(nParam), p.Default, nBus);
+		}
+	}
+
+	for (unsigned nMX = 0; nMX < CConfig::FXMixers; nMX++)
+	{
+		sendfx_mixer[nMX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
@@ -330,8 +338,6 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 	}
 
 	SetParameter(ParameterMasterVolume, pConfig->GetMasterVolume());
-	SetParameter(ParameterMixerDryLevel, 99);
-	SetParameter(ParameterFXBypass, 0);
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
 
@@ -405,13 +411,17 @@ bool CMiniDexed::Initialize(void)
 		m_pTG[i]->setBCController(99, 1, 0);
 		m_pTG[i]->setATController(99, 1, 0);
 
-		tg_mixer->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
-		tg_mixer->gain(i, 1.0f);
-
-		for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
+		for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 		{
-			sendfx_mixer[nFX]->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
-			sendfx_mixer[nFX]->gain(i, mapfloat(nFX == 0 ? m_nFX1Send[i] : m_nFX2Send[i], 0, 99, 0.0f, 1.0f));
+			bus_mixer[nBus]->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
+			bus_mixer[nBus]->gain(i, 1.0f);
+
+			for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
+			{
+				unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+				sendfx_mixer[nMX]->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
+				sendfx_mixer[nMX]->gain(i, mapfloat(idMX == 0 ? m_nFX1Send[i] : m_nFX2Send[i], 0, 99, 0.0f, 1.0f));
+			}
 		}
 	}
 
@@ -836,11 +846,15 @@ void CMiniDexed::SetPan(unsigned nPan, unsigned nTG)
 
 	m_nPan[nTG] = nPan;
 
-	tg_mixer->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
-
-	for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
-		sendfx_mixer[nFX]->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
+		bus_mixer[nBus]->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
+
+		for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
+		{
+			unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+			sendfx_mixer[nMX]->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
+		}
 	}
 
 	m_UI.ParameterChanged();
@@ -856,7 +870,11 @@ void CMiniDexed::SetFX1Send(unsigned nFX1Send, unsigned nTG)
 
 	m_nFX1Send[nTG] = nFX1Send;
 
-	sendfx_mixer[0]->gain(nTG, mapfloat(nFX1Send, 0, 99, 0.0f, 1.0f));
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		unsigned nMX = 0 + CConfig::BusFXMixers * nBus;
+		sendfx_mixer[nMX]->gain(nTG, mapfloat(nFX1Send, 0, 99, 0.0f, 1.0f));
+	}
 
 	m_UI.ParameterChanged();
 }
@@ -871,7 +889,11 @@ void CMiniDexed::SetFX2Send(unsigned nFX2Send, unsigned nTG)
 
 	m_nFX2Send[nTG] = nFX2Send;
 
-	sendfx_mixer[1]->gain(nTG, mapfloat(nFX2Send, 0, 99, 0.0f, 1.0f));
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		unsigned nMX = 1 + CConfig::BusFXMixers * nBus;
+		sendfx_mixer[nMX]->gain(nTG, mapfloat(nFX2Send, 0, 99, 0.0f, 1.0f));
+	}
 
 	m_UI.ParameterChanged();
 }
@@ -1223,14 +1245,6 @@ void CMiniDexed::SetParameter(TParameter Parameter, int nValue)
 	case ParameterSDFilter:
 		m_SDFilter = SDFilter::to_filter(nValue, m_pConfig->GetToneGenerators());
 		m_UI.ParameterChanged();
-		break;
-
-	case ParameterMixerDryLevel:
-		nValue = constrain(nValue, 0, 99);
-		tg_mixer->gain(mapfloat(nValue, 0, 99, 0.0f, 1.0f));
-		break;
-
-	case ParameterFXBypass:
 		break;
 
 	default:
@@ -1763,6 +1777,37 @@ int CMiniDexed::GetFXParameter(FX::Parameter Parameter, unsigned nFX)
 	return m_nFXParameter[nFX][Parameter];
 }
 
+void CMiniDexed::SetBusParameter(Bus::Parameter Parameter, int nValue, unsigned nBus)
+{
+	assert(nBus < CConfig::Buses);
+	assert(Parameter < Bus::Parameter::Unknown);
+
+	const Bus::ParameterType &p = Bus::s_Parameter[Parameter];
+	nValue = constrain((int)nValue, p.Minimum, p.Maximum);
+
+	m_nBusParameter[nBus][Parameter] = nValue;
+
+	switch (Parameter)
+	{
+	case Bus::Parameter::MixerDryLevel:
+		bus_mixer[nBus]->gain(mapfloat(nValue, 0, 99, 0.0f, 1.0f));
+		break;
+	case Bus::Parameter::FXBypass:
+		break;
+	default:
+		assert(0);
+		break;
+	}
+}
+
+int CMiniDexed::GetBusParameter(Bus::Parameter Parameter, unsigned nBus)
+{
+	assert(nBus < CConfig::Buses);
+	assert(Parameter < Bus::Parameter::Unknown);
+
+	return m_nBusParameter[nBus][Parameter];
+}
+
 void CMiniDexed::SetTGParameter(TTGParameter Parameter, int nValue, unsigned nTG)
 {
 	assert(nTG < CConfig::AllToneGenerators);
@@ -1773,7 +1818,7 @@ void CMiniDexed::SetTGParameter(TTGParameter Parameter, int nValue, unsigned nTG
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
 	{
-		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink))
+		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink || i / 8 != nTG / 8))
 			continue;
 
 		if (i != nTG && Parameter == TGParameterTGLink)
@@ -2146,7 +2191,7 @@ void CMiniDexed::SetVoiceParameter(uint8_t uchOffset, uint8_t uchValue, unsigned
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
 	{
-		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink))
+		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink || i / 8 != nTG / 8))
 			continue;
 
 		if (nOP < 6)
@@ -2345,49 +2390,72 @@ void CMiniDexed::ProcessSound(void)
 			int32_t tmp_int[nFrames * 2];
 
 			// get the mix buffer of all TGs
-			float *SampleBuffer[2];
-			tg_mixer->getBuffers(SampleBuffer);
+			float *MasterBuffer[2];
+			bus_mixer[0]->getBuffers(MasterBuffer);
 
-			tg_mixer->zeroFill();
-
-			for (uint8_t i = 0; i < m_nToneGenerators; i++)
+			for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 			{
-				tg_mixer->doAddMix(i, m_OutputLevel[i]);
-			}
-			// END TG mixing
+				if (m_nToneGenerators <= nBus * 8)
+					continue;
 
-			// BEGIN adding sendFX
-			float *FXSendBuffer[2];
+				float *SampleBuffer[2];
+				bus_mixer[nBus]->getBuffers(SampleBuffer);
+				bus_mixer[nBus]->zeroFill();
 
-			for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
-			{
-				if (fx_chain[nFX]->get_level() == 0.0f) continue;
-
-				sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
-				sendfx_mixer[nFX]->zeroFill();
-
-				for (uint8_t i = 0; i < m_nToneGenerators; i++)
+				for (uint8_t i = nBus * 8; i < m_nToneGenerators; i++)
 				{
-					sendfx_mixer[nFX]->doAddMix(i, m_OutputLevel[i]);
+					if (i < (nBus + 1) * 8)
+					{
+						bus_mixer[nBus]->doAddMix(i, m_OutputLevel[i]);
+					}
 				}
 
-				if (!m_nParameter[ParameterFXBypass])
+				// BEGIN adding sendFX
+				float *FXSendBuffer[2];
+
+				for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
 				{
+					unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+					unsigned nFX = idMX + CConfig::BusFXChains * nBus;
+
+					if (fx_chain[nFX]->get_level() == 0.0f) continue;
+
+					sendfx_mixer[nMX]->getBuffers(FXSendBuffer);
+					sendfx_mixer[nMX]->zeroFill();
+
+					for (uint8_t i = nBus * 8; i < m_nToneGenerators; i++)
+					{
+						if (i < (nBus + 1) * 8)
+						{
+							sendfx_mixer[nMX]->doAddMix(i, m_OutputLevel[i]);
+						}
+					}
+
+					if (!m_nBusParameter[nBus][Bus::Parameter::FXBypass])
+					{
+						m_FXSpinLock.Acquire();
+						fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+						m_FXSpinLock.Release();
+					}
+
+					arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
+					arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
+				}
+				// END adding sendFX
+
+				if (!m_nBusParameter[nBus][Bus::Parameter::FXBypass])
+				{
+					unsigned nMasterFX = CConfig::BusMasterFX + CConfig::BusFXChains * nBus;
 					m_FXSpinLock.Acquire();
-					fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+					fx_chain[nMasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
 					m_FXSpinLock.Release();
 				}
 
-				arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
-				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
-			}
-			// END adding sendFX
-
-			if (!m_nParameter[ParameterFXBypass])
-			{
-				m_FXSpinLock.Acquire();
-				fx_chain[CConfig::MasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
-				m_FXSpinLock.Release();
+				if (nBus != 0)
+				{
+					arm_add_f32(MasterBuffer[0], SampleBuffer[0], MasterBuffer[0], nFrames);
+					arm_add_f32(MasterBuffer[1], SampleBuffer[1], MasterBuffer[1], nFrames);
+				}
 			}
 
 			// swap stereo channels if needed prior to writing back out
@@ -2402,9 +2470,9 @@ void CMiniDexed::ProcessSound(void)
 			{
 				float targetVol = 0.0f;
 
-				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], targetVol, m_fRamp, SampleBuffer[0], nFrames);
-				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], targetVol, m_fRamp, SampleBuffer[1], nFrames);
-				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
+				scale_ramp_f32(MasterBuffer[0], &m_fMasterVolume[0], targetVol, m_fRamp, MasterBuffer[0], nFrames);
+				scale_ramp_f32(MasterBuffer[1], &m_fMasterVolume[1], targetVol, m_fRamp, MasterBuffer[1], nFrames);
+				arm_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], tmp_float, nFrames);
 
 				if (targetVol == m_fMasterVolume[0] && targetVol == m_fMasterVolume[1])
 				{
@@ -2414,17 +2482,17 @@ void CMiniDexed::ProcessSound(void)
 			}
 			else if (m_bVolRampedDown)
 			{
-				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], 0.0f, tmp_float, nFrames);
+				arm_scale_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], 0.0f, tmp_float, nFrames);
 			}
 			else if (m_fMasterVolume[0] == m_fMasterVolumeW && m_fMasterVolume[1] == m_fMasterVolumeW)
 			{
-				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], m_fMasterVolumeW, tmp_float, nFrames);
+				arm_scale_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], m_fMasterVolumeW, tmp_float, nFrames);
 			}
 			else
 			{
-				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, m_fRamp, SampleBuffer[0], nFrames);
-				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, m_fRamp, SampleBuffer[1], nFrames);
-				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
+				scale_ramp_f32(MasterBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, m_fRamp, MasterBuffer[0], nFrames);
+				scale_ramp_f32(MasterBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, m_fRamp, MasterBuffer[1], nFrames);
+				arm_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], tmp_float, nFrames);
 			}
 
 			arm_float_to_q23(tmp_float, tmp_int, nFrames * 2);
@@ -2568,8 +2636,14 @@ bool CMiniDexed::DoSavePerformance(void)
 		}
 	}
 
-	m_PerformanceConfig.SetMixerDryLevel(m_nParameter[ParameterMixerDryLevel]);
-	m_PerformanceConfig.SetFXBypass(m_nParameter[ParameterFXBypass]);
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			Bus::Parameter param = Bus::Parameter(nParam);
+			m_PerformanceConfig.SetBusParameter(param, GetBusParameter(param, nBus), nBus);
+		}
+	}
 
 	if (m_bSaveAsDeault)
 	{
@@ -3321,8 +3395,14 @@ void CMiniDexed::LoadPerformanceParameters(void)
 		}
 	}
 
-	SetParameter(ParameterMixerDryLevel, m_PerformanceConfig.GetMixerDryLevel());
-	SetParameter(ParameterFXBypass, m_PerformanceConfig.GetFXBypass());
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			Bus::Parameter param = Bus::Parameter(nParam);
+			SetBusParameter(param, m_PerformanceConfig.GetBusParameter(param, nBus), nBus);
+		}
+	}
 
 	m_UI.DisplayChanged();
 }
