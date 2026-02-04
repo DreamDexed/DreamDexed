@@ -37,7 +37,7 @@
  */
 
 #include <cassert>
-#include <math.h>
+#include <cmath>
 #include "butter.h"
 
 #ifndef M_PI
