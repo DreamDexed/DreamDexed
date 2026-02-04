@@ -157,8 +157,8 @@ public:
 	void SetEQPreHighcut(unsigned nValue, unsigned nTG);
 
 	// Effects
-	int GetFXParameter(FX::TFXParameter nParameter, unsigned nFX) const;
-	void SetFXParameter(FX::TFXParameter nParameter, int nValue, unsigned nFX);
+	int GetFXParameter(FX::Parameter nParameter, unsigned nFX) const;
+	void SetFXParameter(FX::Parameter nParameter, int nValue, unsigned nFX);
 
 	unsigned GetMixerDryLevel() const;
 	void SetMixerDryLevel(unsigned nValue);
@@ -267,7 +267,7 @@ private:
 
 	std::string NewPerformanceName = "";
 
-	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
+	int m_nFXParameter[CConfig::FXChains][FX::Parameter::Unknown];
 
 	unsigned m_nMixerDryLevel;
 	unsigned m_nFXBypass;

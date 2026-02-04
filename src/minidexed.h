@@ -217,8 +217,8 @@ public:
 	bool DeletePerformance(unsigned nID);
 	bool DoDeletePerformance(void);
 
-	void SetFXParameter(FX::TFXParameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
-	int GetFXParameter(FX::TFXParameter Parameter, unsigned nFX);
+	void SetFXParameter(FX::Parameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
+	int GetFXParameter(FX::Parameter Parameter, unsigned nFX);
 
 	// Must match the order in CUIMenu::TGParameter
 	enum TTGParameter
@@ -335,7 +335,7 @@ private:
 	CConfig *m_pConfig;
 
 	int m_nParameter[ParameterUnknown]; // global (non-TG) parameters
-	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown]; // FX parameters
+	int m_nFXParameter[CConfig::FXChains][FX::Parameter::Unknown]; // FX parameters
 
 	unsigned m_nToneGenerators;
 	unsigned m_nPolyphony;
