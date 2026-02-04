@@ -9,7 +9,7 @@ The author makes no guarantee of its suitability for any purpose.
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 
 #ifndef PI
 #define PI 3.141592653589793f
