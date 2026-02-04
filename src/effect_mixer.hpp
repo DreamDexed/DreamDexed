@@ -3,9 +3,13 @@
 
 #pragma once
 
-#include <cstdint>
 #include <cassert>
-#include <arm_math.h>
+#include <cmath>
+
+#include <dsp/support_functions.h>
+#include <dsp/basic_math_functions.h>
+
+#include "common.h"
 
 #define UNITY_GAIN 1.0f
 #define MAX_GAIN 1.0f
@@ -13,183 +17,174 @@
 #define UNITY_PANORAMA 1.0f
 #define MAX_PANORAMA 1.0f
 #define MIN_PANORAMA 0.0f
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
 
 void inline scale_ramp_f32(
-  const float32_t * pSrc,
-        float32_t * pScale,
-        float32_t dScale,
-	float32_t ramp,
-        float32_t * pDst,
-        uint32_t blockSize)
+const float *pSrc,
+float *pScale,
+float dScale,
+float ramp,
+float *pDst,
+int blockSize)
 {
-  uint32_t blkCnt;                               /* Loop counter */
-  float32_t scale = *pScale;
+	int blkCnt; /* Loop counter */
+	float scale = *pScale;
 
-  blkCnt = blockSize;
+	blkCnt = blockSize;
 
-  while (blkCnt > 0U)
-  {
-    if (scale != dScale)
-    {
-      scale = dScale > scale ?
-      	fmin(dScale, scale + ramp):
-      	fmax(dScale, scale - ramp);
-    }
+	while (blkCnt > 0)
+	{
+		if (scale != dScale)
+		{
+			scale = dScale > scale ? fmin(dScale, scale + ramp) : fmax(dScale, scale - ramp);
+		}
 
-    *pDst++ = *pSrc++ * scale;
+		*pDst++ = *pSrc++ * scale;
 
-    blkCnt--;
-  }
+		blkCnt--;
+	}
 
-  *pScale = scale;
+	*pScale = scale;
 }
 
-
-template <int NN> class AudioMixer
+template <int NN>
+class AudioMixer
 {
 public:
-	AudioMixer(uint16_t len, float32_t samplerate):
+	AudioMixer(int len, float samplerate) :
+	buffer_length{len},
+	sumbufL{new float[buffer_length]{}},
 	ramp{10.0f / samplerate} // 100ms
 	{
-		buffer_length=len;
-		for (uint8_t i=0; i<NN; i++)
+		for (int i = 0; i < NN; i++)
 			multiplier[i] = UNITY_GAIN;
-
-		sumbufL=new float32_t[buffer_length];
-		arm_fill_f32(0.0f, sumbufL, len);
 	}
 
 	~AudioMixer()
 	{
-		delete [] sumbufL;
+		delete[] sumbufL;
 	}
 
-        void doAddMix(uint8_t channel, float32_t* in)
+	void doAddMix(int channel, float *in)
 	{
-		float32_t tmp[buffer_length];
-
+		assert(channel >= 0 && channel < NN);
 		assert(in);
 
-		if(multiplier[channel]!=UNITY_GAIN)
-			arm_scale_f32(in,multiplier[channel],tmp,buffer_length);
-		arm_add_f32(sumbufL, tmp, sumbufL, buffer_length);
+		if (multiplier[channel] != UNITY_GAIN)
+		{
+			float tmp[buffer_length];
+			arm_scale_f32(in, multiplier[channel], tmp, buffer_length);
+			arm_add_f32(sumbufL, tmp, sumbufL, buffer_length);
+		}
+		else
+		{
+			arm_add_f32(sumbufL, in, sumbufL, buffer_length);
+		}
 	}
 
-	void gain(uint8_t channel, float32_t gain)
+	void gain(int channel, float gain)
 	{
-		if (channel >= NN) return;
+		assert(channel >= 0 && channel < NN);
 
-		if (gain > MAX_GAIN)
-			gain = MAX_GAIN;
-		else if (gain < MIN_GAIN)
-			gain = MIN_GAIN;
+		gain = constrain(gain, MIN_GAIN, MAX_GAIN);
 		multiplier[channel] = powf(gain, 2);
 	}
 
-	void gain(float32_t gain)
+	void gain(float gain)
 	{
-		float32_t gain4 = powf(gain, 2);
+		gain = constrain(gain, MIN_GAIN, MAX_GAIN);
+		gain = powf(gain, 2);
 
-		for (uint8_t i = 0; i < NN; i++)
+		for (int i = 0; i < NN; i++)
 		{
-			if (gain > MAX_GAIN)
-				gain = MAX_GAIN;
-			else if (gain < MIN_GAIN)
-				gain = MIN_GAIN;
-			multiplier[i] = gain4;
-		} 
+			multiplier[i] = gain;
+		}
 	}
 
-	void getMix(float32_t* buffer)
+	void getMix(float *buffer)
 	{
 		assert(buffer);
 		assert(sumbufL);
 		arm_copy_f32(sumbufL, buffer, buffer_length);
 
-		if(sumbufL)
-			arm_fill_f32(0.0f, sumbufL, buffer_length);
+		arm_fill_f32(0.0f, sumbufL, buffer_length);
 	}
 
 protected:
-	float32_t multiplier[NN];
-	float32_t* sumbufL;
-	uint16_t buffer_length;
-	const float32_t ramp;
+	float multiplier[NN];
+	int buffer_length;
+	float *sumbufL;
+	const float ramp;
 };
 
-template <int NN> class AudioStereoMixer : public AudioMixer<NN>
+template <int NN>
+class AudioStereoMixer : public AudioMixer<NN>
 {
 public:
-	AudioStereoMixer(uint16_t len, float32_t samplerate) : AudioMixer<NN>(len, samplerate)
+	AudioStereoMixer(int len, float samplerate) :
+	AudioMixer<NN>{len, samplerate},
+	sumbufR{new float[buffer_length]{}}
 	{
-		for (uint8_t i=0; i<NN; i++)
+		for (int i = 0; i < NN; i++)
 		{
 			panorama[i][0] = UNITY_PANORAMA;
 			panorama[i][1] = UNITY_PANORAMA;
 			mp[i][0] = mp_w[i][0] = UNITY_GAIN * UNITY_PANORAMA;
 			mp[i][1] = mp_w[i][1] = UNITY_GAIN * UNITY_PANORAMA;
 		}
-
-		sumbufR=new float32_t[buffer_length];
-		arm_fill_f32(0.0f, sumbufR, buffer_length);
 	}
 
 	~AudioStereoMixer()
 	{
-		delete [] sumbufR;
+		delete[] sumbufR;
 	}
 
-	void gain(uint8_t channel, float32_t gain)
+	void gain(int channel, float gain)
 	{
-		if (channel >= NN) return;
+		assert(channel >= 0 && channel < NN);
 
-		if (gain > MAX_GAIN)
-			gain = MAX_GAIN;
-		else if (gain < MIN_GAIN)
-			gain = MIN_GAIN;
+		gain = constrain(gain, MIN_GAIN, MAX_GAIN);
 		multiplier[channel] = powf(gain, 2);
 
 		mp_w[channel][0] = multiplier[channel] * panorama[channel][0];
 		mp_w[channel][1] = multiplier[channel] * panorama[channel][1];
 	}
 
-	void gain(float32_t gain)
+	void gain(float gain)
 	{
-		float32_t gain4 = powf(gain, 2);
+		gain = constrain(gain, MIN_GAIN, MAX_GAIN);
+		gain = powf(gain, 2);
 
-		for (uint8_t i = 0; i < NN; i++)
+		for (int i = 0; i < NN; i++)
 		{
-			if (gain > MAX_GAIN)
-				gain = MAX_GAIN;
-			else if (gain < MIN_GAIN)
-				gain = MIN_GAIN;
-			multiplier[i] = gain4;
+			multiplier[i] = gain;
 
 			mp_w[i][0] = multiplier[i] * panorama[i][0];
 			mp_w[i][1] = multiplier[i] * panorama[i][1];
-		} 
+		}
 	}
 
-        void pan(uint8_t channel, float32_t pan)
+	void pan(int channel, float pan)
 	{
-		if (channel >= NN) return;
+		assert(channel >= 0 && channel < NN);
 
-		if (pan > MAX_PANORAMA)
-			pan = MAX_PANORAMA;
-		else if (pan < MIN_PANORAMA)
-			pan = MIN_PANORAMA;
+		pan = constrain(pan, MIN_PANORAMA, MAX_PANORAMA);
 
 		// From: https://stackoverflow.com/questions/67062207/how-to-pan-audio-sample-data-naturally
-		panorama[channel][0]=arm_cos_f32(mapfloat(pan, MIN_PANORAMA, MAX_PANORAMA, 0.0, M_PI/2.0));
-		panorama[channel][1]=arm_sin_f32(mapfloat(pan, MIN_PANORAMA, MAX_PANORAMA, 0.0, M_PI/2.0));
+		panorama[channel][0] = cosf(mapfloat(pan, MIN_PANORAMA, MAX_PANORAMA, 0.0, M_PI / 2.0));
+		panorama[channel][1] = sinf(mapfloat(pan, MIN_PANORAMA, MAX_PANORAMA, 0.0, M_PI / 2.0));
 
 		mp_w[channel][0] = multiplier[channel] * panorama[channel][0];
 		mp_w[channel][1] = multiplier[channel] * panorama[channel][1];
 	}
 
-	void doAddMix(uint8_t channel, float32_t* in)
+	void doAddMix(int channel, float *in)
 	{
-		float32_t tmp[buffer_length];
+		assert(channel >= 0 && channel < NN);
+
+		float tmp[buffer_length];
 
 		assert(in);
 
@@ -214,23 +209,23 @@ public:
 		}
 	}
 
-	void getMix(float32_t* bufferL, float32_t* bufferR)
+	void getMix(float *bufferL, float *bufferR)
 	{
 		assert(bufferR);
 		assert(bufferL);
 		assert(sumbufL);
 		assert(sumbufR);
 
-		arm_copy_f32 (sumbufL, bufferL, buffer_length);
-		arm_copy_f32 (sumbufR, bufferR, buffer_length);
+		arm_copy_f32(sumbufL, bufferL, buffer_length);
+		arm_copy_f32(sumbufR, bufferR, buffer_length);
 
-		if(sumbufL)
+		if (sumbufL)
 			arm_fill_f32(0.0f, sumbufL, buffer_length);
-		if(sumbufR)
+		if (sumbufR)
 			arm_fill_f32(0.0f, sumbufR, buffer_length);
 	}
 
-	void getBuffers(float32_t (*buffers[2]))
+	void getBuffers(float(*buffers[2]))
 	{
 		buffers[0] = sumbufL;
 		buffers[1] = sumbufR;
@@ -238,9 +233,9 @@ public:
 
 	void zeroFill()
 	{
-		if(sumbufL)
+		if (sumbufL)
 			arm_fill_f32(0.0f, sumbufL, buffer_length);
-		if(sumbufR)
+		if (sumbufR)
 			arm_fill_f32(0.0f, sumbufR, buffer_length);
 	}
 
@@ -249,8 +244,8 @@ protected:
 	using AudioMixer<NN>::multiplier;
 	using AudioMixer<NN>::buffer_length;
 	using AudioMixer<NN>::ramp;
-	float32_t panorama[NN][2];
-	float32_t mp[NN][2];
-	float32_t mp_w[NN][2];
-	float32_t* sumbufR;
+	float panorama[NN][2];
+	float mp[NN][2];
+	float mp_w[NN][2];
+	float *sumbufR;
 };

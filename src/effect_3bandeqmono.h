@@ -1,4 +1,4 @@
-/* 
+/*
  * DISTHRO 3 Band EQ
  * Ported from https://github.com/DISTRHO/Mini-Series/blob/master/plugins/3BandEQ
  * Ported from https://github.com/jnonis/MiniDexed
@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 
 #include "effect_bwfmono.h"
@@ -14,7 +15,7 @@
 class AudioEffect3BandEQMono
 {
 public:
-	AudioEffect3BandEQMono(float samplerate):
+	AudioEffect3BandEQMono(float samplerate) :
 	samplerate{samplerate},
 	preHPF{AudioEffectBWFMono::HP, samplerate, 20.0f, 2},
 	preLPF(AudioEffectBWFMono::LP, samplerate, 20000.0f, 2),
@@ -58,7 +59,7 @@ public:
 	float setLowMidFreq(float value)
 	{
 		fLowMidFreq = std::min(value, fMidHighFreq);
-		xLP  = std::exp(-2.0f * M_PI * fLowMidFreq / samplerate);
+		xLP = std::exp(-2.0f * M_PI * fLowMidFreq / samplerate);
 		a0LP = 1.0f - xLP;
 		b1LP = -xLP;
 		return fLowMidFreq;
@@ -67,20 +68,20 @@ public:
 	float setMidHighFreq(float value)
 	{
 		fMidHighFreq = std::max(value, fLowMidFreq);
-		xHP  = std::exp(-2.0f * M_PI * fMidHighFreq / samplerate);
+		xHP = std::exp(-2.0f * M_PI * fMidHighFreq / samplerate);
 		a0HP = 1.0f - xHP;
 		b1HP = -xHP;
 		return fMidHighFreq;
 	}
 
-	unsigned setLowMidFreq_n(unsigned value)
+	int setLowMidFreq_n(int value)
 	{
 		nLowMidFreq = std::min(value, nMidHighFreq);
 		setLowMidFreq(MIDI_EQ_HZ[nLowMidFreq]);
 		return nLowMidFreq;
 	}
 
-	unsigned setMidHighFreq_n(unsigned value)
+	int setMidHighFreq_n(int value)
 	{
 		nMidHighFreq = std::max(value, nLowMidFreq);
 		setMidHighFreq(MIDI_EQ_HZ[nMidHighFreq]);
@@ -96,15 +97,21 @@ public:
 	float getGain_dB() const { return fGain; }
 	float getLowMidFreq() const { return fLowMidFreq; }
 	float getMidHighFreq() const { return fMidHighFreq; }
-	unsigned getLowMidFreq_n() const { return nLowMidFreq; }
-	unsigned getMidHighFreq_n() const { return nMidHighFreq; }
+	int getLowMidFreq_n() const { return nLowMidFreq; }
+	int getMidHighFreq_n() const { return nMidHighFreq; }
 
 	float getPreLowCut() { return preHPF.getCutoff_Hz(); }
 	float getPreHighCut() { return preLPF.getCutoff_Hz(); }
 
-	void resetState() { tmpLP = 0.0f; tmpHP = 0.0f; preHPF.resetState(); preLPF.resetState(); }
+	void resetState()
+	{
+		tmpLP = 0.0f;
+		tmpHP = 0.0f;
+		preHPF.resetState();
+		preLPF.resetState();
+	}
 
-	void process(float32_t* block, uint16_t len)
+	void process(float *block, int len)
 	{
 		float outLP, outHP;
 
@@ -116,7 +123,7 @@ public:
 
 		if (!fLow && !fMid && !fHigh && !fGain) return;
 
-		for (uint16_t i=0; i < len; ++i)
+		for (int i = 0; i < len; ++i)
 		{
 			float inValue = std::isnan(block[i]) ? 0.0f : block[i];
 
@@ -126,7 +133,7 @@ public:
 			tmpHP = a0HP * inValue - b1HP * tmpHP;
 			outHP = inValue - tmpHP;
 
-			block[i] = (outLP*lowVol + (inValue - outLP - outHP)*midVol + outHP*highVol) * outVol;
+			block[i] = (outLP * lowVol + (inValue - outLP - outHP) * midVol + outHP * highVol) * outVol;
 		}
 	}
 
@@ -137,7 +144,7 @@ private:
 	AudioEffectBWFMono preLPF;
 
 	float fLow, fMid, fHigh, fGain, fLowMidFreq, fMidHighFreq;
-	unsigned nLowMidFreq, nMidHighFreq;
+	int nLowMidFreq, nMidHighFreq;
 
 	float lowVol, midVol, highVol, outVol;
 

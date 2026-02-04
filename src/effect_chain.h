@@ -1,115 +1,132 @@
 #pragma once
 
+#include <atomic>
+#include <cassert>
+#include <cstdint>
 #include <functional>
 
+#include <dsp/basic_math_functions.h>
+
+#include "common.h"
+#include "effect.h"
+#include "effect_3bandeq.h"
+#include "effect_cloudseed2.h"
+#include "effect_compressor.h"
+#include "effect_dreamdelay.h"
+#include "effect_platervbstereo.h"
+#include "effect_ykchorus.h"
 #include "zyn/APhaser.h"
 #include "zyn/Chorus.h"
 #include "zyn/Distortion.h"
 #include "zyn/Phaser.h"
 #include "zyn/Sympathetic.h"
 
-#include "effect_3bandeq.h"
-#include "effect_compressor.h"
-#include "effect_cloudseed2.h"
-#include "effect_dreamdelay.h"
-#include "effect_platervbstereo.h"
-#include "effect_ykchorus.h"
-
 class AudioFXChain
 {
 public:
-        typedef std::function<void(float *inputL, float *inputR, uint16_t len)> process_t;
+	typedef std::function<void(float *inputL, float *inputR, int len)> process_t;
 
-        AudioFXChain(float samplerate):
-        zyn_distortion{samplerate},
-        yk_chorus{samplerate},
-        zyn_chorus{samplerate},
-        zyn_sympathetic{samplerate},
-        zyn_aphaser{samplerate},
-        zyn_phaser{samplerate},
-        dream_delay{samplerate},
-        plate_reverb{samplerate},
-        cloudseed2{samplerate},
-        compressor{samplerate},
-        eq{samplerate},
-        bypass{},
-        funcs{
-                [this](float *inputL, float *inputR, uint16_t len) {},
-                [this](float *inputL, float *inputR, uint16_t len) { zyn_distortion.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { yk_chorus.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { zyn_chorus.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { zyn_sympathetic.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { zyn_aphaser.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { zyn_phaser.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { dream_delay.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { plate_reverb.process(inputL, inputR, inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { cloudseed2.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { compressor.process(inputL, inputR, len); },
-                [this](float *inputL, float *inputR, uint16_t len) { eq.process(inputL, inputR, len); },
-        },
-        level{}
-        {
-        }
+	AudioFXChain(float samplerate) :
+	zyn_distortion{samplerate},
+	yk_chorus{samplerate},
+	zyn_chorus{samplerate},
+	zyn_sympathetic{samplerate},
+	zyn_aphaser{samplerate},
+	zyn_phaser{samplerate},
+	dream_delay{samplerate},
+	plate_reverb{samplerate},
+	cloudseed2{samplerate},
+	compressor{samplerate},
+	eq{samplerate},
+	bypass{},
+	funcs{
+		[](float *inputL, float *inputR, int len) {},
+		[this](float *inputL, float *inputR, int len)
+		{ zyn_distortion.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ yk_chorus.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ zyn_chorus.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ zyn_sympathetic.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ zyn_aphaser.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ zyn_phaser.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ dream_delay.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ plate_reverb.process(inputL, inputR, inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ cloudseed2.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ compressor.process(inputL, inputR, len); },
+		[this](float *inputL, float *inputR, int len)
+		{ eq.process(inputL, inputR, len); },
+	},
+	level{}
+	{
+	}
 
-        float get_level() { return level; }
-        void set_level(float value) { level = constrain(value, 0.0f, 1.0f); }
+	float get_level() { return level; }
+	void set_level(float value) { level = constrain(value, 0.0f, 1.0f); }
 
-        void process (float *inputL, float *inputR, uint16_t len)
-        {
-                if (bypass) return;
+	void process(float *inputL, float *inputR, int len)
+	{
+		if (bypass) return;
 
-                for (int i = 0; i < FX::slots_num; ++i)
-                        if (uint8_t id = slots[i])
-                                funcs[id](inputL, inputR, len);
+		for (int i = 0; i < FX::slots_num; ++i)
+			if (int id = slots[i])
+				funcs[id](inputL, inputR, len);
 
-                if (level != 1.0f)
-                {
-                        arm_scale_f32(inputL, level, inputL, len);
-                        arm_scale_f32(inputR, level, inputR, len);
-                }
-        }
+		if (level != 1.0f)
+		{
+			arm_scale_f32(inputL, level, inputL, static_cast<uint32_t>(len));
+			arm_scale_f32(inputR, level, inputR, static_cast<uint32_t>(len));
+		}
+	}
 
-        void resetState()
-        {
-                zyn_distortion.cleanup();
-                zyn_chorus.cleanup();
-                zyn_sympathetic.cleanup();
-                zyn_aphaser.cleanup();
-                zyn_phaser.cleanup();
-                dream_delay.resetState();
-                plate_reverb.reset();
-                compressor.resetState();
-                eq.resetState();
+	void resetState()
+	{
+		zyn_distortion.cleanup();
+		zyn_chorus.cleanup();
+		zyn_sympathetic.cleanup();
+		zyn_aphaser.cleanup();
+		zyn_phaser.cleanup();
+		dream_delay.resetState();
+		plate_reverb.reset();
+		compressor.resetState();
+		eq.resetState();
 
-                cloudseed2.setRampedDown();
-                cloudseed2.setNeedBufferClear();
-        }
+		cloudseed2.setRampedDown();
+		cloudseed2.setNeedBufferClear();
+	}
 
-        void setSlot(uint8_t slot, uint8_t effect_id)
-        {
-                assert(slot < FX::slots_num);
-                assert(effect_id < FX::effects_num);
+	void setSlot(int slot, int effect_id)
+	{
+		assert(slot >= 0 && slot < FX::slots_num);
+		assert(effect_id >= 0 && effect_id < FX::effects_num);
 
-                slots[slot] = effect_id;
-        }
+		slots[slot] = effect_id;
+	}
 
-        zyn::Distortion zyn_distortion;
-        AudioEffectYKChorus yk_chorus;
-        zyn::Chorus zyn_chorus;
-        zyn::Sympathetic zyn_sympathetic;
-        zyn::APhaser zyn_aphaser;
-        zyn::Phaser zyn_phaser;
-        AudioEffectDreamDelay dream_delay;
-        AudioEffectPlateReverb plate_reverb;
-        AudioEffectCloudSeed2 cloudseed2;
-        AudioEffectCompressor compressor;
-        AudioEffect3BandEQ eq;
+	zyn::Distortion zyn_distortion;
+	AudioEffectYKChorus yk_chorus;
+	zyn::Chorus zyn_chorus;
+	zyn::Sympathetic zyn_sympathetic;
+	zyn::APhaser zyn_aphaser;
+	zyn::Phaser zyn_phaser;
+	AudioEffectDreamDelay dream_delay;
+	AudioEffectPlateReverb plate_reverb;
+	AudioEffectCloudSeed2 cloudseed2;
+	AudioEffectCompressor compressor;
+	AudioEffect3BandEQ eq;
 
-        std::atomic<bool> bypass;
+	std::atomic<bool> bypass;
 
 private:
-        std::atomic<uint8_t> slots[FX::slots_num];
-        const process_t funcs[FX::effects_num];
+	std::atomic<int> slots[FX::slots_num];
+	const process_t funcs[FX::effects_num];
 
-        float level;
+	float level;
 };

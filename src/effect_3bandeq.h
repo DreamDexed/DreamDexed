@@ -1,4 +1,4 @@
-/* 
+/*
  * DISTHRO 3 Band EQ
  * Ported from https://github.com/DISTRHO/Mini-Series/blob/master/plugins/3BandEQ
  * Ported from https://github.com/jnonis/MiniDexed
@@ -13,7 +13,7 @@
 class AudioEffect3BandEQ
 {
 public:
-	AudioEffect3BandEQ(float samplerate):
+	AudioEffect3BandEQ(float samplerate) :
 	bypass{},
 	eqL{samplerate},
 	eqR{samplerate}
@@ -56,13 +56,13 @@ public:
 		return eqR.setMidHighFreq(value);
 	}
 
-	unsigned setLowMidFreq_n(unsigned value)
+	int setLowMidFreq_n(int value)
 	{
 		eqL.setLowMidFreq_n(value);
 		return eqR.setLowMidFreq_n(value);
 	}
 
-	unsigned setMidHighFreq_n(unsigned value)
+	int setMidHighFreq_n(int value)
 	{
 		eqL.setMidHighFreq_n(value);
 		return eqR.setMidHighFreq_n(value);
@@ -86,15 +86,19 @@ public:
 	float getGain_dB() const { return eqR.getGain_dB(); }
 	float getLowMidFreq() const { return eqR.getLowMidFreq(); }
 	float getMidHighFreq() const { return eqR.getMidHighFreq(); }
-	unsigned getLowMidFreq_n() const { return eqR.getLowMidFreq_n(); }
-	unsigned getMidHighFreq_n() const { return eqR.getMidHighFreq_n(); }
+	int getLowMidFreq_n() const { return eqR.getLowMidFreq_n(); }
+	int getMidHighFreq_n() const { return eqR.getMidHighFreq_n(); }
 
 	float getPreLowCut() { return eqR.getPreLowCut(); }
 	float getPreHighCut() { return eqR.getPreHighCut(); }
 
-	void resetState() { eqL.resetState(); eqR.resetState(); }
+	void resetState()
+	{
+		eqL.resetState();
+		eqR.resetState();
+	}
 
-	void process(float32_t* blockL, float32_t* blockR, uint16_t len)
+	void process(float *blockL, float *blockR, int len)
 	{
 		if (bypass) return;
 

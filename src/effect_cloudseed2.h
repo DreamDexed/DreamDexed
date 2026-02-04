@@ -8,10 +8,14 @@
 #define BUFFER_SIZE 128
 #define SLOW_CLEAR_SIZE 192000 // may need to be adjusted for other Pis
 
+#include <algorithm>
 #include <atomic>
+#include <cassert>
+#include <cstring>
 #include <string>
 
 #include "../CloudSeedCore/DSP/ReverbController.h"
+#include "../CloudSeedCore/Parameters.h"
 
 class AudioEffectCloudSeed2
 {
@@ -35,40 +39,39 @@ public:
 		"SSnappyAttack",
 	};
 
-	static constexpr unsigned presets_num = sizeof PresetNames / sizeof *PresetNames;
+	static constexpr int presets_num = sizeof PresetNames / sizeof *PresetNames;
 	static const float *Presets[];
 
-	static std::string GetLateMode (int nValue, int nWidth)
+	static std::string GetLateMode(int nValue, int nWidth)
 	{
 		return nValue ? "Post" : "Pre";
 	}
 
-	static std::string getPresetName (int nValue, int nWidth)
+	static std::string getPresetName(int nValue, int nWidth)
 	{
-		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		assert(nValue >= 0 && nValue < presets_num);
 		return PresetNames[nValue];
 	}
 
-	static const char *getPresetNameChar (int nValue)
+	static const char *getPresetNameChar(int nValue)
 	{
-		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		assert(nValue >= 0 && nValue < presets_num);
 		return PresetNames[nValue];
 	}
 
-	static unsigned getIDFromPresetName(const char *presetName)
+	static int getIDFromPresetName(const char *presetName)
 	{
-		for (unsigned i = 0; i < presets_num; ++i)
+		for (int i = 0; i < presets_num; ++i)
 			if (strcmp(PresetNames[i], presetName) == 0)
 				return i;
 
 		return 0;
 	}
 
-	AudioEffectCloudSeed2(float samplerate):
+	AudioEffectCloudSeed2(float samplerate) :
 	bypass{},
-	samplerate{samplerate},
 	ramp_dt{10.0f / samplerate},
-	engine{(int)samplerate},
+	engine{static_cast<int>(samplerate)},
 	targetVol{},
 	needBufferClear{},
 	waitBufferClear{},
@@ -78,22 +81,22 @@ public:
 	{
 	}
 
-	void setParameter(unsigned paramID, float param)
+	void setParameter(int paramID, float param)
 	{
 		engine.SetParameter(paramID, param);
 	}
 
-	float getParameter(unsigned paramID)
+	float getParameter(int paramID)
 	{
 		return engine.GetAllParameters()[paramID];
 	}
 
-	void process(float32_t* inblockL, float32_t* inblockR, uint16_t len)
+	void process(float *inblockL, float *inblockR, int len)
 	{
 		if (targetVol == 0.0f && vol > 0.0f)
 		{
 			engine.Process(inblockL, inblockR, inblockL, inblockR, len);
-			for (uint16_t i = 0; i < len; ++i)
+			for (int i = 0; i < len; ++i)
 			{
 				vol = std::max(0.0f, vol - ramp_dt);
 				inblockL[i] *= vol;
@@ -115,21 +118,21 @@ public:
 			if (engine.SlowClearDone(SLOW_CLEAR_SIZE))
 				waitBufferClear = false;
 
-			memset(inblockL, 0, len * sizeof *inblockL);
-			memset(inblockR, 0, len * sizeof *inblockR);
+			std::fill_n(inblockL, len, 0);
+			std::fill_n(inblockR, len, 0);
 
 			return;
 		}
 
 		if (needParameterLoad)
 		{
-			unsigned needParam = needParameterLoad;
-			unsigned paramID = Cloudseed::Parameter::COUNT - needParam;
+			int needParam = needParameterLoad;
+			int paramID = Cloudseed::Parameter::COUNT - needParam;
 			engine.SetParameter(paramID, Presets[preset][paramID]);
 			needParameterLoad = needParam - 1;
-			
-			memset(inblockL, 0, len * sizeof *inblockL);
-			memset(inblockR, 0, len * sizeof *inblockR);
+
+			std::fill_n(inblockL, len, 0);
+			std::fill_n(inblockR, len, 0);
 
 			if (!needParameterLoad)
 				targetVol = 1.0f;
@@ -140,7 +143,7 @@ public:
 		if (targetVol == 1.0f && vol < 1.0f)
 		{
 			engine.Process(inblockL, inblockR, inblockL, inblockR, len);
-			for (uint16_t i = 0; i < len; ++i)
+			for (int i = 0; i < len; ++i)
 			{
 				vol = std::min(vol + ramp_dt, 1.0f);
 				inblockL[i] *= vol;
@@ -148,7 +151,7 @@ public:
 			}
 
 			return;
-		} 
+		}
 
 		if (bypass) return;
 
@@ -157,9 +160,9 @@ public:
 		engine.Process(inblockL, inblockR, inblockL, inblockR, len);
 	}
 
-	void loadPreset(unsigned p)
+	void loadPreset(int p)
 	{
-		assert(p < presets_num);
+		assert(p >= 0 && p < presets_num);
 		preset = p;
 
 		targetVol = 0.0f;
@@ -181,21 +184,20 @@ public:
 	{
 		double *params = engine.GetAllParameters();
 		return params[Cloudseed::Parameter::DryOut] == 1.0f &&
-			params[Cloudseed::Parameter::EarlyOut] == 0.0f &&
-			params[Cloudseed::Parameter::LateOut] == 0.0f;
+		       params[Cloudseed::Parameter::EarlyOut] == 0.0f &&
+		       params[Cloudseed::Parameter::LateOut] == 0.0f;
 	}
 
 	std::atomic<bool> bypass;
 
 private:
-	float samplerate;
 	float ramp_dt;
 	Cloudseed::ReverbController engine;
 	std::atomic<float> targetVol;
 	std::atomic<bool> needBufferClear;
 	bool waitBufferClear;
-	std::atomic<unsigned> needParameterLoad;
-	std::atomic<unsigned> preset;
+	std::atomic<int> needParameterLoad;
+	std::atomic<int> preset;
 
 	std::atomic<float> vol;
 };
