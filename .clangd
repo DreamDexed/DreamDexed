@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clangd.json
+CompileFlags:
+        Add:
+                - "--include-directory=arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/aarch64-none-elf/include/"
+                - "--include-directory=arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/aarch64-none-elf/include/c++/14.3.1/"
+                - "--include-directory=arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/aarch64-none-elf/include/c++/14.3.1/aarch64-none-elf/"
+                - "--include-directory=CMSIS_5/CMSIS/Core/Include"
+                - "--include-directory=CMSIS_5/CMSIS/DSP/Include"
+                - "--include-directory=CMSIS_5/CMSIS/DSP/PrivateInclude"
+                - "--include-directory=CMSIS_5/CMSIS/DSP/ComputeLibrary/Include"
+                - "--include-directory=circle-stdlib/include"
+                - "--include-directory=circle-stdlib/libs/circle/include"
+                - "--include-directory=circle-stdlib/libs/circle/addon"
+                - "--include-directory=circle-stdlib/libs/circle-newlib/include"
+                - "--include-directory=circle-stdlib/install/aarch64-none-circle/include"
+                - "--include-directory=Synth_Dexed/src"
+                - "-D ARM_ALLOW_MULTI_CORE"
+                - '-D VERSION="260101-abcdef"'
+                - "-D RASPPI=4"
+                - "-Wall"
+                - "-Wextra"
+                - "-Wno-missing-field-initializers"
+                - "-Wno-vla-cxx-extension"
+                - "-Wno-unused-parameter"
+                - "-Wno-logical-op-parentheses"
+                - "-Wconversion"
+                - "-Wno-implicit-int-float-conversion"
+                - "-Wno-float-conversion"
+                - "-Wno-implicit-float-conversion"
+                - "-Warith-conversion"
+
+        Compiler: arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-g++
+Diagnostics:
+        MissingIncludes: Strict
+        UnusedIncludes: Strict
+        Suppress:
+                - "c99-designator"
