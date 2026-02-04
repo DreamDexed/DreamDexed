@@ -11,13 +11,13 @@
   of the License, or (at your option) any later version.
 */
 
+#include "Distortion.h"
+
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 #include <cstring>
 #include <string>
 
-#include "Distortion.h"
 #include "AnalogFilter.h"
 #include "WaveShapeSmps.h"
 
@@ -25,20 +25,20 @@
 #define PI 3.141592653589793f
 #endif
 
-static const uint16_t MIDI_EQ_HZ[] = {
-        20, 22, 25, 28, 32, 36, 40, 45, 50, 56,
-        63, 70, 80, 90, 100, 110, 125, 140, 160, 180,
-        200, 225, 250, 280, 315, 355, 400, 450, 500, 560,
-        630, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800,
-        2000, 2200, 2500, 2800, 3200, 3600, 4000, 4500, 5000, 5600,
-        6300, 7000, 8000, 9000, 10000, 11000, 12000, 14000, 16000, 18000,
-        20000
-};
-static constexpr uint8_t MIDI_EQ_N = sizeof MIDI_EQ_HZ / sizeof *MIDI_EQ_HZ;
+static const short MIDI_EQ_HZ[] = {
+	20, 22, 25, 28, 32, 36, 40, 45, 50, 56,
+	63, 70, 80, 90, 100, 110, 125, 140, 160, 180,
+	200, 225, 250, 280, 315, 355, 400, 450, 500, 560,
+	630, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800,
+	2000, 2200, 2500, 2800, 3200, 3600, 4000, 4500, 5000, 5600,
+	6300, 7000, 8000, 9000, 10000, 11000, 12000, 14000, 16000, 18000,
+	20000};
+static constexpr short MIDI_EQ_N = sizeof MIDI_EQ_HZ / sizeof *MIDI_EQ_HZ;
 
-namespace zyn {
+namespace zyn
+{
 
-Distortion::Distortion(float samplerate):
+Distortion::Distortion(float samplerate) :
 samplerate{samplerate},
 Ppreset{},
 lpfl{2, 20000, 1, 0, samplerate},
@@ -49,8 +49,8 @@ hpfr{3, 20, 1, 0, samplerate}
 	loadpreset(Ppreset);
 }
 
-//Cleanup the effect
-void Distortion::cleanup(void)
+// Cleanup the effect
+void Distortion::cleanup()
 {
 	lpfl.cleanup();
 	hpfl.cleanup();
@@ -58,19 +58,19 @@ void Distortion::cleanup(void)
 	hpfr.cleanup();
 }
 
-
-//Apply the filters
-void Distortion::applyfilters(float *inputL, float *inputR, uint16_t period)
+// Apply the filters
+void Distortion::applyfilters(float *inputL, float *inputR, int period)
 {
 	if (Phighcut != MIDI_EQ_N - 1) lpfl.filterout(inputL, period);
 	if (Plowcut != 0) hpfl.filterout(inputL, period);
-	if (Pstereo != 0) { //stereo
+	if (Pstereo != 0)
+	{ // stereo
 		if (Phighcut != MIDI_EQ_N - 1) lpfr.filterout(inputR, period);
 		if (Plowcut != 0) hpfr.filterout(inputR, period);
 	}
 }
 
-void Distortion::process(float *inputL, float *inputR, uint16_t period)
+void Distortion::process(float *inputL, float *inputR, int period)
 {
 	if (bypass) return;
 
@@ -84,12 +84,13 @@ void Distortion::process(float *inputL, float *inputR, uint16_t period)
 	float tempR[period];
 
 	if (Pstereo)
-		for(int i = 0; i < period; ++i) {
+		for (int i = 0; i < period; ++i)
+		{
 			tempL[i] = inputL[i] * inputvol * panl;
 			tempR[i] = inputR[i] * inputvol * panr;
 		}
 	else
-		for(int i = 0; i < period; ++i)
+		for (int i = 0; i < period; ++i)
 			tempL[i] = (inputL[i] * panl + inputR[i] * panr) * inputvol;
 
 	if (Pfiltering == FilteringPre)
@@ -103,37 +104,40 @@ void Distortion::process(float *inputL, float *inputR, uint16_t period)
 		applyfilters(tempL, tempR, period);
 
 	if (!Pstereo)
-		memcpy(tempR, tempL, period * sizeof(float));
+		memcpy(tempR, tempL, static_cast<size_t>(period) * sizeof(float));
 
-	for (int i = 0; i < period; ++i) {
+	for (int i = 0; i < period; ++i)
+	{
 		float lout = tempL[i];
 		float rout = tempR[i];
-		float l    = lout * (1.0f - lrcross) + rout * lrcross;
-		float r    = rout * (1.0f - lrcross) + lout * lrcross;
+		float l = lout * (1.0f - lrcross) + rout * lrcross;
+		float r = rout * (1.0f - lrcross) + lout * lrcross;
 
 		inputL[i] = inputL[i] * dry + l * 2.0f * level * wet;
 		inputR[i] = inputR[i] * dry + r * 2.0f * level * wet;
 	}
 }
 
-
-void Distortion::setmix(unsigned char _Pmix)
+void Distortion::setmix(signed char _Pmix)
 {
 	Pmix = _Pmix;
 
-	float mix = (float)Pmix / 100.0f;
-	if (mix < 0.5f) {
+	float mix = Pmix / 100.0f;
+	if (mix < 0.5f)
+	{
 		dry = 1.0f;
 		wet = mix * 2.0f;
-	} else {
+	}
+	else
+	{
 		dry = (1.0f - mix) * 2.0f;
 		wet = 1.0f;
 	}
 }
 
-void Distortion::setlowcut(unsigned char _Plowcut)
+void Distortion::setlowcut(signed char _Plowcut)
 {
-	assert (_Plowcut < MIDI_EQ_N);
+	assert(_Plowcut < MIDI_EQ_N);
 
 	Plowcut = _Plowcut;
 	float fr = MIDI_EQ_HZ[Plowcut];
@@ -141,9 +145,9 @@ void Distortion::setlowcut(unsigned char _Plowcut)
 	hpfr.setfreq(fr);
 }
 
-void Distortion::sethighcut(unsigned char _Phighcut)
+void Distortion::sethighcut(signed char _Phighcut)
 {
-	assert (_Phighcut < MIDI_EQ_N);
+	assert(_Phighcut < MIDI_EQ_N);
 
 	Phighcut = _Phighcut;
 	float fr = MIDI_EQ_HZ[Phighcut];
@@ -151,24 +155,24 @@ void Distortion::sethighcut(unsigned char _Phighcut)
 	lpfr.setfreq(fr);
 }
 
-void Distortion::setpanning(unsigned char Ppanning_)
+void Distortion::setpanning(signed char Ppanning_)
 {
 	Ppanning = Ppanning_;
-	float panning = ((float)Ppanning - 0.5f) / 127.0f;
+	float panning = (Ppanning - 0.5f) / 127.0f;
 	panl = cosf(panning * PI / 2.0f);
 	panr = cosf((1.0f - panning) * PI / 2.0f);
 }
 
-void Distortion::setlevel(unsigned char Plevel_)
+void Distortion::setlevel(signed char Plevel_)
 {
 	Plevel = Plevel_;
 	level = dB2rap(60.0f * Plevel_ / 127.0f - 40.0f);
 }
 
-void Distortion::setlrcross(unsigned char Plrcross_)
+void Distortion::setlrcross(signed char Plrcross_)
 {
 	Plrcross = Plrcross_;
-	lrcross  = (float)Plrcross / 127.0f;
+	lrcross = Plrcross / 127.0f;
 }
 
 static const char *DistortionTypes[Distortion::types_num] = {
@@ -191,10 +195,9 @@ static const char *DistortionTypes[Distortion::types_num] = {
 	"Square",
 };
 
-
 std::string Distortion::ToDistortionType(int nValue, int nWidth)
 {
-	assert (nValue >= 0 && (unsigned)nValue < types_num);
+	assert(nValue >= 0 && nValue < types_num);
 	return DistortionTypes[nValue];
 }
 
@@ -208,9 +211,9 @@ static const char *PresetNames[Distortion::presets_num] = {
 	"Quantisize",
 };
 
-const char * Distortion::ToPresetNameChar(int nValue)
+const char *Distortion::ToPresetNameChar(int nValue)
 {
-	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	assert(nValue >= 0 && nValue < presets_num);
 	return PresetNames[nValue];
 }
 
@@ -219,19 +222,20 @@ std::string Distortion::ToPresetName(int nValue, int nWidth)
 	return ToPresetNameChar(nValue);
 }
 
-unsigned Distortion::ToIDFromPreset(const char *preset)
+int Distortion::ToIDFromPreset(const char *preset)
 {
-	for (unsigned i = 0; i < presets_num; ++i)
+	for (int i = 0; i < presets_num; ++i)
 		if (strcmp(PresetNames[i], preset) == 0)
 			return i;
 
 	return 0;
 }
 
-void Distortion::loadpreset(unsigned char npreset)
+void Distortion::loadpreset(int npreset)
 {
-	const int presets[presets_num][ParameterCount] = {
-		{ // Init
+	const signed char presets[presets_num][ParameterCount] = {
+		{
+			// Init
 			[ParameterMix] = 0,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 56,
@@ -246,7 +250,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // Overdrive 1
+		{
+			// Overdrive 1
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 56,
@@ -261,7 +266,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // Overdrive 2
+		{
+			// Overdrive 2
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 29,
@@ -276,7 +282,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // A. Exciter 1
+		{
+			// A. Exciter 1
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 75,
@@ -291,7 +298,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // A. Exciter 2
+		{
+			// A. Exciter 2
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 85,
@@ -306,7 +314,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // Guitar Amp
+		{
+			// Guitar Amp
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 63,
@@ -321,7 +330,8 @@ void Distortion::loadpreset(unsigned char npreset)
 			[ParameterShape] = 32,
 			[ParameterOffset] = 64,
 		},
-		{ // Quantisize
+		{
+			// Quantisize
 			[ParameterMix] = 100,
 			[ParameterPanning] = 64,
 			[ParameterDrive] = 3,
@@ -339,7 +349,7 @@ void Distortion::loadpreset(unsigned char npreset)
 	};
 
 	if (npreset >= presets_num)
-		npreset = presets_num;
+		npreset = presets_num - 1;
 
 	for (int n = 0; n < ParameterCount; n++)
 		changepar(n, presets[npreset][n]);
@@ -347,43 +357,86 @@ void Distortion::loadpreset(unsigned char npreset)
 	cleanup();
 }
 
-void Distortion::changepar(int npar, unsigned char value)
+void Distortion::changepar(int npar, int value)
 {
-	switch (npar) {
-	case ParameterMix: setmix(value); break;
-	case ParameterPanning: setpanning(value); break;
-	case ParameterDrive: Pdrive = value; break;
-	case ParameterLevel: setlevel(value); break;
-	case ParameterType: Ptype = value > 16 ? 16 : value; break;
-	case ParameterNegate: Pnegate = (value > 1) ? 1 : value; break;
-	case ParameterFiltering: Pfiltering = value > FilteringPost ? FilteringPost : value; break;
-	case ParameterLowcut: setlowcut(value); break;
-	case ParameterHighcut: sethighcut(value); break;
-	case ParameterStereo: Pstereo = (value > 1) ? 1 : value; break;
-	case ParameterLRCross: setlrcross(value); break;
-	case ParameterShape: Pshape = value; break;
-	case ParameterOffset: Poffset = value; break;
+	signed char cValue = static_cast<signed char>(value);
+	switch (npar)
+	{
+	case ParameterMix:
+		setmix(cValue);
+		break;
+	case ParameterPanning:
+		setpanning(cValue);
+		break;
+	case ParameterDrive:
+		Pdrive = cValue;
+		break;
+	case ParameterLevel:
+		setlevel(cValue);
+		break;
+	case ParameterType:
+		Ptype = cValue > 16 ? 16 : cValue;
+		break;
+	case ParameterNegate:
+		Pnegate = (cValue > 1) ? 1 : cValue;
+		break;
+	case ParameterFiltering:
+		Pfiltering = cValue > FilteringPost ? FilteringPost : cValue;
+		break;
+	case ParameterLowcut:
+		setlowcut(cValue);
+		break;
+	case ParameterHighcut:
+		sethighcut(cValue);
+		break;
+	case ParameterStereo:
+		Pstereo = (cValue > 1) ? 1 : cValue;
+		break;
+	case ParameterLRCross:
+		setlrcross(cValue);
+		break;
+	case ParameterShape:
+		Pshape = cValue;
+		break;
+	case ParameterOffset:
+		Poffset = cValue;
+		break;
 	}
 }
 
-unsigned char Distortion::getpar(int npar) const
+int Distortion::getpar(int npar) const
 {
-	switch (npar) {
-	case ParameterMix: return Pmix;
-	case ParameterPanning: return Ppanning;
-	case ParameterDrive: return Pdrive;
-	case ParameterLevel: return Plevel;
-	case ParameterType: return Ptype;
-	case ParameterNegate: return Pnegate;
-	case ParameterFiltering: return Pfiltering;
-	case ParameterLowcut: return Plowcut;
-	case ParameterHighcut: return Phighcut;
-	case ParameterStereo: return Pstereo;
-	case ParameterLRCross: return Plrcross;
-	case ParameterShape: return Pshape;
-	case ParameterOffset: return Poffset;
-	default: return 0;
+	switch (npar)
+	{
+	case ParameterMix:
+		return Pmix;
+	case ParameterPanning:
+		return Ppanning;
+	case ParameterDrive:
+		return Pdrive;
+	case ParameterLevel:
+		return Plevel;
+	case ParameterType:
+		return Ptype;
+	case ParameterNegate:
+		return Pnegate;
+	case ParameterFiltering:
+		return Pfiltering;
+	case ParameterLowcut:
+		return Plowcut;
+	case ParameterHighcut:
+		return Phighcut;
+	case ParameterStereo:
+		return Pstereo;
+	case ParameterLRCross:
+		return Plrcross;
+	case ParameterShape:
+		return Pshape;
+	case ParameterOffset:
+		return Poffset;
+	default:
+		return 0;
 	}
 }
 
-}
+} // namespace zyn

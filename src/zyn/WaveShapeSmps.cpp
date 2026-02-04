@@ -11,11 +11,12 @@
   of the License, or (at your option) any later version.
 */
 
-#include <cmath>
-
 #include "WaveShapeSmps.h"
 
-namespace zyn {
+#include <cmath>
+
+namespace zyn
+{
 
 float polyblampres(float smp, float ws, float dMax)
 {
@@ -29,12 +30,15 @@ float polyblampres(float smp, float ws, float dMax)
 	if (dMax == 0) return 0.0;
 	float dist = fabsf(smp) - ws;
 	float res, d1, d2, d3, d4, d5;
-	if (fabsf(dist) < dMax) {
-		if (dist < -dMax/2.0f) {
-			d1 = (dist + dMax) / dMax * 2.0f;   // [-dMax ... -dMax/2] -> [0 ... 1]
+	if (fabsf(dist) < dMax)
+	{
+		if (dist < -dMax / 2.0f)
+		{
+			d1 = (dist + dMax) / dMax * 2.0f; // [-dMax ... -dMax/2] -> [0 ... 1]
 			res = d1 * d1 * d1 * d1 * d1 / 120.0f;
 		}
-		else if (dist < 0.0f) {
+		else if (dist < 0.0f)
+		{
 			d1 = (dist + dMax / 2.0f) / dMax * 2.0f; // [-dMax/2 ... 0] -> [0 ... 1]
 			d2 = d1 * d1;
 			d3 = d2 * d1;
@@ -42,14 +46,16 @@ float polyblampres(float smp, float ws, float dMax)
 			d5 = d4 * d1;
 			res = (-d5 / 40.0f) + (d4 / 24.0f) + (d3 / 12.0f) + (d2 / 12.0f) + (d1 / 24.0f) + (1.0f / 120.0f);
 		}
-		else if (dist < dMax / 2.0f) {
-			d1 = dist / dMax * 2.0f;          //[0 ... dMax/2] -> [0 ... 1]
+		else if (dist < dMax / 2.0f)
+		{
+			d1 = dist / dMax * 2.0f; //[0 ... dMax/2] -> [0 ... 1]
 			d2 = d1 * d1;
 			d4 = d2 * d2;
 			d5 = d4 * d1;
 			res = (d5 / 40.0f) - (d4 / 12.0f) + (d2 / 3.0f) - (d1 / 2.0f) + (7.0f / 30.0f);
 		}
-		else {
+		else
+		{
 			d1 = (dist - dMax / 2.0f) / dMax * 2.0f; //[dMax/2 ... dMax] -> [0 ... 1]
 			d2 = d1 * d1;
 			d3 = d2 * d1;
@@ -64,12 +70,7 @@ float polyblampres(float smp, float ws, float dMax)
 	return res * dMax / 2.0f;
 }
 
-void waveShapeSmps(int n,
-		   float *smps,
-		   unsigned char type,
-		   unsigned char drive,
-		   unsigned char offset,
-		   unsigned char shape)
+void waveShapeSmps(int n, float *smps, signed char type, signed char drive, signed char offset, signed char shape)
 {
 	int i;
 	float ws = drive / 127.0f;
@@ -77,29 +78,33 @@ void waveShapeSmps(int n,
 	float offs = (offset - 64.0f) / 64.0f;
 	float tmpv;
 
-	switch (type) {
+	switch (type)
+	{
 	case WaveShapeArctangent:
-		ws = powf(10, ws * ws * 3.0f) - 1.0f + 0.001f; //Arctangent
-		for (i = 0; i < n; ++i) {
+		ws = powf(10, ws * ws * 3.0f) - 1.0f + 0.001f; // Arctangent
+		for (i = 0; i < n; ++i)
+		{
 			smps[i] += offs;
 			smps[i] = atanf(smps[i] * ws) / atanf(ws);
 			smps[i] -= offs;
 		}
-	break;
+		break;
 	case WaveShapeAsymmetric:
-		ws = ws * ws * 32.0f + 0.0001f; //Asymmetric
+		ws = ws * ws * 32.0f + 0.0001f; // Asymmetric
 		if (ws < 1.0f)
 			tmpv = sinf(ws) + 0.1f;
 		else
 			tmpv = 1.1f;
 		for (i = 0; i < n; ++i)
 			smps[i] = sinf(smps[i] * (0.1f + ws - ws * smps[i])) / tmpv;
-	break;
+		break;
 	case WaveShapePow:
-		ws = ws * ws * ws * 20.0f + 0.0001f; //Pow
-		for (i = 0; i < n; ++i) {
+		ws = ws * ws * ws * 20.0f + 0.0001f; // Pow
+		for (i = 0; i < n; ++i)
+		{
 			smps[i] *= ws;
-			if (fabsf(smps[i]) < 1.0f) {
+			if (fabsf(smps[i]) < 1.0f)
+			{
 				smps[i] = (smps[i] - smps[i] * smps[i] * smps[i]) * 3.0f;
 				if (ws < 1.0f)
 					smps[i] /= ws;
@@ -107,40 +112,41 @@ void waveShapeSmps(int n,
 			else
 				smps[i] = 0.0f;
 		}
-	break;
+		break;
 	case WaveShapeSine:
-		ws = ws * ws * ws * 32.0f + 0.0001f; //Sine
+		ws = ws * ws * ws * 32.0f + 0.0001f; // Sine
 		if (ws < 1.57f)
 			tmpv = sinf(ws);
 		else
 			tmpv = 1.0f;
 		for (i = 0; i < n; ++i)
 			smps[i] = sinf(smps[i] * ws) / tmpv;
-	break;
+		break;
 	case WaveShapeQuantisize:
-		ws = ws * ws + 0.000001f; //Quantisize
+		ws = ws * ws + 0.000001f; // Quantisize
 		for (i = 0; i < n; ++i)
 			smps[i] = floor(smps[i] / ws + 0.5f) * ws;
-	break;
+		break;
 	case WaveShapeZigzag:
-		ws = ws * ws * ws * 32 + 0.0001f; //Zigzag
+		ws = ws * ws * ws * 32 + 0.0001f; // Zigzag
 		if (ws < 1.0f)
 			tmpv = sinf(ws);
 		else
 			tmpv = 1.0f;
 		for (i = 0; i < n; ++i)
 			smps[i] = asinf(sinf(smps[i] * ws)) / tmpv;
-	break;
+		break;
 	case WaveShapeLimiter:
-		ws = powf(2.0f, -ws * ws * 8.0f); //Limiter
+		ws = powf(2.0f, -ws * ws * 8.0f); // Limiter
 		par = par / 4;
 		if (par > ws - 0.01) par = ws - 0.01;
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			// add the offset: x = smps[i] + offs
 			smps[i] += offs;
 			float res = polyblampres(smps[i], ws, par);
 			// now apply the polyblamped limiter: y = f(x)
-			if (smps[i]>=0)
+			if (smps[i] >= 0)
 				smps[i] = smps[i] > ws ? ws - res : smps[i] - res;
 			else
 				smps[i] = smps[i] < -ws ? -ws + res : smps[i] + res;
@@ -152,31 +158,33 @@ void waveShapeSmps(int n,
 				smps[i] -= offs <= -ws ? -ws + res : offs + res;
 			// divide through the drive factor: prevents limited signals to get low
 			smps[i] /= ws;
-
 		}
-	break;
+		break;
 	case WaveShapeUpperLimiter:
-		ws = powf(2.0f, -ws * ws * 8.0f); //Upper Limiter
-		for (i = 0; i < n; ++i) {
+		ws = powf(2.0f, -ws * ws * 8.0f); // Upper Limiter
+		for (i = 0; i < n; ++i)
+		{
 			float tmp = smps[i];
 			if (tmp > ws)
 				smps[i] = ws;
 			smps[i] *= 2.0f;
 		}
-	break;
+		break;
 	case WaveShapeLowerLimiter:
-		ws = powf(2.0f, -ws * ws * 8.0f); //Lower Limiter
-		for (i = 0; i < n; ++i) {
+		ws = powf(2.0f, -ws * ws * 8.0f); // Lower Limiter
+		for (i = 0; i < n; ++i)
+		{
 			float tmp = smps[i];
 			if (tmp < -ws)
 				smps[i] = -ws;
 			smps[i] *= 2.0f;
 		}
-	break;
+		break;
 	case WaveShapeInverseLimiter:
-		ws = (powf(2.0f, ws * 6.0f) - 1.0f) / powf(2.0f, 6.0f); //Inverse Limiter
+		ws = (powf(2.0f, ws * 6.0f) - 1.0f) / powf(2.0f, 6.0f); // Inverse Limiter
 		if (par > ws - 0.01) par = ws - 0.01;
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			smps[i] += offs;
 			float res = polyblampres(smps[i], ws, par);
 			if (smps[i] >= 0)
@@ -185,35 +193,37 @@ void waveShapeSmps(int n,
 				smps[i] = smps[i] < -ws ? smps[i] + ws - res : -res;
 			smps[i] -= offs;
 		}
-	break;
+		break;
 	case WaveShapeClip:
-		ws = powf(5, ws * ws * 1.0f) - 1.0f; //Clip
+		ws = powf(5, ws * ws * 1.0f) - 1.0f; // Clip
 		for (i = 0; i < n; ++i)
 			smps[i] = smps[i] *
-				(ws + 0.5f) * 0.9999f -
-				floor(0.5f + smps[i] * (ws + 0.5f) * 0.9999f);
-	break;
+				  (ws + 0.5f) * 0.9999f -
+				  floor(0.5f + smps[i] * (ws + 0.5f) * 0.9999f);
+		break;
 	case WaveShapeAsymmetric2:
-		ws = ws * ws * ws * 30 + 0.001f; //Asym2
+		ws = ws * ws * ws * 30 + 0.001f; // Asym2
 		if (ws < 0.3f)
 			tmpv = ws;
 		else
 			tmpv = 1.0f;
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			float tmp = smps[i] * ws;
 			if (tmp > -2.0f && tmp < 1.0f)
 				smps[i] = tmp * (1.0f - tmp) * (tmp + 2.0f) / tmpv;
 			else
 				smps[i] = 0.0f;
 		}
-	break;
+		break;
 	case WaveShapePow2:
-		ws = ws * ws * ws * 32.0f + 0.0001f; //Pow2
-		if(ws < 1.0f)
+		ws = ws * ws * ws * 32.0f + 0.0001f; // Pow2
+		if (ws < 1.0f)
 			tmpv = ws * (1 + ws) / 2.0f;
 		else
 			tmpv = 1.0f;
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			float tmp = smps[i] * ws;
 			if (tmp > -1.0f && tmp < 1.618034f)
 				smps[i] = tmp * (1.0f - tmp) / tmpv;
@@ -222,15 +232,16 @@ void waveShapeSmps(int n,
 			else
 				smps[i] = -2.0f;
 		}
-	break;
+		break;
 	case WaveShapeSigmoid:
-		ws = powf(ws, 5.0f) * 80.0f + 0.0001f; //sigmoid
+		ws = powf(ws, 5.0f) * 80.0f + 0.0001f; // sigmoid
 		if (ws > 10.0f)
 			tmpv = 0.5f;
 		else
 			tmpv = 0.5f - 1.0f / (expf(ws) + 1.0f);
-		for (i = 0; i < n; ++i) {
-			smps[i] += offs; //add offset
+		for (i = 0; i < n; ++i)
+		{
+			smps[i] += offs; // add offset
 			// calculate sigmoid function
 			float tmp = smps[i] * ws;
 			if (tmp < -10.0f)
@@ -249,51 +260,54 @@ void waveShapeSmps(int n,
 			smps[i] = tmp / tmpv;
 			smps[i] -= tmpo / tmpv; // subtract offset
 		}
-	break;
+		break;
 	case WaveShapeTanhSoft: // tanh soft limiter
 		// f(x) = x / ((1+|x|^n)^(1/n)) // tanh approximation for n=2.5
 		// Formula from: Yeh, Abel, Smith (2007): SIMPLIFIED, PHYSICALLY-INFORMED MODELS OF DISTORTION AND OVERDRIVE GUITAR EFFECTS PEDALS
-		par = (20.0f) * par * par + (0.1f) * par + 1.0f;  //Pfunpar=32 -> n=2.5
+		par = (20.0f) * par * par + (0.1f) * par + 1.0f; // Pfunpar=32 -> n=2.5
 		ws = ws * ws * 35.0f + 1.0f;
-		for (i = 0; i < n; ++i) {
-			smps[i] *= ws;// multiply signal to drive it in the saturation of the function
+		for (i = 0; i < n; ++i)
+		{
+			smps[i] *= ws; // multiply signal to drive it in the saturation of the function
 			smps[i] += offs; // add dc offset
 			smps[i] = smps[i] / powf(1 + powf(fabsf(smps[i]), par), 1 / par);
 			smps[i] -= offs / powf(1 + powf(fabsf(offs), par), 1 / par);
 		}
-	break;
-	case WaveShapeCubic: //cubic distortion
+		break;
+	case WaveShapeCubic: // cubic distortion
 		// f(x) = 1.5 * (x-(x^3/3))
 		// Formula from: https://ccrma.stanford.edu/~jos/pasp/Soft_Clipping.html
 		// modified with factor 1.5 to go through [1,1] and [-1,-1]
 		ws = ws * ws * ws * 20.0f + 0.168f; // plain cubic at drive=44
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			smps[i] *= ws; // multiply signal to drive it in the saturation of the function
 			smps[i] += offs; // add dc offset
 			if (fabsf(smps[i]) < 1.0f)
 				smps[i] = 1.5 * (smps[i] - (smps[i] * smps[i] * smps[i] / 3.0));
 			else
 				smps[i] = smps[i] > 0 ? 1.0f : -1.0f;
-			//subtract offset with distortion function applied
+			// subtract offset with distortion function applied
 			smps[i] -= 1.5 * (offs - (offs * offs * offs / 3.0));
 		}
-	break;
-	case WaveShapeSquare: //square distortion
+		break;
+	case WaveShapeSquare: // square distortion
 		// f(x) = x*(2-abs(x))
 		// Formula of cubic changed to square but still going through [1,1] and [-1,-1]
 		ws = ws * ws * ws * 20.0f + 0.168f; // plain square at drive=44
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i)
+		{
 			smps[i] *= ws; // multiply signal to drive it in the saturation of the function
 			smps[i] += offs; // add dc offset
 			if (fabsf(smps[i]) < 1.0f)
 				smps[i] = smps[i] * (2 - fabsf(smps[i]));
 			else
 				smps[i] = smps[i] > 0 ? 1.0f : -1.0f;
-			//subtract offset with distortion function applied
+			// subtract offset with distortion function applied
 			smps[i] -= offs * (2 - fabsf(offs));
 		}
-	break;
+		break;
 	}
 }
 
-}
+} // namespace zyn

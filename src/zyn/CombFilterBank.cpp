@@ -1,13 +1,13 @@
+#include "CombFilterBank.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 
-#include "CombFilterBank.h"
+namespace zyn
+{
 
-namespace zyn {
-
-CombFilterBank::CombFilterBank(float samplerate, float initgain):
+CombFilterBank::CombFilterBank(float samplerate, float initgain) :
 delays{},
 inputgain{1.0f},
 outgain{1.0f},
@@ -25,29 +25,29 @@ samplerate{samplerate}
 	gain_smoothing.reset(gainbwd);
 }
 
-void CombFilterBank::setStrings(unsigned strings_nr_n, float basefreq_n)
+void CombFilterBank::setStrings(int strings_nr_n, float basefreq_n)
 {
 	strings_nr_n = std::min(max_strings, strings_nr_n);
 
 	if (strings_nr_n == strings_nr && basefreq_n == basefreq)
 		return;
 
-	unsigned mem_size_n = std::min(max_samples, (unsigned)ceilf(( samplerate / basefreq_n * 1.03f /*+ buffersize*/ + 2) / 16) * 16);
+	int mem_size_n = std::min(max_samples, static_cast<int>(ceilf((samplerate / basefreq_n * 1.03f /*+ buffersize*/ + 2) / 16) * 16));
 	if (mem_size_n == mem_size)
 	{
 		if (strings_nr_n > strings_nr)
 		{
-			for (unsigned i = strings_nr; i < strings_nr_n; ++i)
+			for (int i = strings_nr; i < strings_nr_n; ++i)
 			{
-				std::fill(string_smps[i], string_smps[i] + mem_size_n, 0.0f);
+				std::fill_n(string_smps[i], mem_size_n, 0.0f);
 			}
 		}
 	}
 	else
 	{
-		for (unsigned int i = 0; i < strings_nr_n; ++i)
+		for (int i = 0; i < strings_nr_n; ++i)
 		{
-			std::fill(string_smps[i], string_smps[i] + mem_size_n, 0.0f);
+			std::fill_n(string_smps[i], mem_size_n, 0.0f);
 		}
 
 		mem_size = mem_size_n;
@@ -66,40 +66,41 @@ static float tanhX(float x)
 	return x * (105.0f + 10.0f * x2) / (105.0f + (45.0f + x2) * x2);
 }
 
-static float sampleLerp(float *smp, float pos, unsigned mem_size)
+static float sampleLerp(float *smp, float pos, int mem_size)
 {
 	int poshi = pos;
 	float poslo = pos - poshi;
 	return smp[poshi] + poslo * (smp[(poshi + 1) % mem_size] - smp[poshi]);
 }
 
-void CombFilterBank::filterout(float *smp, uint16_t period)
+void CombFilterBank::filterout(float *smp, int period)
 {
 	if (strings_nr == 0) return;
 
 	// interpolate gainbuf values over buffer length using value smoothing filter (lp)
 	// this should prevent popping noise when controlled binary with 0 / 127
 	// new control rate = samplerate / 16
-	unsigned gainbufsize = period / 16;
+	int gainbufsize = period / 16;
 	float gainbuf[gainbufsize];
 
 	if (!gain_smoothing.apply(gainbuf, gainbufsize, gainbwd))
-		std::fill(gainbuf, gainbuf + gainbufsize, gainbwd); // if nothing to interpolate (constant value)
+		std::fill_n(gainbuf, gainbufsize, gainbwd); // if nothing to interpolate (constant value)
 
-	float temp[period] = {};
+	float temp[period];
+	std::fill_n(temp, period, 0);
 
-	unsigned strings_act_nr = 0;
+	int strings_act_nr = 0;
 
-	for (unsigned j = 0; j < strings_nr; ++j)
+	for (int j = 0; j < strings_nr; ++j)
 	{
 		if (delays[j] == 0.0f) continue;
 
 		strings_act_nr++;
 
-		unsigned pos_writer_ = pos_writer;
+		int pos_writer_ = pos_writer;
 		float delay = delays[j];
 
-		for (uint16_t i = 0; i < period; ++i)
+		for (int i = 0; i < period; ++i)
 		{
 			float input_smp = smp[i] * inputgain;
 			float gain = gainbuf[i / 16];
@@ -117,10 +118,10 @@ void CombFilterBank::filterout(float *smp, uint16_t period)
 	pos_writer = (pos_writer + period) % mem_size;
 
 	float gain = outgain / strings_act_nr;
-	for (uint16_t i = 0; i < period; ++i)
+	for (int i = 0; i < period; ++i)
 	{
 		smp[i] = temp[i] * gain;
 	}
 }
 
-}
+} // namespace zyn
