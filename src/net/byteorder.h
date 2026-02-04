@@ -23,17 +23,17 @@
 #pragma once
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define htons(VALUE)  (VALUE)
-#define htonl(VALUE)  (VALUE)
+#define htons(VALUE) (VALUE)
+#define htonl(VALUE) (VALUE)
 #define htonll(VALUE) (VALUE)
-#define ntohs(VALUE)  (VALUE)
-#define ntohl(VALUE)  (VALUE)
+#define ntohs(VALUE) (VALUE)
+#define ntohl(VALUE) (VALUE)
 #define ntohll(VALUE) (VALUE)
 #else
-#define htons(VALUE)  __builtin_bswap16(VALUE)
-#define htonl(VALUE)  __builtin_bswap32(VALUE)
+#define htons(VALUE) __builtin_bswap16(VALUE)
+#define htonl(VALUE) __builtin_bswap32(VALUE)
 #define htonll(VALUE) __builtin_bswap64(VALUE)
-#define ntohs(VALUE)  __builtin_bswap16(VALUE)
-#define ntohl(VALUE)  __builtin_bswap32(VALUE)
+#define ntohs(VALUE) __builtin_bswap16(VALUE)
+#define ntohl(VALUE) __builtin_bswap32(VALUE)
 #define ntohll(VALUE) __builtin_bswap64(VALUE)
 #endif
