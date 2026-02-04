@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <cstdint>
 
 class FX
 {
@@ -182,7 +181,7 @@ public:
 		FXParameterUnknown,
 	};
 
-	typedef std::string TToString (int nValue, int nWidth);
+	typedef std::string TToString(int nValue, int nWidth);
 
 	struct FXParameterType
 	{
@@ -200,27 +199,27 @@ public:
 	struct EffectType
 	{
 		const char *Name;
-		const unsigned MinID;
-		const unsigned MaxID;
+		const int MinID;
+		const int MaxID;
 	};
 
-        static constexpr const EffectType s_effects[] = {
-                {"None"},
+	static constexpr const EffectType s_effects[] = {
+		{"None"},
 		{"ZynDistortion", FXParameterZynDistortionPreset, FXParameterZynDistortionBypass},
-                {"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusBypass},
+		{"YKChorus", FXParameterYKChorusMix, FXParameterYKChorusBypass},
 		{"ZynChorus", FXParameterZynChorusPreset, FXParameterZynChorusBypass},
 		{"ZynSympathetic", FXParameterZynSympatheticPreset, FXParameterZynSympatheticBypass},
 		{"ZynAPhaser", FXParameterZynAPhaserPreset, FXParameterZynAPhaserBypass},
 		{"ZynPhaser", FXParameterZynPhaserPreset, FXParameterZynPhaserBypass},
-                {"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayBypass},
-                {"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbBypass},
-                {"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2Bypass},
+		{"DreamDelay", FXParameterDreamDelayMix, FXParameterDreamDelayBypass},
+		{"PlateReverb", FXParameterPlateReverbMix, FXParameterPlateReverbBypass},
+		{"CloudSeed2", FXParameterCloudSeed2Preset, FXParameterCloudSeed2Bypass},
 		{"Compressor", FXParameterCompressorPreGain, FXParameterCompressorBypass},
 		{"EQ", FXParameterEQLow, FXParameterEQBypass},
-        };
-        static constexpr uint8_t effects_num = sizeof s_effects / sizeof *s_effects;
-        static constexpr uint8_t slots_num = 3;
+	};
+	static constexpr int effects_num = sizeof s_effects / sizeof *s_effects;
+	static constexpr int slots_num = 3;
 
 	static const char *getNameFromID(TFXParameter param, int nID);
-	static int getIDFromName(TFXParameter param, const char* name);
+	static int getIDFromName(TFXParameter param, const char *name);
 };
