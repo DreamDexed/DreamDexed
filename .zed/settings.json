@@ -1,0 +1,10 @@
+{
+	"languages": {
+		"C++": {
+			"preferred_line_length": 120,
+		},
+	},
+	"show_whitespaces": "all",
+	"hard_tabs": true,
+	"tab_size": 8,
+}

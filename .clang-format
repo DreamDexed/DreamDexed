@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clang-format-21.x.json
+---
+BasedOnStyle: LLVM
+IndentWidth: 8
+UseTab: Always
+BreakBeforeBraces: Allman
+AllowShortBlocksOnASingleLine: Always
+ColumnLimit: 0
+AccessModifierOffset: -8
+IndentAccessModifiers: False
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerIndentWidth: 0
+BracedInitializerIndentWidth: 8
+ContinuationIndentWidth: 0
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: DontAlign
+IndentExternBlock: NoIndent
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AlignTrailingComments:
+        Kind: Never
+AlignConsecutiveShortCaseStatements:
+        Enabled: true
+        AcrossEmptyLines: true
+        AcrossComments: true
+        AlignCaseColons: false
+
+---
+Language: Cpp
+# Force pointers to the type for C++.
+DerivePointerAlignment: False
+PointerAlignment: Right
+---
