@@ -6,6 +6,8 @@
 #pragma once
 
 #include <atomic>
+#include <cmath>
+#include <cstdint>
 
 #include "compressor.h"
 
@@ -14,12 +16,13 @@ class AudioEffectCompressor
 public:
 	static const unsigned CompressorRatioInf = 31;
 
-	AudioEffectCompressor(float samplerate):
+	AudioEffectCompressor(float samplerate) :
 	bypass{},
 	samplerate{samplerate},
 	compL{samplerate},
 	compR{samplerate}
-	{}
+	{
+	}
 
 	void setPreGain_dB(float gain)
 	{
@@ -71,13 +74,13 @@ public:
 		compR.resetStates();
 	}
 
-	void process(float32_t* blockL, float32_t* blockR, uint16_t len)
+	void process(float *blockL, float *blockR, uint16_t len)
 	{
 		if (bypass) return;
 
-		compL.doCompression (blockL, len);
-		compR.doCompression (blockR, len);
-    	}
+		compL.doCompression(blockL, len);
+		compR.doCompression(blockR, len);
+	}
 
 	std::atomic<bool> bypass;
 

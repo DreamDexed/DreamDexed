@@ -1,4 +1,4 @@
-/* 
+/*
  * DISTHRO 3 Band EQ
  * Ported from https://github.com/DISTRHO/Mini-Series/blob/master/plugins/3BandEQ
  * Ported from https://github.com/jnonis/MiniDexed
@@ -7,13 +7,14 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 
 #include "effect_3bandeqmono.h"
 
 class AudioEffect3BandEQ
 {
 public:
-	AudioEffect3BandEQ(float samplerate):
+	AudioEffect3BandEQ(float samplerate) :
 	bypass{},
 	eqL{samplerate},
 	eqR{samplerate}
@@ -92,9 +93,13 @@ public:
 	float getPreLowCut() { return eqR.getPreLowCut(); }
 	float getPreHighCut() { return eqR.getPreHighCut(); }
 
-	void resetState() { eqL.resetState(); eqR.resetState(); }
+	void resetState()
+	{
+		eqL.resetState();
+		eqR.resetState();
+	}
 
-	void process(float32_t* blockL, float32_t* blockR, uint16_t len)
+	void process(float *blockL, float *blockR, uint16_t len)
 	{
 		if (bypass) return;
 

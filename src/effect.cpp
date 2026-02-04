@@ -1,7 +1,8 @@
 #include <cassert>
+#include <cstdint>
+#include <cstring>
 
 #include "effect.h"
-#include "midi.h"
 #include "effect_cloudseed2.h"
 #include "effect_compressor.h"
 #include "uitostring.h"
