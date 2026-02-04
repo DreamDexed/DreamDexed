@@ -1,13 +1,14 @@
+#include "CombFilterBank.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 
-#include "CombFilterBank.h"
+namespace zyn
+{
 
-namespace zyn {
-
-CombFilterBank::CombFilterBank(float samplerate, float initgain):
+CombFilterBank::CombFilterBank(float samplerate, float initgain) :
 delays{},
 inputgain{1.0f},
 outgain{1.0f},
@@ -32,7 +33,7 @@ void CombFilterBank::setStrings(unsigned strings_nr_n, float basefreq_n)
 	if (strings_nr_n == strings_nr && basefreq_n == basefreq)
 		return;
 
-	unsigned mem_size_n = std::min(max_samples, (unsigned)ceilf(( samplerate / basefreq_n * 1.03f /*+ buffersize*/ + 2) / 16) * 16);
+	unsigned mem_size_n = std::min(max_samples, (unsigned)ceilf((samplerate / basefreq_n * 1.03f /*+ buffersize*/ + 2) / 16) * 16);
 	if (mem_size_n == mem_size)
 	{
 		if (strings_nr_n > strings_nr)
@@ -86,7 +87,8 @@ void CombFilterBank::filterout(float *smp, uint16_t period)
 	if (!gain_smoothing.apply(gainbuf, gainbufsize, gainbwd))
 		std::fill(gainbuf, gainbuf + gainbufsize, gainbwd); // if nothing to interpolate (constant value)
 
-	float temp[period] = {};
+	float temp[period];
+	std::fill(temp, temp + period, 0);
 
 	unsigned strings_act_nr = 0;
 
@@ -123,4 +125,4 @@ void CombFilterBank::filterout(float *smp, uint16_t period)
 	}
 }
 
-}
+} // namespace zyn

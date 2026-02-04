@@ -27,10 +27,13 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
+#include <string>
 
 #include "EffectLFO.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class APhaser
 {
@@ -46,7 +49,8 @@ public:
 
 	static constexpr unsigned max_stages = 12;
 	static constexpr unsigned presets_num = 7;
-	enum Parameter {
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterLFOFreq,
@@ -65,28 +69,27 @@ public:
 		ParameterCount
 	};
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
+	static const char *ToPresetNameChar(int nValue);
 	static unsigned ToIDFromPreset(const char *preset);
 
 private:
-	EffectLFO lfo;		//Phaser modulator
+	EffectLFO lfo; // Phaser modulator
 
 	unsigned Ppreset;
 
-	//Phaser parameters
-	int Pmix;		//Used in Process.C to set wet/dry mix
+	int Pmix; // Used in Process.C to set wet/dry mix
 	int Ppanning;
-	int Pdepth;		//Depth of phaser sweep
-	int Pfb;		//feedback
-	int Pstages;		//Number of first-order All-Pass stages
+	int Pdepth;  // Depth of phaser sweep
+	int Pfb;     // feedback
+	int Pstages; // Number of first-order All-Pass stages
 	int Plrcross;
-	int Psubtractive;		//if I wish to subtract the output instead of the adding it
-	int Pwidth;		//Phaser width (LFO amplitude)
-	int Pdistortion;	//Model distortion added by FET element
-	int Pmismatch;		//Model mismatch between variable resistors
-	int Phyper;		//lfo^2 -- converts tri into hyper-sine
+	int Psubtractive; // if I wish to subtract the output instead of the adding it
+	int Pwidth;	  // Phaser width (LFO amplitude)
+	int Pdistortion;  // Model distortion added by FET element
+	int Pmismatch;	  // Model mismatch between variable resistors
+	int Phyper;	  // lfo^2 -- converts tri into hyper-sine
 
-	//Control parameters
+	// Control parameters
 	void setmix(int Pmix);
 	void setpanning(int Ppanning);
 	void setdepth(int Pdepth);
@@ -97,18 +100,18 @@ private:
 	void setdistortion(int Pdistortion);
 	void setmismatch(int Pmismatch);
 
-	//Internal Variables
+	// Internal Variables
 	float dry, wet, panl, panr, depth, fb, lrcross, width, distortion, mismatchpct;
 	float lxn1[max_stages];
 	float lyn1[max_stages];
 	float rxn1[max_stages];
 	float ryn1[max_stages];
-	const float offset[max_stages];	//model mismatch between JFET devices
+	const float offset[max_stages]; // model mismatch between JFET devices
 	float oldlgain, oldrgain, fbl, fbr;
 
-	const float Rmin;	// 2N5457 typical on resistance at Vgs = 0
-	const float Rmx;	// Rmin/Rmax to avoid division in loop
-	const float CFs;	// A constant derived from capacitor and resistor relationships
+	const float Rmin; // 2N5457 typical on resistance at Vgs = 0
+	const float Rmx;  // Rmin/Rmax to avoid division in loop
+	const float CFs;  // A constant derived from capacitor and resistor relationships
 };
 
-}
+} // namespace zyn

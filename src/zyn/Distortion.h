@@ -19,7 +19,8 @@
 
 #include "AnalogFilter.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class Distortion
 {
@@ -36,7 +37,8 @@ public:
 	static constexpr unsigned presets_num = 7;
 	static constexpr unsigned types_num = 17;
 
-	enum Parameter {
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterDrive,
@@ -53,38 +55,38 @@ public:
 		ParameterCount,
 	};
 
-	enum Filtering {
+	enum Filtering
+	{
 		FilteringPre,
 		FilteringPost,
 	};
 
 	static std::string ToDistortionType(int nValue, int nWidth);
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
+	static const char *ToPresetNameChar(int nValue);
 	static unsigned ToIDFromPreset(const char *preset);
 
 private:
 	void applyfilters(float *inputL, float *inputR, uint16_t period);
 
-
 	float samplerate;
 
 	unsigned char Ppreset;
 
-	//Parameters
+	// Parameters
 	unsigned char Pmix;
 	unsigned char Ppanning;
-	unsigned char Pdrive;        //the input amplification
-	unsigned char Plevel;        //the output amplification
-	unsigned char Ptype;         //Distortion type
-	unsigned char Pnegate;       //if the input is negated
-	unsigned char Pfiltering;    //if you want to do the filtering before or after the distortion
-	unsigned char Plowcut;       //lowcut
-	unsigned char Phighcut;      //higcut
-	unsigned char Pstereo;       //0=mono, 1=stereo
-	unsigned char Plrcross;      //L/R mix
-	unsigned char Pshape;        //for waveshaper shape
-	unsigned char Poffset;       //the input offset
+	unsigned char Pdrive; // the input amplification
+	unsigned char Plevel; // the output amplification
+	unsigned char Ptype; // Distortion type
+	unsigned char Pnegate; // if the input is negated
+	unsigned char Pfiltering; // if you want to do the filtering before or after the distortion
+	unsigned char Plowcut; // lowcut
+	unsigned char Phighcut; // higcut
+	unsigned char Pstereo; // 0=mono, 1=stereo
+	unsigned char Plrcross; // L/R mix
+	unsigned char Pshape; // for waveshaper shape
+	unsigned char Poffset; // the input offset
 
 	void setmix(unsigned char _Pmix);
 	void setlowcut(unsigned char _Plowcut);
@@ -93,10 +95,10 @@ private:
 	void setlevel(unsigned char _Plevel);
 	void setlrcross(unsigned char _Plrcross);
 
-	//Real Parameters
+	// Real Parameters
 	AnalogFilter lpfl, lpfr, hpfl, hpfr;
 
 	float dry, wet, panl, panr, level, lrcross;
 };
 
-}
+} // namespace zyn

@@ -1,8 +1,11 @@
-#include "ValueSmoothingFilter.h"
-
 #pragma once
 
-namespace zyn {
+#include <cstdint>
+
+#include "ValueSmoothingFilter.h"
+
+namespace zyn
+{
 
 /**Comb Filter Bank for sympathetic Resonance*/
 class CombFilterBank
@@ -34,4 +37,4 @@ private:
 	float samplerate;
 };
 
-}
+} // namespace zyn

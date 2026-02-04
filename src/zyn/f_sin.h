@@ -6,7 +6,6 @@ This is unlicensed.  Do whatever you want with but use at your own disgression.
 The author makes no guarantee of its suitability for any purpose.
 */
 
-
 #pragma once
 
 #include <cmath>
@@ -23,8 +22,8 @@ The author makes no guarantee of its suitability for any purpose.
 #define D_PI 6.283185307179586f
 #endif
 
-//globals
-static const float fact3 = 0.148148148148148f; //can multiply by 1/fact3
+// globals
+static const float fact3 = 0.148148148148148f; // can multiply by 1/fact3
 
 static inline float f_sin(float x)
 {
@@ -33,16 +32,22 @@ static inline float f_sin(float x)
 
 	if (x > D_PI || x < -D_PI) x = fmod(x, D_PI);
 	if (x < 0.0f) x += D_PI;
-	if (x > PI) {
+	if (x > PI)
+	{
 		x = D_PI - x;
 		sign = 1;
-	} else {
+	}
+	else
+	{
 		sign = 0;
 	}
 
-	if (x <= PI_2) {
+	if (x <= PI_2)
+	{
 		y = x - x * x * x * fact3;
-	} else {
+	}
+	else
+	{
 		float tmp = x - PI;
 		y = -tmp + tmp * tmp * tmp * fact3;
 	}

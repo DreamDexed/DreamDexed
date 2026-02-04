@@ -11,13 +11,15 @@
   of the License, or (at your option) any later version.
 */
 
+#include "Sympathetic.h"
+
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <string>
 
-#include "Sympathetic.h"
+#include "AnalogFilter.h"
 
 #ifndef PI
 #define PI 3.141592653589793f
@@ -30,8 +32,7 @@ static const uint16_t MIDI_EQ_HZ[] = {
 	630, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800,
 	2000, 2200, 2500, 2800, 3200, 3600, 4000, 4500, 5000, 5600,
 	6300, 7000, 8000, 9000, 10000, 11000, 12000, 14000, 16000, 18000,
-	20000
-};
+	20000};
 static constexpr uint8_t MIDI_EQ_N = sizeof MIDI_EQ_HZ / sizeof *MIDI_EQ_HZ;
 
 // coefficients for calculating gainbwd from Pq
@@ -43,9 +44,10 @@ static const float gainbwd_factor = 0.001f;
 // 0.873f + 0.001f * 65 = 0.873f + 0.065f = 0.938f
 static const float gainbwd_init = 0.938f;
 
-namespace zyn {
+namespace zyn
+{
 
-Sympathetic::Sympathetic(float samplerate):
+Sympathetic::Sympathetic(float samplerate) :
 samplerate{samplerate},
 lpf{2, 20000, 1, 0, samplerate},
 hpf{3, 20, 1, 0, samplerate},
@@ -72,7 +74,7 @@ void Sympathetic::process(float *inputL, float *inputR, uint16_t period)
 
 	float temp[period];
 
-	for(int i = 0; i < period; ++i)
+	for (int i = 0; i < period; ++i)
 		temp[i] = (inputL[i] * panl + inputR[i] * panr) * inputvol;
 
 	filterBank.filterout(temp, period);
@@ -81,9 +83,10 @@ void Sympathetic::process(float *inputL, float *inputR, uint16_t period)
 	if (Phighcut != MIDI_EQ_N - 1) lpf.filterout(temp, period);
 
 	float outscale = 2.0f * level * wet;
-	for (int i = 0; i < period; ++i) {
+	for (int i = 0; i < period; ++i)
+	{
 		float t = temp[i] * outscale;
-	
+
 		inputL[i] = inputL[i] * dry + t;
 		inputR[i] = inputR[i] * dry + t;
 	}
@@ -94,10 +97,13 @@ void Sympathetic::setmix(unsigned char _Pmix)
 	Pmix = _Pmix;
 
 	float mix = (float)Pmix / 100.0f;
-	if (mix < 0.5f) {
+	if (mix < 0.5f)
+	{
 		dry = 1.0f;
 		wet = mix * 2.0f;
-	} else {
+	}
+	else
+	{
 		dry = (1.0f - mix) * 2.0f;
 		wet = 1.0f;
 	}
@@ -125,7 +131,7 @@ void Sympathetic::setlevel(unsigned char _Plevel)
 
 void Sympathetic::setlowcut(unsigned char _Plowcut)
 {
-	assert (_Plowcut < MIDI_EQ_N);
+	assert(_Plowcut < MIDI_EQ_N);
 
 	Plowcut = _Plowcut;
 	float fr = MIDI_EQ_HZ[Plowcut];
@@ -134,7 +140,7 @@ void Sympathetic::setlowcut(unsigned char _Plowcut)
 
 void Sympathetic::sethighcut(unsigned char _Phighcut)
 {
-	assert (_Phighcut < MIDI_EQ_N);
+	assert(_Phighcut < MIDI_EQ_N);
 
 	Phighcut = _Phighcut;
 	float fr = MIDI_EQ_HZ[Phighcut];
@@ -143,11 +149,19 @@ void Sympathetic::sethighcut(unsigned char _Phighcut)
 
 void Sympathetic::calcFreqs()
 {
-	switch (Ptype) {
-	case TypeGeneric: calcFreqsGeneric(); break;
-	case TypePiano: calcFreqsPiano(); break;
-	case TypeGuitar: calcFreqsGuitar(); break;
-	default: assert(false);
+	switch (Ptype)
+	{
+	case TypeGeneric:
+		calcFreqsGeneric();
+		break;
+	case TypePiano:
+		calcFreqsPiano();
+		break;
+	case TypeGuitar:
+		calcFreqsGuitar();
+		break;
+	default:
+		assert(false);
 	}
 }
 
@@ -190,21 +204,25 @@ void Sympathetic::calcFreqsPiano()
 			stringchoir_size = 2;
 		else // 3 strings for Mid Range & High Treble section keys 23 - 88
 			stringchoir_size = 3;
-		
+
 		int n = i * Punison_size;
 		filterBank.delays[n] = samplerate / centerFreq;
 
 		if (Punison_size > 1)
+		{
 			if (stringchoir_size > 1)
 				filterBank.delays[n + 1] = samplerate / (centerFreq * unison_real_spread_up);
 			else
 				filterBank.delays[n + 1] = 0;
+		}
 
 		if (Punison_size > 2)
+		{
 			if (stringchoir_size > 2)
 				filterBank.delays[n + 2] = samplerate / (centerFreq * unison_real_spread_down);
 			else
 				filterBank.delays[n + 2] = 0;
+		}
 	}
 	filterBank.setStrings(Pstrings * Punison_size, baseFreq);
 }
@@ -212,10 +230,9 @@ void Sympathetic::calcFreqsPiano()
 void Sympathetic::calcFreqsGuitar()
 {
 	// frequencies steps of a guitar in standard e tuning
-	//static constexpr float guitar_freqs[6] = {82.4f, 110.0f, 146.8f, 196.0f, 246.9f, 329.6f};
+	// static constexpr float guitar_freqs[6] = {82.4f, 110.0f, 146.8f, 196.0f, 246.9f, 329.6f};
 	static constexpr uint8_t strings = 6;
 	static constexpr uint8_t steps[strings] = {0, 5, 10, 15, 19, 24};
-	
 
 	float unison_spread_semicent = powf(Punison_spread / 63.5f, 2.0f) * 25.0f;
 	float unison_real_spread_up = powf(2.0f, (unison_spread_semicent * 0.5f) / 1200.0f);
@@ -245,7 +262,7 @@ static const char *SympTypes[Sympathetic::types_num] = {
 
 std::string Sympathetic::ToTypeName(int nValue, int nWidth)
 {
-	assert (nValue >= 0 && (unsigned)nValue < types_num);
+	assert(nValue >= 0 && (unsigned)nValue < types_num);
 	return SympTypes[nValue];
 }
 
@@ -260,9 +277,9 @@ static const char *PresetNames[Sympathetic::presets_num] = {
 	"Double Bass",
 };
 
-const char * Sympathetic::ToPresetNameChar(int nValue)
+const char *Sympathetic::ToPresetNameChar(int nValue)
 {
-	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	assert(nValue >= 0 && (unsigned)nValue < presets_num);
 	return PresetNames[nValue];
 }
 
@@ -283,7 +300,8 @@ unsigned Sympathetic::ToIDFromPreset(const char *preset)
 void Sympathetic::loadpreset(unsigned char npreset)
 {
 	const int presets[presets_num][ParameterCount] = {
-		{ // Init
+		{
+			// Init
 			[ParameterMix] = 0,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 125,
@@ -300,7 +318,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Generic
+		{
+			// Generic
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 125,
@@ -317,7 +336,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Piano 12-String
+		{
+			// Piano 12-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 0,
@@ -334,7 +354,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Piano 60-String
+		{
+			// Piano 60-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 0,
@@ -351,7 +372,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Guitar 6-String
+		{
+			// Guitar 6-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 110,
@@ -368,7 +390,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Guitar 12-String
+		{
+			// Guitar 12-String
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 110,
@@ -385,7 +408,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Violin
+		{
+			// Violin
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 110,
@@ -402,7 +426,8 @@ void Sympathetic::loadpreset(unsigned char npreset)
 			[ParameterHighcut] = 60,
 			[ParameterNegate] = 0,
 		},
-		{ // Double Bass
+		{
+			// Double Bass
 			[ParameterMix] = 50,
 			[ParameterPanning] = 64,
 			[ParameterQ] = 110,
@@ -436,24 +461,29 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 {
 	bool needUpdate = false;
 
-	switch(npar) {
-	case ParameterMix: setmix(value); break;
-	case ParameterPanning: setpanning(value); break;
+	switch (npar)
+	{
+	case ParameterMix:
+		setmix(value);
+		break;
+	case ParameterPanning:
+		setpanning(value);
+		break;
 	case ParameterQ:
 		Pq = value;
 		filterBank.gainbwd = gainbwd_offset + Pq * gainbwd_factor;
-	break;
+		break;
 	case ParameterQSustain:
 		Pq_sustain = value;
-	break;
+		break;
 	case ParameterDrive:
 		setdrive(value);
 		filterBank.inputgain = (float)Pdrive / 65.0f;
-	break;
+		break;
 	case ParameterLevel:
 		setlevel(value);
 		filterBank.outgain = (float)Plevel / 65.0f;
-	break;
+		break;
 	case ParameterType:
 		value = value < types_num ? value : types_num - 1;
 		if (Ptype != value)
@@ -461,12 +491,12 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 			Ptype = value;
 			needUpdate = true;
 		}
-	break;
+		break;
 	case ParameterUnisonSize:
 	{
 		value = value > 3 ? 3 : value;
 		value = value < 1 ? 1 : value;
-		if(Punison_size != value)
+		if (Punison_size != value)
 		{
 			Punison_size = value;
 			needUpdate = true;
@@ -474,12 +504,12 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 	}
 	break;
 	case ParameterUnisonSpread:
-		if(Punison_spread != value)
+		if (Punison_spread != value)
 		{
 			Punison_spread = value;
 			needUpdate = true;
 		}
-	break;
+		break;
 	case ParameterStrings:
 	{
 		value = value > 76 ? 76 : value;
@@ -509,11 +539,18 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 			baseFreq = powf(2.0f, ((float)Pbasenote - 69.0f) / 12.0f) * 440.0f;
 			needUpdate = true;
 		}
-	break;
-	case ParameterLowcut: setlowcut(value); break;
-	case ParameterHighcut: sethighcut(value); break;
-	case ParameterNegate: Pnegate = value > 1 ? 1 : value; break;
-	default: assert(false);
+		break;
+	case ParameterLowcut:
+		setlowcut(value);
+		break;
+	case ParameterHighcut:
+		sethighcut(value);
+		break;
+	case ParameterNegate:
+		Pnegate = value > 1 ? 1 : value;
+		break;
+	default:
+		assert(false);
 	}
 
 	if (updateFreqs && needUpdate)
@@ -522,23 +559,40 @@ void Sympathetic::changepar(int npar, unsigned char value, bool updateFreqs)
 
 unsigned char Sympathetic::getpar(int npar) const
 {
-	switch(npar) {
-	case ParameterMix: return Pmix;
-	case ParameterPanning: return Ppanning;
-	case ParameterQ: return Pq;
-	case ParameterQSustain: return Pq_sustain;
-	case ParameterDrive: return Pdrive;
-	case ParameterLevel: return Plevel;
-	case ParameterType: return Ptype;
-	case ParameterUnisonSize: return Punison_size;
-	case ParameterUnisonSpread: return Punison_spread;
-	case ParameterStrings: return Pstrings;
-	case ParameterInterval: return Pinterval;
-	case ParameterBaseNote: return Pbasenote;
-	case ParameterLowcut: return Plowcut;
-	case ParameterHighcut: return Phighcut;
-	case ParameterNegate: return Pnegate;
-	default: assert(false);
+	switch (npar)
+	{
+	case ParameterMix:
+		return Pmix;
+	case ParameterPanning:
+		return Ppanning;
+	case ParameterQ:
+		return Pq;
+	case ParameterQSustain:
+		return Pq_sustain;
+	case ParameterDrive:
+		return Pdrive;
+	case ParameterLevel:
+		return Plevel;
+	case ParameterType:
+		return Ptype;
+	case ParameterUnisonSize:
+		return Punison_size;
+	case ParameterUnisonSpread:
+		return Punison_spread;
+	case ParameterStrings:
+		return Pstrings;
+	case ParameterInterval:
+		return Pinterval;
+	case ParameterBaseNote:
+		return Pbasenote;
+	case ParameterLowcut:
+		return Plowcut;
+	case ParameterHighcut:
+		return Phighcut;
+	case ParameterNegate:
+		return Pnegate;
+	default:
+		assert(false);
 	}
 }
 
@@ -547,4 +601,4 @@ void Sympathetic::sustain(bool sustain)
 	filterBank.gainbwd = gainbwd_offset + (sustain ? Pq_sustain : Pq) * gainbwd_factor;
 }
 
-}
+} // namespace zyn

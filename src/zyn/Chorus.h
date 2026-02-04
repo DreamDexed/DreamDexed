@@ -14,19 +14,23 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
+#include <string>
 
 #include "EffectLFO.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class Chorus
 {
 public:
-	enum ChorusModes {
+	enum ChorusModes
+	{
 		ModeDefault,
-		ModeFlange,	// flanger mode (very short delays)
-		ModeDual,	// 180° dual phase chorus
-		ModeTriple,	// 120° triple phase chorus
+		ModeFlange, // flanger mode (very short delays)
+		ModeDual,   // 180° dual phase chorus
+		ModeTriple, // 120° triple phase chorus
 		ModeCount,
 	};
 
@@ -43,7 +47,8 @@ public:
 	static constexpr int delay_size = max_delay_time / 1000 * 192000;
 	static constexpr unsigned presets_num = 13;
 
-	enum Parameter {
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterLFOFreq,
@@ -61,27 +66,27 @@ public:
 
 	static std::string ToChorusMode(int nValue, int nWidth);
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
+	static const char *ToPresetNameChar(int nValue);
 	static unsigned ToIDFromPreset(const char *preset);
 
 private:
-	inline float getSample(float* delayline, float mdel, int dk);
+	inline float getSample(float *delayline, float mdel, int dk);
 
 	float samplerate;
-	EffectLFO lfo;			//lfo-ul chorus
+	EffectLFO lfo; // lfo-ul chorus
 
-	//Chorus Parameters
+	// Chorus Parameters
 	unsigned char Ppreset;
 	unsigned char Pmix;
 	unsigned char Ppanning;
-	unsigned char Pdepth;		//the depth of the Chorus(ms)
-	unsigned char Pdelay;		//the delay (ms)
-	unsigned char Pfb;		//feedback
-	unsigned char Plrcross;		//left/right cross
-	unsigned char Pflangemode;	//mode as described above in CHORUS_MODES
-	unsigned char Psubtractive;	//if I wish to subtract the output instead of the adding it
+	unsigned char Pdepth;	    // the depth of the Chorus(ms)
+	unsigned char Pdelay;	    // the delay (ms)
+	unsigned char Pfb;	    // feedback
+	unsigned char Plrcross;	    // left/right cross
+	unsigned char Pflangemode;  // mode as described above in CHORUS_MODES
+	unsigned char Psubtractive; // if I wish to subtract the output instead of the adding it
 
-	//Parameter Controls
+	// Parameter Controls
 	void setmix(unsigned char _Pmix);
 	void setpanning(unsigned char _Ppanning);
 	void setdepth(unsigned char _Pdepth);
@@ -89,7 +94,7 @@ private:
 	void setfb(unsigned char _Pfb);
 	void setlrcross(unsigned char _Plrcross);
 
-	//Internal Values
+	// Internal Values
 	float dry, wet, panl, panr, depth, delay, fb, lrcross;
 	float dlNew, drNew;
 	float dlNew2, drNew2;
@@ -101,4 +106,4 @@ private:
 	float getdelay(float xlfo);
 };
 
-}
+} // namespace zyn
