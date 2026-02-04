@@ -29,9 +29,9 @@
 #include <cstring>
 #include <cstdio>
 #include <cassert>
-#include "arm_float_to_q23.h"
-#include "arm_scale_zip_f32.h"
-#include "arm_zip_f32.h"
+#include "arm/arm_float_to_q23.h"
+#include "arm/arm_scale_zip_f32.h"
+#include "arm/arm_zip_f32.h"
 
 const char WLANFirmwarePath[] = "firmware/";
 const char WLANConfigFile[]   = "wpa_supplicant.conf";
