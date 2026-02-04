@@ -28,12 +28,12 @@ class DCBlock
 public:
 	float inputs, outputs, lastOutput;
 
-	DCBlock()
+	DCBlock() :
+	inputs{},
+	outputs{},
+	lastOutput{}
 	{
-		lastOutput = inputs = outputs = 0.0f;
 	}
-
-	~DCBlock() {}
 
 	inline void tick(float *sample, float cutoff)
 	{

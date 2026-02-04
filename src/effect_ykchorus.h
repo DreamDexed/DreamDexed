@@ -30,8 +30,8 @@ public:
     void setChorus1(bool enable) { engine.setEnablesChorus(enable, engine.isChorus2Enabled); }
     void setChorus2(bool enable) { engine.setEnablesChorus(engine.isChorus1Enabled, enable); }
 
-    float getChorus1Rate() { return engine.chorus1L->rate; }
-    float getChorus2Rate() { return engine.chorus2L->rate; }
+    float getChorus1Rate() { return engine.chorus1L.rate; }
+    float getChorus2Rate() { return engine.chorus2L.rate; }
 
     void setChorus1LFORate(float32_t rate) { engine.setChorus1LfoRate(rate); }
     void setChorus2LFORate(float32_t rate) { engine.setChorus2LfoRate(rate); }

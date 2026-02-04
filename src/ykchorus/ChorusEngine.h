@@ -29,44 +29,27 @@
 class ChorusEngine
 {
 public:
-	Chorus *chorus1L;
-	Chorus *chorus1R;
-	Chorus *chorus2L;
-	Chorus *chorus2R;
+	Chorus chorus1L;
+	Chorus chorus1R;
+	Chorus chorus2L;
+	Chorus chorus2R;
 
-	DCBlock *dcBlock1L;
-	DCBlock *dcBlock1R;
-	DCBlock *dcBlock2L;
-	DCBlock *dcBlock2R;
+	DCBlock dcBlock1L;
+	DCBlock dcBlock1R;
+	DCBlock dcBlock2L;
+	DCBlock dcBlock2R;
 
 	bool isChorus1Enabled;
 	bool isChorus2Enabled;
 
-	ChorusEngine(float sampleRate)
+	ChorusEngine(float sampleRate) :
+	chorus1L{sampleRate, 1.0f, 0.5f, 7.0f},
+	chorus1R{sampleRate, 0.0f, 0.5f, 7.0f},
+	chorus2L{sampleRate, 0.0f, 0.83f, 7.0f},
+	chorus2R{sampleRate, 1.0f, 0.83f, 7.0f},
+	isChorus1Enabled{false},
+	isChorus2Enabled{false}
 	{
-		dcBlock1L = new DCBlock();
-		dcBlock1R = new DCBlock();
-		dcBlock2L = new DCBlock();
-		dcBlock2R = new DCBlock();
-
-		setUpChorus(sampleRate);
-	}
-
-	~ChorusEngine()
-	{
-		delete chorus1L;
-		delete chorus1R;
-		delete chorus2L;
-		delete chorus2R;
-		delete dcBlock1L;
-		delete dcBlock1R;
-		delete dcBlock2L;
-		delete dcBlock2R;
-	}
-
-	void setSampleRate(float sampleRate)
-	{
-		setUpChorus(sampleRate);
 	}
 
 	void setEnablesChorus(bool isChorus1Enabled, bool isChorus2Enabled)
@@ -77,22 +60,14 @@ public:
 
 	void setChorus1LfoRate(float rate)
 	{
-		chorus1L->setLfoRate(rate);
-		chorus1R->setLfoRate(rate);
+		chorus1L.setLfoRate(rate);
+		chorus1R.setLfoRate(rate);
 	}
 
 	void setChorus2LfoRate(float rate)
 	{
-		chorus2L->setLfoRate(rate);
-		chorus2R->setLfoRate(rate);
-	}
-
-	void setUpChorus(float sampleRate)
-	{
-		chorus1L = new Chorus(sampleRate, 1.0f, 0.5f, 7.0f);
-		chorus1R = new Chorus(sampleRate, 0.0f, 0.5f, 7.0f);
-		chorus2L = new Chorus(sampleRate, 0.0f, 0.83f, 7.0f);
-		chorus2R = new Chorus(sampleRate, 1.0f, 0.83f, 7.0f);
+		chorus2L.setLfoRate(rate);
+		chorus2R.setLfoRate(rate);
 	}
 
 	inline void process(float dry, float wet, float *sampleL, float *sampleR)
@@ -101,17 +76,17 @@ public:
 		float resultL = 0.0f;
 		if (isChorus1Enabled)
 		{
-			resultL += chorus1L->process(sampleL);
-			resultR += chorus1R->process(sampleR);
-			dcBlock1L->tick(&resultL, 0.01f);
-			dcBlock1R->tick(&resultR, 0.01f);
+			resultL += chorus1L.process(sampleL);
+			resultR += chorus1R.process(sampleR);
+			dcBlock1L.tick(&resultL, 0.01f);
+			dcBlock1R.tick(&resultR, 0.01f);
 		}
 		if (isChorus2Enabled)
 		{
-			resultL += chorus2L->process(sampleL);
-			resultR += chorus2R->process(sampleR);
-			dcBlock2L->tick(&resultL, 0.01f);
-			dcBlock2R->tick(&resultR, 0.01f);
+			resultL += chorus2L.process(sampleL);
+			resultR += chorus2R.process(sampleR);
+			dcBlock2L.tick(&resultL, 0.01f);
+			dcBlock2R.tick(&resultR, 0.01f);
 		}
 		*sampleL = dry * *sampleL + wet * resultL * 1.4f;
 		*sampleR = dry * *sampleR + wet * resultR * 1.4f;

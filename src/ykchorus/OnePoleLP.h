@@ -28,12 +28,12 @@ class OnePoleLP
 public:
 	float inputs, outputs, lastOutput;
 
-	OnePoleLP()
+	OnePoleLP() :
+	inputs{},
+	outputs{},
+	lastOutput{}
 	{
-		lastOutput = inputs = outputs = 0.0f;
 	}
-
-	~OnePoleLP() {}
 
 	void tick(float *sample, float cutoff)
 	{
