@@ -22,15 +22,15 @@
 
 */
 
+#include "Phaser.h"
+
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 #include <cstring>
 #include <string>
 
-#include "Phaser.h"
-
-namespace zyn {
+namespace zyn
+{
 
 #define PHASER_LFO_SHAPE 2
 
@@ -38,7 +38,7 @@ namespace zyn {
 #define PI 3.141592653589793f
 #endif
 
-Phaser::Phaser(float samplerate):
+Phaser::Phaser(float samplerate) :
 bypass{},
 lfo{samplerate},
 Ppreset{},
@@ -49,7 +49,7 @@ wet{}
 	cleanup();
 };
 
-void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
+void Phaser::process(float *smpsl, float *smpsr, int period)
 {
 	if (bypass) return;
 
@@ -63,39 +63,45 @@ void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 	lgain = (expf(lgain * PHASER_LFO_SHAPE) - 1.0f) / (expf(PHASER_LFO_SHAPE) - 1.0f);
 	rgain = (expf(rgain * PHASER_LFO_SHAPE) - 1.0f) / (expf(PHASER_LFO_SHAPE) - 1.0f);
 
-
 	lgain = 1.0f - phase * (1.0f - depth) - (1.0f - phase) * lgain * depth;
 	rgain = 1.0f - phase * (1.0f - depth) - (1.0f - phase) * rgain * depth;
 
-	if (lgain > 1.0f) lgain = 1.0f;
-	else if (lgain < 0.0f) lgain = 0.0f;
+	if (lgain > 1.0f)
+		lgain = 1.0f;
+	else if (lgain < 0.0f)
+		lgain = 0.0f;
 
-	if (rgain > 1.0f) rgain = 1.0f;
-	else if (rgain < 0.0f) rgain = 0.0f;
+	if (rgain > 1.0f)
+		rgain = 1.0f;
+	else if (rgain < 0.0f)
+		rgain = 0.0f;
 
-	for (unsigned int i = 0; i < period; i++) {
-		float x = (float) i / ((float)period);
+	for (int i = 0; i < period; i++)
+	{
+		float x = float(i) / period;
 		float x1 = 1.0f - x;
 		float gl = lgain * x + oldlgain * x1;
 		float gr = rgain * x + oldrgain * x1;
 		float inl = smpsl[i] * panl + fbl;
 		float inr = smpsr[i] * panr + fbr;
 
-		//Left channel
-		for (int j = 0; j < Pstages * 2; j++) {
-			//Phasing routine
+		// Left channel
+		for (int j = 0; j < Pstages * 2; j++)
+		{
+			// Phasing routine
 			float tmp = oldl[j];
 			oldl[j] = gl * tmp + inl;
 			inl = tmp - gl * oldl[j];
 		};
-		//Right channel
-		for (int j = 0; j < Pstages * 2; j++) {
-			//Phasing routine
+		// Right channel
+		for (int j = 0; j < Pstages * 2; j++)
+		{
+			// Phasing routine
 			float tmp = oldr[j];
 			oldr[j] = (gr * tmp) + inr;
 			inr = tmp - (gr * oldr[j]);
 		};
-		//Left/Right crossing
+		// Left/Right crossing
 		float l = inl;
 		float r = inr;
 		inl = l * (1.0f - lrcross) + r * lrcross;
@@ -104,7 +110,8 @@ void Phaser::process(float *smpsl, float *smpsr, uint16_t period)
 		fbl = inl * fb;
 		fbr = inr * fb;
 
-		if (Psubtractive != 0) {
+		if (Psubtractive != 0)
+		{
 			inl *= -1.0f;
 			inr *= -1.0f;
 		}
@@ -125,23 +132,23 @@ void Phaser::cleanup()
 	memset(oldr, 0, sizeof oldr);
 };
 
-void Phaser::setdepth(int Pdepth)
+void Phaser::setdepth(signed char Pdepth)
 {
 	this->Pdepth = Pdepth;
-	depth = ((float)Pdepth / 127.0f);
+	depth = Pdepth / 127.0f;
 };
 
-void Phaser::setfb(int Pfb)
+void Phaser::setfb(signed char Pfb)
 {
 	this->Pfb = Pfb;
-	fb = ((float)Pfb - 64.0f) / 64.1f;
+	fb = (Pfb - 64.0f) / 64.1f;
 };
 
-void Phaser::setmix(int Pmix)
+void Phaser::setmix(signed char Pmix)
 {
 	this->Pmix = Pmix;
 
-	float mix = (float)Pmix / 100.0f;
+	float mix = Pmix / 100.0f;
 	if (mix < 0.5f)
 	{
 		dry = 1.0f;
@@ -154,32 +161,32 @@ void Phaser::setmix(int Pmix)
 	}
 };
 
-void Phaser::setpanning(int Ppanning)
+void Phaser::setpanning(signed char Ppanning)
 {
 	this->Ppanning = Ppanning;
-	float panning = ((float)Ppanning - .5f)/ 127.0f;
+	float panning = (Ppanning - .5f) / 127.0f;
 	panl = cosf(panning * PI / 2.0f);
 	panr = cosf((1.0f - panning) * PI / 2.0f);
 };
 
-void Phaser::setlrcross(int Plrcross)
+void Phaser::setlrcross(signed char Plrcross)
 {
 	this->Plrcross = Plrcross;
-	lrcross = (float)Plrcross / 127.0f;
+	lrcross = Plrcross / 127.0f;
 };
 
-void Phaser::setstages(int Pstages)
+void Phaser::setstages(signed char Pstages)
 {
-	if ((unsigned int)Pstages > max_stages)
+	if (Pstages > max_stages)
 		Pstages = max_stages;
 	this->Pstages = Pstages;
-	cleanup ();
+	cleanup();
 };
 
-void Phaser::setphase(int Pphase)
+void Phaser::setphase(signed char Pphase)
 {
 	this->Pphase = Pphase;
-	phase = ((float)Pphase / 127.0f);
+	phase = Pphase / 127.0f;
 };
 
 static const char *PresetNames[Phaser::presets_num] = {
@@ -192,9 +199,9 @@ static const char *PresetNames[Phaser::presets_num] = {
 	"Phaser6",
 };
 
-const char * Phaser::ToPresetNameChar(int nValue)
+const char *Phaser::ToPresetNameChar(int nValue)
 {
-	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	assert(nValue >= 0 && nValue < presets_num);
 	return PresetNames[nValue];
 }
 
@@ -203,18 +210,18 @@ std::string Phaser::ToPresetName(int nValue, int nWidth)
 	return ToPresetNameChar(nValue);
 }
 
-unsigned Phaser::ToIDFromPreset(const char *preset)
+int Phaser::ToIDFromPreset(const char *preset)
 {
-	for (unsigned i = 0; i < presets_num; ++i)
+	for (int i = 0; i < presets_num; ++i)
 		if (strcmp(PresetNames[i], preset) == 0)
 			return i;
 
 	return 0;
 }
 
-void Phaser::loadpreset(unsigned npreset)
+void Phaser::loadpreset(int npreset)
 {
-	const int presets[presets_num][ParameterCount] = {
+	const signed char presets[presets_num][ParameterCount] = {
 		{
 			[ParameterMix] = 0,
 			[ParameterPanning] = 64,
@@ -316,7 +323,7 @@ void Phaser::loadpreset(unsigned npreset)
 	};
 
 	if (npreset >= presets_num)
-		npreset = presets_num;
+		npreset = presets_num - 1;
 
 	for (int n = 0; n < ParameterCount; n++)
 		changepar(n, presets[npreset][n]);
@@ -324,53 +331,85 @@ void Phaser::loadpreset(unsigned npreset)
 	Ppreset = npreset;
 };
 
-void Phaser::changepar(unsigned npar, int value)
+void Phaser::changepar(int npar, int value)
 {
-	switch (npar) {
-	case ParameterMix: setmix(value); break;
-	case ParameterPanning: setpanning(value); break;
+	signed char cValue = static_cast<signed char>(value);
+	switch (npar)
+	{
+	case ParameterMix:
+		setmix(cValue);
+		break;
+	case ParameterPanning:
+		setpanning(cValue);
+		break;
 	case ParameterLFOFreq:
-		lfo.Pfreq = value;
+		lfo.Pfreq = cValue;
 		lfo.updateparams(lfo.nPeriod);
-	break;
+		break;
 	case ParameterLFORandomness:
-		lfo.Prandomness = value;
+		lfo.Prandomness = cValue;
 		lfo.updateparams(lfo.nPeriod);
-	break;
+		break;
 	case ParameterLFOType:
-		lfo.PLFOtype = value;
+		lfo.PLFOtype = cValue;
 		lfo.updateparams(lfo.nPeriod);
-	break;
+		break;
 	case ParameterLFOLRDelay:
-		lfo.Pstereo = value;
+		lfo.Pstereo = cValue;
 		lfo.updateparams(lfo.nPeriod);
-	break;
-	case ParameterDepth: setdepth(value); break;
-	case ParameterFeedback: setfb(value); break;
-	case ParameterStages: setstages(value); break;
-	case ParameterLRCross: setlrcross(value); break;
-	case ParameterSubtractive: Psubtractive = value > 1 ? 1 : value; break;
-	case ParameterPhase: setphase(value); break;
+		break;
+	case ParameterDepth:
+		setdepth(cValue);
+		break;
+	case ParameterFeedback:
+		setfb(cValue);
+		break;
+	case ParameterStages:
+		setstages(cValue);
+		break;
+	case ParameterLRCross:
+		setlrcross(cValue);
+		break;
+	case ParameterSubtractive:
+		Psubtractive = cValue > 1 ? 1 : cValue;
+		break;
+	case ParameterPhase:
+		setphase(cValue);
+		break;
 	}
 };
 
-int Phaser::getpar(unsigned npar)
+int Phaser::getpar(int npar)
 {
-	switch (npar) {
-	case ParameterMix: return Pmix;
-	case ParameterPanning: return Ppanning;
-	case ParameterLFOFreq: return lfo.Pfreq;
-	case ParameterLFORandomness: return lfo.Prandomness;
-	case ParameterLFOType: return lfo.PLFOtype;
-	case ParameterLFOLRDelay: return lfo.Pstereo;
-	case ParameterDepth: return Pdepth;
-	case ParameterFeedback: return Pfb;
-	case ParameterStages: return Pstages;
-	case ParameterLRCross: return Plrcross;
-	case ParameterSubtractive: return Psubtractive;
-	case ParameterPhase: return Pphase;
-	default: return 0;
+	switch (npar)
+	{
+	case ParameterMix:
+		return Pmix;
+	case ParameterPanning:
+		return Ppanning;
+	case ParameterLFOFreq:
+		return lfo.Pfreq;
+	case ParameterLFORandomness:
+		return lfo.Prandomness;
+	case ParameterLFOType:
+		return lfo.PLFOtype;
+	case ParameterLFOLRDelay:
+		return lfo.Pstereo;
+	case ParameterDepth:
+		return Pdepth;
+	case ParameterFeedback:
+		return Pfb;
+	case ParameterStages:
+		return Pstages;
+	case ParameterLRCross:
+		return Plrcross;
+	case ParameterSubtractive:
+		return Psubtractive;
+	case ParameterPhase:
+		return Pphase;
+	default:
+		return 0;
 	}
 };
 
-}
+} // namespace zyn

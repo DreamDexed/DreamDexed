@@ -17,17 +17,14 @@
 /* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 /*******************************************************************************/
 
-#include <cmath>
-
 #include "ValueSmoothingFilter.h"
 
-/* compensate for missing nonlib macro */
-#define assume_aligned(x) (x)
+#include <cmath>
 
-namespace zyn {
+namespace zyn
+{
 
-void
-ValueSmoothingFilter::sample_rate(nframes_t n)
+void ValueSmoothingFilter::sample_rate(int n)
 {
 	const float FS = n;
 	const float T = 0.05f;
@@ -35,8 +32,7 @@ ValueSmoothingFilter::sample_rate(nframes_t n)
 	w = _cutoff / (FS * T);
 }
 
-bool
-ValueSmoothingFilter::apply(sample_t * __restrict__ dst, nframes_t nframes, float gt)
+bool ValueSmoothingFilter::apply(float *dst, int nframes, float gt)
 {
 	if (_reset_on_next_apply)
 	{
@@ -48,8 +44,6 @@ ValueSmoothingFilter::apply(sample_t * __restrict__ dst, nframes_t nframes, floa
 	if (target_reached(gt))
 		return false;
 
-	sample_t * dst_ = (sample_t*) assume_aligned(dst);
-
 	const float a = 0.07f;
 	const float b = 1 + a;
 
@@ -58,11 +52,12 @@ ValueSmoothingFilter::apply(sample_t * __restrict__ dst, nframes_t nframes, floa
 	float g1 = this->g1;
 	float g2 = this->g2;
 
-	for (nframes_t i = 0; i < nframes; i++)
+	for (int i = 0; i < nframes; i++)
 	{
 		g1 += w * (gm - g1 - a * g2);
 		g2 += w * (g1 - g2);
-		dst_[i] = g2;
+
+		dst[i] = g2;
 	}
 
 	if (fabsf(gt - g2) < t)
@@ -74,4 +69,4 @@ ValueSmoothingFilter::apply(sample_t * __restrict__ dst, nframes_t nframes, floa
 	return true;
 }
 
-}
+} // namespace zyn

@@ -26,34 +26,35 @@
 #pragma once
 
 #include <string>
-#include <cstdint>
 
-namespace zyn {
+namespace zyn
+{
 
 class EffectLFO
 {
 public:
 	EffectLFO(float samplerate);
 	void effectlfoout(float *outl, float *outr, float phaseOffset = 0.0f);
-	void updateparams(uint16_t period);
-	uint16_t nPeriod;
+	void updateparams(int period);
+	int nPeriod;
 
-	unsigned char Pfreq;  //!< Frequency parameter (0-127)
-	unsigned char Prandomness;  //!< Randomness parameter (0-127)
-	unsigned char PLFOtype;  //!< LFO type parameter
-	unsigned char Pstereo;  //!< Stereo parameter (64 = 0)
+	signed char Pfreq; //!< Frequency parameter (0-127)
+	signed char Prandomness; //!< Randomness parameter (0-127)
+	signed char PLFOtype; //!< LFO type parameter
+	signed char Pstereo; //!< Stereo parameter (64 = 0)
 
 	static std::string ToLFOType(int nValue, int nWidth);
+
 private:
 	float getlfoshape(float x);
 
 	float xl, xr;
 	float incx;
-	float ampl1, ampl2, ampr1, ampr2;	//necesar pentru "randomness"
+	float ampl1, ampl2, ampr1, ampr2; // necesar pentru "randomness"
 	float lfornd;
-	char lfotype;
+	int lfotype;
 
 	float samplerate;
 };
 
-}
+} // namespace zyn

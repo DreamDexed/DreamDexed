@@ -25,26 +25,29 @@
 #pragma once
 
 #include <atomic>
+#include <string>
 
 #include "EffectLFO.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class Phaser
 {
 public:
 	Phaser(float samplerate);
-	void process(float *smpsl, float *smpsr, uint16_t period);
-	void loadpreset(unsigned npreset);
-	void changepar(unsigned npar, int value);
-	int getpar(unsigned npar);
+	void process(float *smpsl, float *smpsr, int period);
+	void loadpreset(int npreset);
+	void changepar(int npar, int value);
+	int getpar(int npar);
 	void cleanup();
 
 	std::atomic<bool> bypass;
 
-	static constexpr unsigned max_stages = 12;
-	static constexpr unsigned presets_num = 7;
-	enum Parameter {
+	static constexpr int max_stages = 12;
+	static constexpr int presets_num = 7;
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterLFOFreq,
@@ -60,37 +63,37 @@ public:
 		ParameterCount
 	};
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
-	static unsigned ToIDFromPreset(const char *preset);
+	static const char *ToPresetNameChar(int nValue);
+	static int ToIDFromPreset(const char *preset);
 
 private:
-	EffectLFO lfo; 		//Phaser modulator
+	EffectLFO lfo; // Phaser modulator
 
-	unsigned Ppreset;
+	int Ppreset;
 
-	//Parametrii Phaser
-	int Pmix;
-	int Ppanning;
-	int Pdepth;		//the depth of the Phaser
-	int Pfb;		//feedback
-	int Plrcross;		//feedback
-	int Pstages;
-	int Psubtractive;		//if I wish to substract the output instead of the adding it
-	int Pphase;
+	// Parametrii Phaser
+	signed char Pmix;
+	signed char Ppanning;
+	signed char Pdepth; // the depth of the Phaser
+	signed char Pfb; // feedback
+	signed char Plrcross; // feedback
+	signed char Pstages;
+	signed char Psubtractive; // if I wish to substract the output instead of the adding it
+	signed char Pphase;
 
-	void setmix(int Pmix);
-	void setpanning(int Ppanning);
-	void setdepth(int Pdepth);
-	void setfb(int Pfb);
-	void setlrcross(int Plrcross);
-	void setstages(int Pstages);
-	void setphase(int Pphase);
+	void setmix(signed char Pmix);
+	void setpanning(signed char Ppanning);
+	void setdepth(signed char Pdepth);
+	void setfb(signed char Pfb);
+	void setlrcross(signed char Plrcross);
+	void setstages(signed char Pstages);
+	void setphase(signed char Pphase);
 
-	//Valorile interne
+	// Valorile interne
 	float dry, wet, panl, panr, fb, depth, lrcross, fbl, fbr, phase;
 	float oldl[max_stages * 2];
 	float oldr[max_stages * 2];
 	float oldlgain, oldrgain;
 };
 
-}
+} // namespace zyn

@@ -12,37 +12,34 @@
 */
 #pragma once
 
-namespace zyn {
+namespace zyn
+{
 
-//Waveshaping(called by Distortion effect and waveshape from OscilGen)
-void waveShapeSmps(int n,
-		   float *smps,
-		   unsigned char type,
-		   unsigned char drive,
-		   unsigned char offset = 64,
-		   unsigned char shape = 0);
+// Waveshaping(called by Distortion effect and waveshape from OscilGen)
+void waveShapeSmps(int n, float *smps, signed char type, signed char drive, signed char offset = 64, signed char shape = 0);
 
-	enum WaveShapeType {
-		WaveShapeArctangent,
-		WaveShapeAsymmetric,
-		WaveShapePow,
-		WaveShapeSine,
-		WaveShapeQuantisize,
-		WaveShapeZigzag,
-		WaveShapeLimiter,
-		WaveShapeUpperLimiter,
-		WaveShapeLowerLimiter,
-		WaveShapeInverseLimiter,
-		WaveShapeClip,
-		WaveShapeAsymmetric2,
-		WaveShapePow2,
-		WaveShapeSigmoid,
-		WaveShapeTanhSoft,
-		WaveShapeCubic,
-		WaveShapeSquare,
-	};
+enum WaveShapeType
+{
+	WaveShapeArctangent,
+	WaveShapeAsymmetric,
+	WaveShapePow,
+	WaveShapeSine,
+	WaveShapeQuantisize,
+	WaveShapeZigzag,
+	WaveShapeLimiter,
+	WaveShapeUpperLimiter,
+	WaveShapeLowerLimiter,
+	WaveShapeInverseLimiter,
+	WaveShapeClip,
+	WaveShapeAsymmetric2,
+	WaveShapePow2,
+	WaveShapeSigmoid,
+	WaveShapeTanhSoft,
+	WaveShapeCubic,
+	WaveShapeSquare,
+};
 
-//calculate the polyblamp residual value (called by waveshape function)
+// calculate the polyblamp residual value (called by waveshape function)
 float polyblampres(float smp, float ws, float dMax);
 
-}
+} // namespace zyn

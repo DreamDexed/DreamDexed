@@ -23,30 +23,31 @@
 
 */
 
+#include "EffectLFO.h"
+
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <string>
 
-#include "EffectLFO.h"
 #include "f_sin.h"
 
-namespace zyn {
+namespace zyn
+{
 
-#define RND (rand()/(RAND_MAX+1.0))
+#define RND (rand() / (RAND_MAX + 1.0f))
 
-EffectLFO::EffectLFO(float samplerate):
-nPeriod{256}, //this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
+EffectLFO::EffectLFO(float samplerate) :
+nPeriod{256}, // this is our best guess at what it will be, later we'll correct it when we actually know fPERIOD
 Pfreq{40},
 Prandomness{0},
 Pstereo{64},
 xl{},
 xr{},
-ampl1{(float)RND},
-ampl2{(float)RND},
-ampr1{(float)RND},
-ampr2{(float)RND},
+ampl1{RND},
+ampl2{RND},
+ampr1{RND},
+ampr2{RND},
 lfornd{},
 samplerate{samplerate}
 {
@@ -55,27 +56,30 @@ samplerate{samplerate}
 
 std::string EffectLFO::ToLFOType(int nValue, int nWidth)
 {
-	switch(nValue)
+	switch (nValue)
 	{
-		case 0: return "Sine";
-		case 1: return "Triangle";
-		default: return "Invalid";
+	case 0:
+		return "Sine";
+	case 1:
+		return "Triangle";
+	default:
+		return "Invalid";
 	}
 }
 
-void EffectLFO::updateparams(uint16_t period)
+void EffectLFO::updateparams(int period)
 {
 	float lfofreq = (powf(2.0f, Pfreq / 127.0f * 10.0f) - 1.0f) * 0.03f;
 	nPeriod = period;
-	incx = fabsf(lfofreq) * (float)period / samplerate;
+	incx = fabsf(lfofreq) * period / samplerate;
 	if (incx > 0.49999999f)
-		incx = 0.499999999f;		//Limit the Frequency
+		incx = 0.499999999f; // Limit the Frequency
 
-	lfornd = (float)Prandomness / 127.0f;
+	lfornd = Prandomness / 127.0f;
 	lfornd = (lfornd > 1.0f) ? 1.0f : lfornd;
 
-	if (PLFOtype > 1)   //this has to be updated if more lfo's are added
-		PLFOtype = 1;		
+	if (PLFOtype > 1) // this has to be updated if more lfo's are added
+		PLFOtype = 1;
 	lfotype = PLFOtype;
 	xr = xl + (Pstereo - 64.0f) / 127.0f + 1.0f;
 	xr -= floorf(xr);
@@ -87,11 +91,12 @@ float EffectLFO::getlfoshape(float x)
 
 	if (x > 1.0f) x -= 1.0f;
 
-	switch (lfotype) {
-	case 0: //EffectLFO_SINE
+	switch (lfotype)
+	{
+	case 0: // EffectLFO_SINE
 		out = f_cos(x * D_PI);
 		break;
-	case 1: //EffectLFO_TRIANGLE
+	case 1: // EffectLFO_TRIANGLE
 		if (x > 0.0f && x < 0.25f)
 			out = 4.0f * x;
 		else if (x > 0.25f && x < 0.75f)
@@ -116,29 +121,36 @@ void EffectLFO::effectlfoout(float *outl, float *outr, float phaseOffset)
 	*outl = (out + 1.0f) * 0.5f;
 
 	// update left phase for master lfo
-	if (phaseOffset == 0.0f) {
+	if (phaseOffset == 0.0f)
+	{
 		xl += incx;
-		if(xl > 1.0f) {
+		if (xl > 1.0f)
+		{
 			xl -= 1.0f;
 			ampl1 = ampl2;
-			ampl2 = (1.0f - lfornd) + lfornd * (float)RND;
+			ampl2 = (1.0f - lfornd) + lfornd * RND;
 		}
 	}
-
 	// right stereo signal
-	else out = getlfoshape(xr + phaseOffset);
+	else
+	{
+		out = getlfoshape(xr + phaseOffset);
+	}
+
 	out *= ampr1 + xr * (ampr2 - ampr1);
 	*outr = (out + 1.0f) * 0.5f;
 
 	// update right phase for master lfo
-	if(phaseOffset == 0.0f) {
+	if (phaseOffset == 0.0f)
+	{
 		xr += incx;
-		if(xr > 1.0f) {
+		if (xr > 1.0f)
+		{
 			xr -= 1.0f;
 			ampr1 = ampr2;
-			ampr2 = (1.0f - lfornd) + lfornd * (float)RND;
+			ampr2 = (1.0f - lfornd) + lfornd * RND;
 		}
 	}
 }
 
-}
+} // namespace zyn
