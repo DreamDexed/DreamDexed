@@ -1,7 +1,7 @@
 //
 // udpmididevice.h
 //
-// Virtual midi device for data recieved on network 
+// Virtual midi device for data recieved on network
 //
 // MiniDexed - Dexed FM synthesizer for bare metal Raspberry Pi
 // Copyright (C) 2022  The MiniDexed Team
@@ -24,36 +24,42 @@
 //
 #pragma once
 
+#include <cstddef>
 
-#include "mididevice.h"
+#include <circle/bcmrandom.h>
+#include <circle/net/ipaddress.h>
+#include <circle/net/socket.h>
+#include <circle/types.h>
+
 #include "config.h"
+#include "mididevice.h"
 #include "net/applemidi.h"
 #include "net/udpmidi.h"
-#include "midi.h"
+#include "userinterface.h"
 
 class CMiniDexed;
 
 class CUDPMIDIDevice : CAppleMIDIHandler, CUDPMIDIHandler, public CMIDIDevice
 {
 public:
-	CUDPMIDIDevice (CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
-	~CUDPMIDIDevice (void);
+	CUDPMIDIDevice(CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
+	~CUDPMIDIDevice(void);
 
-	boolean Initialize (void);
-	virtual void OnAppleMIDIDataReceived(const u8* pData, size_t nSize) override;
-	virtual void OnAppleMIDIConnect(const CIPAddress* pIPAddress, const char* pName) override;
-	virtual void OnAppleMIDIDisconnect(const CIPAddress* pIPAddress, const char* pName) override;
-	virtual void OnUDPMIDIDataReceived(const u8* pData, size_t nSize) override;
+	boolean Initialize(void);
+	virtual void OnAppleMIDIDataReceived(const u8 *pData, size_t nSize) override;
+	virtual void OnAppleMIDIConnect(const CIPAddress *pIPAddress, const char *pName) override;
+	virtual void OnAppleMIDIDisconnect(const CIPAddress *pIPAddress, const char *pName) override;
+	virtual void OnUDPMIDIDataReceived(const u8 *pData, size_t nSize) override;
 	virtual void Send(const u8 *pMessage, size_t nLength, unsigned nCable = 0) override;
 
 private:
 	CMiniDexed *m_pSynthesizer;
 	CConfig *m_pConfig;
 	CBcmRandomNumberGenerator m_Random;
-	CAppleMIDIParticipant* m_pAppleMIDIParticipant; // AppleMIDI participant instance
+	CAppleMIDIParticipant *m_pAppleMIDIParticipant; // AppleMIDI participant instance
 	bool m_bIsAppleMIDIConnected = false;
-	CUDPMIDIReceiver* m_pUDPMIDIReceiver;
-	CSocket* m_pUDPSendSocket = nullptr;
+	CUDPMIDIReceiver *m_pUDPMIDIReceiver;
+	CSocket *m_pUDPSendSocket = nullptr;
 	CIPAddress m_UDPDestAddress;
 	unsigned m_UDPDestPort = 1999;
 	CIPAddress m_LastUDPSenderAddress;
