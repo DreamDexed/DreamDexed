@@ -12,8 +12,10 @@
 */
 
 #include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <cstring>
-#include <math.h>
+#include <string>
 
 #include "Distortion.h"
 #include "AnalogFilter.h"

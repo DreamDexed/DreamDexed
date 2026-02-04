@@ -24,7 +24,10 @@
 */
 
 #include <cassert>
-#include <math.h>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
 
 #include "EffectLFO.h"
 #include "f_sin.h"

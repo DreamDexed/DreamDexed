@@ -23,9 +23,9 @@
 
 #pragma once
 
+#include <cmath>
 
 #include "OnePoleLP.h"
-#include "math.h"
 
 class Chorus {
 public:
