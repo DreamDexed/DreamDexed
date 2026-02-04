@@ -1,6 +1,6 @@
 #pragma once
 
-#include "arm_math_types.h"
+#include <stdint.h>
 
 typedef int32_t q23_t;
 
@@ -15,7 +15,7 @@ extern "C"
  * @param[out] pDst       points to the Q23 output vector
  * @param[in]  blockSize  length of the input vector
  */
-void arm_float_to_q23(const float32_t * pSrc, q23_t * pDst, uint32_t blockSize);
+void arm_float_to_q23(const float *pSrc, q23_t *pDst, int blockSize);
 
 #ifdef __cplusplus
 }
