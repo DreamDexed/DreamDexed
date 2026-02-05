@@ -17,28 +17,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 #include "midipin.h"
-#include <circle/logger.h>
 
-LOGMODULE ("midipin");
-
-CMIDIPin::CMIDIPin (unsigned nPinNumber)
-:	m_nPinNumber (nPinNumber),
-	m_nValue (0)
+CMIDIPin::CMIDIPin(unsigned nPinNumber) :
+m_nPinNumber{nPinNumber},
+m_nValue{0}
 {
 }
 
-CMIDIPin::~CMIDIPin (void)
-{
-}
-		
-unsigned CMIDIPin::Read (void)
+int CMIDIPin::Read()
 {
 	return m_nValue;
 }
 
-void CMIDIPin::Write (unsigned nValue)
+void CMIDIPin::Write(int nValue)
 {
 	m_nValue = nValue;
 }
-
