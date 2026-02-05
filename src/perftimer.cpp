@@ -18,25 +18,28 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "perftimer.h"
-#include <circle/cputhrottle.h>
+
 #include <iostream>
 
-CPerformanceTimer::CPerformanceTimer (const char *pName, unsigned nDeadlineMicros)
-:	m_Name (pName),
-	m_nDeadlineMicros (nDeadlineMicros),
-	m_nMaximumMicros (0),
-	m_nLastDumpTicks (0)
+#include <circle/cputhrottle.h>
+#include <circle/timer.h>
+
+CPerformanceTimer::CPerformanceTimer(const char *pName, unsigned nDeadlineMicros) :
+m_Name{pName},
+m_nDeadlineMicros{nDeadlineMicros},
+m_nMaximumMicros{},
+m_nLastDumpTicks{}
 {
 }
 
-void CPerformanceTimer::Start (void)
+void CPerformanceTimer::Start()
 {
-	m_nStartTicks = CTimer::GetClockTicks ();
+	m_nStartTicks = CTimer::GetClockTicks();
 }
 
-void CPerformanceTimer::Stop (void)
+void CPerformanceTimer::Stop()
 {
-	unsigned nEndTicks = CTimer::GetClockTicks ();
+	unsigned nEndTicks = CTimer::GetClockTicks();
 	m_nLastMicros = (nEndTicks - m_nStartTicks) / (CLOCKHZ / 1000000);
 
 	if (m_nLastMicros > m_nMaximumMicros)
@@ -45,35 +48,35 @@ void CPerformanceTimer::Stop (void)
 	}
 }
 
-void CPerformanceTimer::Dump (unsigned nIntervalTicks)
+void CPerformanceTimer::Dump(unsigned nIntervalTicks)
 {
-	unsigned nTicks = CTimer::GetClockTicks ();
+	unsigned nTicks = CTimer::GetClockTicks();
 
 	if (nTicks - m_nLastDumpTicks >= nIntervalTicks)
 	{
 		m_nLastDumpTicks = nTicks;
 
-		unsigned nMaximumMicros = m_nMaximumMicros;	// may be overwritten from interrupt
+		unsigned nMaximumMicros = m_nMaximumMicros; // may be overwritten from interrupt
 		unsigned nLastMicros = m_nLastMicros;
 
 		std::cout << m_Name << ": Last duration was " << nLastMicros << "us";
 
 		if (m_nDeadlineMicros != 0)
 		{
-			std::cout << " (" << nLastMicros*100 / m_nDeadlineMicros << "%)";
+			std::cout << " (" << nLastMicros * 100 / m_nDeadlineMicros << "%)";
 		}
 
 		std::cout << " Maximum was " << nMaximumMicros << "us";
 
 		if (m_nDeadlineMicros != 0)
 		{
-			std::cout << " (" << nMaximumMicros*100 / m_nDeadlineMicros << "%)";
+			std::cout << " (" << nMaximumMicros * 100 / m_nDeadlineMicros << "%)";
 		}
 
-		CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+		CCPUThrottle *pCPUT = CCPUThrottle::Get();
 
-		std::cout << " (CPU " << pCPUT->GetClockRate () / 1000000 << "/" << pCPUT->GetMaxClockRate() / 1000000 << " MHz ";
-		std::cout << pCPUT->GetTemperature () << "/" << pCPUT->GetMaxTemperature () << " C)";
+		std::cout << " (CPU " << pCPUT->GetClockRate() / 1000000 << "/" << pCPUT->GetMaxClockRate() / 1000000 << " MHz ";
+		std::cout << pCPUT->GetTemperature() << "/" << pCPUT->GetMaxTemperature() << " C)";
 
 		std::cout << std::endl;
 	}
