@@ -17,17 +17,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 #include "sysexfileloader.h"
+
+#include <strings.h>
+#include <sys/dirent.h>
+
+#include <cassert>
+#include <cstdint>
 #include <cstdio>
-#include <dirent.h>
 #include <cstdlib>
 #include <cstring>
-#include <strings.h>
-#include <cassert>
+#include <string>
+
 #include <circle/logger.h>
+
 #include "voices.c"
 
-LOGMODULE ("syxfile");
+LOGMODULE("syxfile");
 
 /*
 uint8_t CSysExFileLoader::s_DefaultVoice[SizeSingleVoice] =	// FM-Piano
@@ -46,147 +53,137 @@ uint8_t CSysExFileLoader::s_DefaultVoice[SizeSingleVoice] =	// FM-Piano
 };
 */
 
-uint8_t CSysExFileLoader::s_DefaultVoice[SizeSingleVoice] =	// INIT VOICE
+uint8_t CSysExFileLoader::s_DefaultVoice[SizeSingleVoice] = // INIT VOICE
 {
 	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP6 eg_rate_1-4, level_1-4, kbd_lev_scl_brk_pt, kbd_lev_scl_lft_depth, kbd_lev_scl_rht_depth, kbd_lev_scl_lft_curve, kbd_lev_scl_rht_curve, kbd_rate_scaling, amp_mod_sensitivity, key_vel_sensitivity, operator_output_level, osc_mode, osc_freq_coarse, osc_freq_fine, osc_detune
-        99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP5
-        99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP4
-        99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP3
-        99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP2
-        99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 99, 00, 01, 00, 07, // OP1
-        99, 99, 99, 99, 50, 50, 50, 50,                                                     // 4 * pitch EG rates, 4 * pitch EG level
-	00, 00, 01,                                                                         // algorithm, feedback, osc sync
-	35, 00, 00, 00, 01, 00,                                                             // lfo speed, lfo delay, lfo pitch_mod_depth, lfo_amp_mod_depth, lfo_sync, lfo_waveform
-	03, 24,                                                                             // pitch_mod_sensitivity, transpose
-        73, 78, 73, 84, 32, 86, 79, 73, 67, 69                                              // 10 * char for name
+	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP5
+	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP4
+	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP3
+	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 07, // OP2
+	99, 99, 99, 99, 99, 99, 99, 00, 00, 00, 00, 00, 00, 00, 00, 00, 99, 00, 01, 00, 07, // OP1
+	99, 99, 99, 99, 50, 50, 50, 50, // 4 * pitch EG rates, 4 * pitch EG level
+	00, 00, 01, // algorithm, feedback, osc sync
+	35, 00, 00, 00, 01, 00, // lfo speed, lfo delay, lfo pitch_mod_depth, lfo_amp_mod_depth, lfo_sync, lfo_waveform
+	03, 24, // pitch_mod_sensitivity, transpose
+	73, 78, 73, 84, 32, 86, 79, 73, 67, 69 // 10 * char for name
 };
 
-CSysExFileLoader::CSysExFileLoader (const char *pDirName)
-:	m_DirName (pDirName)
+CSysExFileLoader::CSysExFileLoader(const char *pDirName) :
+m_DirName{std::string(pDirName) + "/voice"},
+m_nNumHighestBank{},
+m_pVoiceBank{}
 {
-	m_DirName += "/voice";
-	m_nNumHighestBank = 0;
-
-	for (unsigned i = 0; i <= MaxVoiceBankID; i++)
-	{
-		m_pVoiceBank[i] = nullptr;
-	}
 }
 
-CSysExFileLoader::~CSysExFileLoader (void)
+CSysExFileLoader::~CSysExFileLoader()
 {
-	for (unsigned i = 0; i <= MaxVoiceBankID; i++)
+	for (int i = 0; i <= MaxVoiceBankID; i++)
 	{
 		delete m_pVoiceBank[i];
 	}
 }
 
-void CSysExFileLoader::Load (bool bHeaderlessSysExVoices)
+void CSysExFileLoader::Load(bool bHeaderlessSysExVoices)
 {
 	m_nNumHighestBank = 0;
 	m_nBanksLoaded = 0;
 
-    DIR *pDirectory = opendir (m_DirName.c_str ());
+	DIR *pDirectory = opendir(m_DirName.c_str());
 	if (!pDirectory)
 	{
-		LOGWARN ("Directory %s not found", m_DirName.c_str ());
+		LOGWARN("Directory %s not found", m_DirName.c_str());
 
 		return;
 	}
 
 	dirent *pEntry;
-	while ((pEntry = readdir (pDirectory)) != nullptr)
+	while ((pEntry = readdir(pDirectory)) != nullptr)
 	{
-		LoadBank(m_DirName.c_str (), pEntry->d_name, bHeaderlessSysExVoices, 0);
+		LoadBank(m_DirName.c_str(), pEntry->d_name, bHeaderlessSysExVoices, 0);
 	}
-	LOGDBG ("%u Banks loaded. Highest Bank loaded: #%u", m_nBanksLoaded, m_nNumHighestBank+1);
+	LOGDBG("%d Banks loaded. Highest Bank loaded: #%d", m_nBanksLoaded, m_nNumHighestBank + 1);
 
-	closedir (pDirectory);
+	closedir(pDirectory);
 }
 
-void CSysExFileLoader::LoadBank (const char * sDirName, const char * sBankName, bool bHeaderlessSysExVoices, unsigned nSubDirCount)
+void CSysExFileLoader::LoadBank(const char *sDirName, const char *sBankName, bool bHeaderlessSysExVoices, int nSubDirCount)
 {
-	unsigned nBank;
-	size_t nLen = strlen (sBankName);
-	
-	if (   nLen < 5						// "[NNNN]N[_name].syx"
-		|| strcasecmp (&sBankName[nLen-4], ".syx") != 0
-		|| sscanf (sBankName, "%u", &nBank) != 1)
+	int nBank;
+	size_t nLen = strlen(sBankName);
+
+	if (nLen < 5 // "[NNNN]N[_name].syx"
+	    || strcasecmp(&sBankName[nLen - 4], ".syx") != 0 || sscanf(sBankName, "%d", &nBank) != 1)
 	{
 		// See if this is a subdirectory...
-		std::string Dirname (sDirName);
+		std::string Dirname(sDirName);
 		Dirname += "/";
 		Dirname += sBankName;
 
-		DIR *pDirectory = opendir (Dirname.c_str ());
+		DIR *pDirectory = opendir(Dirname.c_str());
 		if (pDirectory)
 		{
 			if (nSubDirCount >= MaxSubDirs)
 			{
-				LOGWARN ("Too many nested subdirectories: %s", sBankName);
+				LOGWARN("Too many nested subdirectories: %s", sBankName);
 				return;
 			}
-	
-			LOGDBG ("Processing subdirectory %s", sBankName);
+
+			LOGDBG("Processing subdirectory %s", sBankName);
 
 			dirent *pEntry;
-			while ((pEntry = readdir (pDirectory)) != nullptr)
+			while ((pEntry = readdir(pDirectory)) != nullptr)
 			{
-				LoadBank(Dirname.c_str (), pEntry->d_name, bHeaderlessSysExVoices, nSubDirCount+1);
+				LoadBank(Dirname.c_str(), pEntry->d_name, bHeaderlessSysExVoices, nSubDirCount + 1);
 			}
-			closedir (pDirectory);
+			closedir(pDirectory);
 		}
 		else
 		{
-			LOGWARN ("%s: Invalid filename format", sBankName);
+			LOGWARN("%s: Invalid filename format", sBankName);
 		}
 
 		return;
 	}
-	
+
 	// File and UI handling requires banks to be 1..indexed.
 	// Internally (and via MIDI) we need 0..indexed.
 	// Any mention of a BankID internally is assumed to be 0..indexed.
-	unsigned nBankIdx = nBank - 1;
+	int nBankIdx = nBank - 1;
 
 	// BankIdx goes from 0 to MaxVoiceBankID inclusive
 	if (nBankIdx > MaxVoiceBankID)
 	{
-		LOGWARN ("Bank #%u is not supported", nBank);
+		LOGWARN("Bank #%d is not supported", nBank);
 
 		return;
 	}
 
 	if (m_pVoiceBank[nBankIdx])
 	{
-		LOGWARN ("Bank #%u already loaded", nBank);
+		LOGWARN("Bank #%d already loaded", nBank);
 
 		return;
 	}
 
 	m_pVoiceBank[nBankIdx] = new TVoiceBank;
-	assert (m_pVoiceBank[nBankIdx]);
-	assert (sizeof(TVoiceBank) == VoiceSysExHdrSize + VoiceSysExSize);
+	assert(m_pVoiceBank[nBankIdx]);
+	assert(sizeof(TVoiceBank) == VoiceSysExHdrSize + VoiceSysExSize);
 
-	std::string Filename (sDirName);
+	std::string Filename(sDirName);
 	Filename += "/";
 	Filename += sBankName;
 
-	FILE *pFile = fopen (Filename.c_str (), "rb");
+	FILE *pFile = fopen(Filename.c_str(), "rb");
 	if (pFile)
 	{
 		bool bBankLoaded = false;
-		if (   fread (m_pVoiceBank[nBankIdx], VoiceSysExHdrSize+VoiceSysExSize, 1, pFile) == 1
-			&& m_pVoiceBank[nBankIdx]->StatusStart == 0xF0
-			&& m_pVoiceBank[nBankIdx]->CompanyID   == 0x43
-			&& m_pVoiceBank[nBankIdx]->Format      == 0x09
-			&& m_pVoiceBank[nBankIdx]->StatusEnd   == 0xF7)
+		if (fread(m_pVoiceBank[nBankIdx], VoiceSysExHdrSize + VoiceSysExSize, 1, pFile) == 1 && m_pVoiceBank[nBankIdx]->StatusStart == 0xF0 && m_pVoiceBank[nBankIdx]->CompanyID == 0x43 && m_pVoiceBank[nBankIdx]->Format == 0x09 && m_pVoiceBank[nBankIdx]->StatusEnd == 0xF7)
 		{
 			if (m_nBanksLoaded % 100 == 0)
 			{
-				LOGDBG ("Banks successfully loaded #%u", m_nBanksLoaded);
+				LOGDBG("Banks successfully loaded #%d", m_nBanksLoaded);
 			}
-			//LOGDBG ("Bank #%u successfully loaded", nBank);
+			// LOGDBG ("Bank #%d successfully loaded", nBank);
 
 			m_BankFileName[nBankIdx] = sBankName;
 			if (nBankIdx > m_nNumHighestBank)
@@ -201,24 +198,24 @@ void CSysExFileLoader::LoadBank (const char * sDirName, const char * sBankName, 
 		{
 			// Config says to accept headerless SysEx Voice Banks
 			// so reset file pointer and try again.
-			fseek (pFile, 0, SEEK_SET);
-			if (fread (m_pVoiceBank[nBankIdx]->Voice, VoiceSysExSize, 1, pFile) == 1)
+			fseek(pFile, 0, SEEK_SET);
+			if (fread(m_pVoiceBank[nBankIdx]->Voice, VoiceSysExSize, 1, pFile) == 1)
 			{
 				if (m_nBanksLoaded % 100 == 0)
 				{
-					LOGDBG ("Banks successfully loaded #%u", m_nBanksLoaded);
+					LOGDBG("Banks successfully loaded #%d", m_nBanksLoaded);
 				}
-				//LOGDBG ("Bank #%u successfully loaded (headerless)", nBank);
+				// LOGDBG ("Bank #%d successfully loaded (headerless)", nBank);
 
 				// Add in the missing header items.
 				// Naturally it isn't possible to validate these!
 				m_pVoiceBank[nBankIdx]->StatusStart = 0xF0;
-				m_pVoiceBank[nBankIdx]->CompanyID   = 0x43;
-				m_pVoiceBank[nBankIdx]->Format      = 0x09;
+				m_pVoiceBank[nBankIdx]->CompanyID = 0x43;
+				m_pVoiceBank[nBankIdx]->Format = 0x09;
 				m_pVoiceBank[nBankIdx]->ByteCountMS = 0x20;
 				m_pVoiceBank[nBankIdx]->ByteCountLS = 0x00;
-				m_pVoiceBank[nBankIdx]->Checksum    = 0x00;
-				m_pVoiceBank[nBankIdx]->StatusEnd   = 0xF7;
+				m_pVoiceBank[nBankIdx]->Checksum = 0x00;
+				m_pVoiceBank[nBankIdx]->StatusEnd = 0xF7;
 
 				m_BankFileName[nBankIdx] = sBankName;
 				if (nBankIdx > m_nNumHighestBank)
@@ -233,13 +230,13 @@ void CSysExFileLoader::LoadBank (const char * sDirName, const char * sBankName, 
 
 		if (!bBankLoaded)
 		{
-			LOGWARN ("%s: Invalid size or format", Filename.c_str ());
+			LOGWARN("%s: Invalid size or format", Filename.c_str());
 
 			delete m_pVoiceBank[nBankIdx];
 			m_pVoiceBank[nBankIdx] = nullptr;
 		}
 
-		fclose (pFile);
+		fclose(pFile);
 	}
 	else
 	{
@@ -248,20 +245,20 @@ void CSysExFileLoader::LoadBank (const char * sDirName, const char * sBankName, 
 	}
 }
 
-std::string CSysExFileLoader::GetBankName (unsigned nBankID)
+std::string CSysExFileLoader::GetBankName(int nBankID)
 {
 	if (nBankID <= MaxVoiceBankID)
 	{
 		std::string Result = m_BankFileName[nBankID];
 
-		size_t nLen = Result.length ();
+		size_t nLen = Result.length();
 		if (nLen > 4)
 		{
-			Result.resize (nLen-4);		// remove file extension
+			Result.resize(nLen - 4); // remove file extension
 
-			unsigned nBank;
-			char BankName[30+1];
-			if (sscanf (Result.c_str (), "%u_%30s", &nBank, BankName) == 2)
+			int nBank;
+			char BankName[30 + 1];
+			if (sscanf(Result.c_str(), "%d_%30s", &nBank, BankName) == 2)
 			{
 				Result = BankName;
 
@@ -273,7 +270,7 @@ std::string CSysExFileLoader::GetBankName (unsigned nBankID)
 	return "NO NAME";
 }
 
-std::string CSysExFileLoader::GetVoiceName (unsigned nBankID, unsigned nVoiceID)
+std::string CSysExFileLoader::GetVoiceName(int nBankID, int nVoiceID)
 {
 	if ((nBankID <= MaxVoiceBankID) && (nVoiceID < VoicesPerBank))
 	{
@@ -281,70 +278,69 @@ std::string CSysExFileLoader::GetVoiceName (unsigned nBankID, unsigned nVoiceID)
 		{
 			// The name is the last 10 characters of the voice data
 			char sVoiceName[11];
-			strncpy (sVoiceName, (char *)((char *)&(m_pVoiceBank[nBankID]->Voice[nVoiceID]) + SizePackedVoice - 10), 10);
+			memcpy(sVoiceName, &m_pVoiceBank[nBankID]->Voice[nVoiceID][SizePackedVoice - 10], 10);
 			sVoiceName[10] = 0;
-			std::string result(sVoiceName);
-			return result;
+			return std::string(sVoiceName);
 		}
 	}
 	return "INIT VOICE";
 }
 
-unsigned CSysExFileLoader::GetNextBankUp (unsigned nBankID)
+int CSysExFileLoader::GetNextBankUp(int nBankID)
 {
 	// Find the next loaded bank "up" from the provided bank ID
-	for (unsigned id=nBankID+1; id <= m_nNumHighestBank; id++)
+	for (int id = nBankID + 1; id <= m_nNumHighestBank; id++)
 	{
 		if (IsValidBank(id))
 		{
 			return id;
 		}
 	}
-	
+
 	// Handle wrap-around
-	for (unsigned id=0; id<nBankID; id++)
+	for (int id = 0; id < nBankID; id++)
 	{
 		if (IsValidBank(id))
 		{
 			return id;
 		}
 	}
-	
+
 	// If we get here there are no other banks!
 	return nBankID;
 }
 
-unsigned CSysExFileLoader::GetNextBankDown (unsigned nBankID)
+int CSysExFileLoader::GetNextBankDown(int nBankID)
 {
 	// Find the next loaded bank "down" from the provided bank ID
-	for (int id=((int)nBankID)-1; id >= 0; id--)
-	{
-		if (IsValidBank((unsigned)id))
-		{
-			return id;
-		}
-	}
-
-	// Handle wrap-around
-	for (unsigned id=m_nNumHighestBank; id>nBankID; id--)
+	for (int id = nBankID - 1; id >= 0; id--)
 	{
 		if (IsValidBank(id))
 		{
 			return id;
 		}
 	}
-	
+
+	// Handle wrap-around
+	for (int id = m_nNumHighestBank; id > nBankID; id--)
+	{
+		if (IsValidBank(id))
+		{
+			return id;
+		}
+	}
+
 	// If we get here there are no other banks!
 	return nBankID;
 }
 
-bool CSysExFileLoader::IsValidBank (unsigned nBankID)
+bool CSysExFileLoader::IsValidBank(int nBankID)
 {
 	if (m_pVoiceBank[nBankID])
 	{
 		// Use a valid "status start/end" as an indicator of a valid loaded bank
 		if ((m_pVoiceBank[nBankID]->StatusStart == 0xF0) &&
-			(m_pVoiceBank[nBankID]->StatusEnd == 0xF7))
+		    (m_pVoiceBank[nBankID]->StatusEnd == 0xF7))
 		{
 			return true;
 		}
@@ -352,19 +348,18 @@ bool CSysExFileLoader::IsValidBank (unsigned nBankID)
 	return false;
 }
 
-unsigned CSysExFileLoader::GetNumHighestBank (void)
+int CSysExFileLoader::GetNumHighestBank()
 {
 	return m_nNumHighestBank;
 }
 
-void CSysExFileLoader::GetVoice (unsigned nBankID, unsigned nVoiceID, uint8_t *pVoiceData)
+void CSysExFileLoader::GetVoice(int nBankID, int nVoiceID, uint8_t *pVoiceData)
 {
-	if (   nBankID <= MaxVoiceBankID
-	    && nVoiceID <= VoicesPerBank)
+	if (nBankID <= MaxVoiceBankID && nVoiceID <= VoicesPerBank)
 	{
 		if (IsValidBank(nBankID))
 		{
-			DecodePackedVoice (m_pVoiceBank[nBankID]->Voice[nVoiceID], pVoiceData);
+			DecodePackedVoice(m_pVoiceBank[nBankID]->Voice[nVoiceID], pVoiceData);
 
 			return;
 		}
@@ -376,29 +371,29 @@ void CSysExFileLoader::GetVoice (unsigned nBankID, unsigned nVoiceID, uint8_t *p
 			{
 				extern const uint8_t voices_bank[1][32][156];
 
-				memcpy (pVoiceData, voices_bank[0][nVoiceID], SizeSingleVoice);
+				memcpy(pVoiceData, voices_bank[0][nVoiceID], SizeSingleVoice);
 
 				return;
 			}
 		}
 	}
 
-	memcpy (pVoiceData, s_DefaultVoice, SizeSingleVoice);
+	memcpy(pVoiceData, s_DefaultVoice, SizeSingleVoice);
 }
 
 // See: https://github.com/bwhitman/learnfm/blob/master/dx7db.py
-void CSysExFileLoader::DecodePackedVoice (const uint8_t *pPackedData, uint8_t *pDecodedData)
+void CSysExFileLoader::DecodePackedVoice(const uint8_t *pPackedData, uint8_t *pDecodedData)
 {
 	const uint8_t *p = pPackedData;
 	uint8_t *o = pDecodedData;
 
-	memset (o, 0, 156);
+	memset(o, 0, 156);
 
-	for (unsigned op = 0; op < 6; op++)
+	for (int op = 0; op < 6; op++)
 	{
-		memcpy(&o[op*21], &p[op*17], 11);
+		memcpy(&o[op * 21], &p[op * 17], 11);
 
-		uint8_t leftrightcurves = p[op*17+11];
+		uint8_t leftrightcurves = p[op * 17 + 11];
 		o[op * 21 + 11] = leftrightcurves & 3;
 		o[op * 21 + 12] = (leftrightcurves >> 2) & 3;
 
@@ -417,20 +412,20 @@ void CSysExFileLoader::DecodePackedVoice (const uint8_t *pPackedData, uint8_t *p
 		o[op * 21 + 19] = p[op * 17 + 16];
 	}
 
-	memcpy (&o[126], &p[102], 9);
+	memcpy(&o[126], &p[102], 9);
 	uint8_t oks_fb = p[111];
 	o[135] = oks_fb & 7;
 	o[136] = oks_fb >> 3;
-	memcpy (&o[137], &p[112], 4);
+	memcpy(&o[137], &p[112], 4);
 	uint8_t lpms_lfw_lks = p[116];
 	o[141] = lpms_lfw_lks & 1;
 	o[142] = (lpms_lfw_lks >> 1) & 7;
 	o[143] = lpms_lfw_lks >> 4;
-	memcpy (&o[144], &p[117], 11);
+	memcpy(&o[144], &p[117], 11);
 	o[155] = 0x3f;
 
 	// Clamp the unpacked patches to a known max.
-	static uint8_t maxes[] =
+	static const uint8_t maxes[] =
 	{
 		99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, // osc6
 		3, 3, 7, 3, 7, 99, 1, 31, 99, 14,
@@ -450,7 +445,7 @@ void CSysExFileLoader::DecodePackedVoice (const uint8_t *pPackedData, uint8_t *p
 		127 // operator on/off
 	};
 
-	for (unsigned i = 0; i < 156; i++)
+	for (int i = 0; i < 156; i++)
 	{
 		if (o[i] > maxes[i])
 		{
