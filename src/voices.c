@@ -4,6 +4,7 @@
 //
 #include <stdint.h>
 
+// clang-format off
 const uint8_t voices_bank[1][32][156] =
 {
 	{
@@ -713,3 +714,4 @@ const uint8_t voices_bank[1][32][156] =
 		}
 	}
 };
+// clang-format on
