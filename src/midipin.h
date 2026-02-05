@@ -24,24 +24,23 @@
 // Normal GPIO pins are below 100.
 // So use a "pin number" of 128 + MIDI CC message for a "MIDI Pin"
 #define MIDI_PINS 128
-#define ccToMidiPin(c) (((c)==0)?0:((c)+MIDI_PINS))
-#define MidiPinToCC(p) (((p)>=MIDI_PINS)?((p)-MIDI_PINS):0)
-#define isMidiPin(p)   (((p)>=MIDI_PINS)?1:0)
+#define ccToMidiPin(c) (((c) == 0) ? 0 : ((c) + MIDI_PINS))
+#define MidiPinToCC(p) (((p) >= MIDI_PINS) ? ((p) - MIDI_PINS) : 0)
+#define isMidiPin(p) (((p) >= MIDI_PINS) ? 1 : 0)
 
 #define MIDIPIN_CENTER 64
 
 class CMIDIPin
 {
 public:
-	CMIDIPin (unsigned nPinNumber);  // pinNumber = ccToMidiPin (MIDI CC number)
-	~CMIDIPin (void);
+	CMIDIPin(unsigned nPinNumber); // pinNumber = ccToMidiPin (MIDI CC number)
 
 	// Will return the value written to
-	unsigned Read (void);
+	int Read();
 
-	void Write (unsigned nValue);
+	void Write(int nValue);
 
 private:
 	unsigned m_nPinNumber;
-	unsigned m_nValue;
+	int m_nValue;
 };
