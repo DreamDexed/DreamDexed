@@ -20,12 +20,14 @@
 
 #pragma once
 
-#include <synth_dexed.h>
-#include <circle/spinlock.h>
 #include <cstdint>
 
+#include <circle/spinlock.h>
+#include <compressor.h>
+#include <dexed.h>
+#include <synth_dexed.h>
+
 #include "effect_3bandeqmono.h"
-#include "compressor.h"
 
 #define DEXED_OP_ENABLE (DEXED_OP_OSC_DETUNE + 1)
 
@@ -35,76 +37,76 @@
 class CDexedAdapter : public Dexed
 {
 public:
-	CDexedAdapter (uint8_t maxnotes, unsigned samplerate):
-	Dexed (maxnotes, samplerate),
-	EQ {(float)samplerate},
-	Compr {(float)samplerate},
-	m_bCompressorEnable {}
+	CDexedAdapter(int maxnotes, unsigned samplerate) :
+	Dexed{static_cast<uint8_t>(maxnotes), samplerate},
+	EQ{static_cast<float>(samplerate)},
+	Compr{static_cast<float>(samplerate)},
+	m_bCompressorEnable{}
 	{
 	}
 
-	void loadVoiceParameters (uint8_t* data)
+	void loadVoiceParameters(uint8_t *data)
 	{
-		m_SpinLock.Acquire ();
-		Dexed::loadVoiceParameters (data);
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		Dexed::loadVoiceParameters(data);
+		m_SpinLock.Release();
 	}
 
-	void keyup (int16_t pitch)
+	void keyup(uint8_t pitch)
 	{
-		m_SpinLock.Acquire ();
-		Dexed::keyup (pitch);
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		Dexed::keyup(pitch);
+		m_SpinLock.Release();
 	}
 
-	void keydown (int16_t pitch, uint8_t velo)
+	void keydown(uint8_t pitch, uint8_t velo)
 	{
-		m_SpinLock.Acquire ();
-		Dexed::keydown (pitch, velo);
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		Dexed::keydown(pitch, velo);
+		m_SpinLock.Release();
 	}
 
-	void getSamples (float32_t* buffer, uint16_t n_samples)
+	void getSamples(float *buffer, int n_samples)
 	{
-		m_SpinLock.Acquire ();
-		Dexed::getSamples (buffer, n_samples);
+		m_SpinLock.Acquire();
+		Dexed::getSamples(buffer, static_cast<uint16_t>(n_samples));
 		EQ.process(buffer, n_samples);
 		if (m_bCompressorEnable)
 		{
-			Compr.doCompression (buffer, n_samples);
+			Compr.doCompression(buffer, static_cast<uint16_t>(n_samples));
 		}
-		m_SpinLock.Release ();
+		m_SpinLock.Release();
 	}
 
-	void ControllersRefresh (void)
+	void ControllersRefresh()
 	{
-		m_SpinLock.Acquire ();
-		Dexed::ControllersRefresh ();
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		Dexed::ControllersRefresh();
+		m_SpinLock.Release();
 	}
 
-	void setSustain (bool sustain)
+	void setSustain(bool sustain)
 	{
-		m_SpinLock.Acquire ();
-		Dexed::setSustain (sustain);
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		Dexed::setSustain(sustain);
+		m_SpinLock.Release();
 	}
 
 	void setCompressorEnable(bool enable)
 	{
-		m_SpinLock.Acquire ();
+		m_SpinLock.Acquire();
 		m_bCompressorEnable = enable;
-		m_SpinLock.Release ();
+		m_SpinLock.Release();
 	}
 
-	void resetState ()
+	void resetState()
 	{
-		m_SpinLock.Acquire ();
-		deactivate ();
-		resetFxState ();
-		EQ.resetState ();
-		Compr.resetStates ();
-		m_SpinLock.Release ();
+		m_SpinLock.Acquire();
+		deactivate();
+		resetFxState();
+		EQ.resetState();
+		Compr.resetStates();
+		m_SpinLock.Release();
 	}
 
 	AudioEffect3BandEQMono EQ;
