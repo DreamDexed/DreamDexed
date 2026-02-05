@@ -17,15 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 #include "pckeyboard.h"
-#include <circle/devicenameservice.h>
-#include <circle/util.h>
+
 #include <cassert>
+#include <cstdint>
+#include <cstring>
+
+#include <circle/device.h>
+#include <circle/devicenameservice.h>
+#include <circle/types.h>
+#include <circle/usb/usbkeyboard.h>
+#include <circle/util.h>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
 
 struct TKeyInfo
 {
-	char	KeyCode;	// upper case letter or digit
-	u8	KeyNumber;	// MIDI number
+	char KeyCode; // upper case letter or digit
+	uint8_t KeyNumber; // MIDI number
 };
 
 // KeyCode is valid for standard QWERTY keyboard
@@ -55,28 +67,28 @@ static TKeyInfo KeyTable[] =
 	{'3', 51}, // D#2
 	{'W', 50}, // D2
 	{'2', 49}, // C#2
-	{'Q', 48}  // C2
+	{'Q', 48}, // C2
 };
 
 CPCKeyboard *CPCKeyboard::s_pThis = 0;
 
-CPCKeyboard::CPCKeyboard (CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI)
-:	CMIDIDevice (pSynthesizer, pConfig, pUI),
-	m_pKeyboard (0)
+CPCKeyboard::CPCKeyboard(CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI) :
+CMIDIDevice(pSynthesizer, pConfig, pUI),
+m_pKeyboard(0)
 {
 	s_pThis = this;
 
-	memset (m_LastKeys, 0, sizeof m_LastKeys);
+	memset(m_LastKeys, 0, sizeof m_LastKeys);
 
-	AddDevice ("ukbd1");
+	AddDevice("ukbd1");
 }
 
-CPCKeyboard::~CPCKeyboard (void)
+CPCKeyboard::~CPCKeyboard(void)
 {
 	s_pThis = 0;
 }
 
-void CPCKeyboard::Process (boolean bPlugAndPlayUpdated)
+void CPCKeyboard::Process(bool bPlugAndPlayUpdated)
 {
 	if (!bPlugAndPlayUpdated)
 	{
@@ -86,32 +98,31 @@ void CPCKeyboard::Process (boolean bPlugAndPlayUpdated)
 	if (m_pKeyboard == 0)
 	{
 		m_pKeyboard =
-			(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
+		(CUSBKeyboardDevice *)CDeviceNameService::Get()->GetDevice("ukbd1", FALSE);
 		if (m_pKeyboard != 0)
 		{
-			m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
+			m_pKeyboard->RegisterKeyStatusHandlerRaw(KeyStatusHandlerRaw);
 
-			m_pKeyboard->RegisterRemovedHandler (DeviceRemovedHandler);
+			m_pKeyboard->RegisterRemovedHandler(DeviceRemovedHandler);
 		}
 	}
 }
 
-void CPCKeyboard::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6])
+void CPCKeyboard::KeyStatusHandlerRaw(unsigned char ucModifiers, const unsigned char RawKeys[6])
 {
-	assert (s_pThis != 0);
+	assert(s_pThis != 0);
 
 	// report released keys
 	for (unsigned i = 0; i < 6; i++)
 	{
 		u8 ucKeyCode = s_pThis->m_LastKeys[i];
-		if (   ucKeyCode != 0
-		    && !FindByte (RawKeys, ucKeyCode, 6))
+		if (ucKeyCode != 0 && !FindByte(RawKeys, ucKeyCode, 6))
 		{
-			u8 ucKeyNumber = GetKeyNumber (ucKeyCode);
+			u8 ucKeyNumber = GetKeyNumber(ucKeyCode);
 			if (ucKeyNumber != 0)
 			{
 				u8 NoteOff[] = {0x80, ucKeyNumber, 0};
-				s_pThis->MIDIMessageHandler (NoteOff, sizeof NoteOff);
+				s_pThis->MIDIMessageHandler(NoteOff, sizeof NoteOff);
 			}
 		}
 	}
@@ -119,36 +130,35 @@ void CPCKeyboard::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned
 	// report pressed keys
 	for (unsigned i = 0; i < 6; i++)
 	{
-		u8 ucKeyCode = RawKeys[i];
-		if (   ucKeyCode != 0
-		    && !FindByte (s_pThis->m_LastKeys, ucKeyCode, 6))
+		uint8_t ucKeyCode = RawKeys[i];
+		if (ucKeyCode != 0 && !FindByte(s_pThis->m_LastKeys, ucKeyCode, 6))
 		{
-			u8 ucKeyNumber = GetKeyNumber (ucKeyCode);
+			uint8_t ucKeyNumber = GetKeyNumber(ucKeyCode);
 			if (ucKeyNumber != 0)
 			{
-				u8 NoteOn[] = {0x90, ucKeyNumber, 100};
-				s_pThis->MIDIMessageHandler (NoteOn, sizeof NoteOn);
+				uint8_t NoteOn[] = {0x90, ucKeyNumber, 100};
+				s_pThis->MIDIMessageHandler(NoteOn, sizeof NoteOn);
 			}
 		}
 	}
 
-	memcpy (s_pThis->m_LastKeys, RawKeys, sizeof s_pThis->m_LastKeys);
+	memcpy(s_pThis->m_LastKeys, RawKeys, sizeof s_pThis->m_LastKeys);
 }
 
-u8 CPCKeyboard::GetKeyNumber (u8 ucKeyCode)
+uint8_t CPCKeyboard::GetKeyNumber(uint8_t ucKeyCode)
 {
 	char chKey;
 	if (0x04 <= ucKeyCode && ucKeyCode <= 0x1D)
 	{
-		chKey = ucKeyCode-'\x04'+'A';	// key code of 'A' is 0x04
+		chKey = ucKeyCode - '\x04' + 'A'; // key code of 'A' is 0x04
 	}
 	else if (0x1E <= ucKeyCode && ucKeyCode <= 0x26)
 	{
-		chKey = ucKeyCode-'\x1E'+'1';	// key code of '1' is 0x1E
+		chKey = ucKeyCode - '\x1E' + '1'; // key code of '1' is 0x1E
 	}
 	else if (ucKeyCode == 0x36)
 	{
-		chKey = ',';			// key code of ',' is 0x36
+		chKey = ','; // key code of ',' is 0x36
 	}
 	else
 	{
@@ -166,7 +176,7 @@ u8 CPCKeyboard::GetKeyNumber (u8 ucKeyCode)
 	return 0;
 }
 
-boolean CPCKeyboard::FindByte (const u8 *pBuffer, u8 ucByte, unsigned nLength)
+bool CPCKeyboard::FindByte(const uint8_t *pBuffer, uint8_t ucByte, unsigned nLength)
 {
 	while (nLength-- > 0)
 	{
@@ -179,8 +189,8 @@ boolean CPCKeyboard::FindByte (const u8 *pBuffer, u8 ucByte, unsigned nLength)
 	return FALSE;
 }
 
-void CPCKeyboard::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
+void CPCKeyboard::DeviceRemovedHandler(CDevice *pDevice, void *pContext)
 {
-	assert (s_pThis != 0);
+	assert(s_pThis != 0);
 	s_pThis->m_pKeyboard = 0;
 }
