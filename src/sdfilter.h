@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 #include <string>
 
 struct SDFilter
 {
-	enum class Type : uint8_t {
+	enum class Type : uint8_t
+	{
 		None,
 		TGLink,
 		TG,
@@ -21,7 +23,7 @@ struct SDFilter
 
 	static SDFilter to_filter(unsigned nValue, unsigned nTGNum)
 	{
-		assert (nValue <= get_maximum(nTGNum));
+		assert(nValue <= get_maximum(nTGNum));
 
 		if (nValue == 0) return {Type::None, 0};
 		if (nValue >= 1 && nValue <= 4) return {Type::TGLink, (uint8_t)nValue};
@@ -33,10 +35,14 @@ struct SDFilter
 	{
 		switch (type)
 		{
-		case Type::None: return "None";
-		case Type::TGLink: return std::string("TG-Link ") + (char)('A' + param - 1);
-		case Type::TG: return std::string("TG ") + std::to_string(param + 1);
-		default: return std::string("MIDI Ch ") + std::to_string(param + 1);
+		case Type::None:
+			return "None";
+		case Type::TGLink:
+			return std::string("TG-Link ") + (char)('A' + param - 1);
+		case Type::TG:
+			return std::string("TG ") + std::to_string(param + 1);
+		default:
+			return std::string("MIDI Ch ") + std::to_string(param + 1);
 		}
 	}
 };
