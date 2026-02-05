@@ -21,11 +21,13 @@
 //
 #pragma once
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+
 #include <circle/macros.h>
 
-class CSysExFileLoader		// Loader for DX7 .syx files
+class CSysExFileLoader // Loader for DX7 .syx files
 {
 public:
 	static const unsigned MaxVoiceBankID = 16383; // i.e. 14-bit MSB/LSB value between 0 and 16383
@@ -38,50 +40,49 @@ public:
 
 	struct TVoiceBank
 	{
-		uint8_t StatusStart;	// 0xF0
-		uint8_t CompanyID;	// 0x43
-		uint8_t SubStatus;	// 0x00
-		uint8_t Format;		// 0x09
-		uint8_t ByteCountMS;	// 0x20
-		uint8_t ByteCountLS;	// 0x00
+		uint8_t StatusStart; // 0xF0
+		uint8_t CompanyID; // 0x43
+		uint8_t SubStatus; // 0x00
+		uint8_t Format; // 0x09
+		uint8_t ByteCountMS; // 0x20
+		uint8_t ByteCountLS; // 0x00
 
 		uint8_t Voice[VoicesPerBank][SizePackedVoice];
 
 		uint8_t Checksum;
-		uint8_t StatusEnd;	// 0xF7
-	}
-	PACKED;
+		uint8_t StatusEnd; // 0xF7
+	} PACKED;
 
 public:
-	CSysExFileLoader (const char *pDirName = "/sysex");
-	~CSysExFileLoader (void);
+	CSysExFileLoader(const char *pDirName = "/sysex");
+	~CSysExFileLoader(void);
 
-	void Load (bool bHeaderlessSysExVoices = false);
+	void Load(bool bHeaderlessSysExVoices = false);
 
-	std::string GetBankName (unsigned nBankID);	// 0 .. MaxVoiceBankID
-	std::string GetVoiceName (unsigned nBankID, unsigned nVoice); // 0 .. MaxVoiceBankID, 0 .. VoicesPerBank-1
-	unsigned GetNumHighestBank (); // 0 .. MaxVoiceBankID
-	bool     IsValidBank (unsigned nBankID);
-	unsigned GetNextBankUp (unsigned nBankID);
-	unsigned GetNextBankDown (unsigned nBankID);
+	std::string GetBankName(unsigned nBankID); // 0 .. MaxVoiceBankID
+	std::string GetVoiceName(unsigned nBankID, unsigned nVoice); // 0 .. MaxVoiceBankID, 0 .. VoicesPerBank-1
+	unsigned GetNumHighestBank(); // 0 .. MaxVoiceBankID
+	bool IsValidBank(unsigned nBankID);
+	unsigned GetNextBankUp(unsigned nBankID);
+	unsigned GetNextBankDown(unsigned nBankID);
 
-	void GetVoice (unsigned nBankID,		// 0 .. MaxVoiceBankID
-		       unsigned nVoiceID,		// 0 .. 31
-		       uint8_t *pVoiceData);		// returns unpacked format (156 bytes)
+	void GetVoice(unsigned nBankID, // 0 .. MaxVoiceBankID
+		      unsigned nVoiceID, // 0 .. 31
+		      uint8_t *pVoiceData); // returns unpacked format (156 bytes)
 
 private:
-	static void DecodePackedVoice (const uint8_t *pPackedData, uint8_t *pDecodedData);
+	static void DecodePackedVoice(const uint8_t *pPackedData, uint8_t *pDecodedData);
 
 private:
 	std::string m_DirName;
-	
+
 	unsigned m_nNumHighestBank;
 	unsigned m_nBanksLoaded;
 
-	TVoiceBank *m_pVoiceBank[MaxVoiceBankID+1];
-	std::string m_BankFileName[MaxVoiceBankID+1];
+	TVoiceBank *m_pVoiceBank[MaxVoiceBankID + 1];
+	std::string m_BankFileName[MaxVoiceBankID + 1];
 
 	static uint8_t s_DefaultVoice[SizeSingleVoice];
-	
-	void LoadBank (const char * sDirName, const char * sBankName, bool bHeaderlessSysExVoices, unsigned nSubDirCount);
+
+	void LoadBank(const char *sDirName, const char *sBankName, bool bHeaderlessSysExVoices, unsigned nSubDirCount);
 };
