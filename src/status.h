@@ -1,46 +1,47 @@
 #pragma once
 
 #include <atomic>
-#include <circle/timer.h>
+#include <cassert>
+
 #include <circle/cputhrottle.h>
+#include <circle/timer.h>
 
 class CStatus
 {
 public:
-	CStatus (unsigned nUpdateSecs = 3):
-	nCPUMaxTemp{CCPUThrottle::Get ()->GetMaxTemperature ()},
-	nCPUMaxClockRate{CCPUThrottle::Get ()->GetMaxClockRate ()},
-	m_nUpdateTicks{nUpdateSecs*CLOCKHZ},
+	CStatus(unsigned nUpdateSecs = 3) :
+	nCPUMaxTemp{CCPUThrottle::Get()->GetMaxTemperature()},
+	nCPUMaxClockRate{CCPUThrottle::Get()->GetMaxClockRate()},
+	m_nUpdateTicks{nUpdateSecs * CLOCKHZ},
 	m_nLastTicks{}
 	{
-		assert (s_pThis == 0);
+		assert(s_pThis == 0);
 		s_pThis = this;
-		assert (s_pThis != 0);
 	}
 
-	~CStatus ()
+	~CStatus()
 	{
 		s_pThis = 0;
 	}
 
-	void Update ()
+	void Update()
 	{
-		unsigned nTicks = CTimer::GetClockTicks ();
+		unsigned nTicks = CTimer::GetClockTicks();
 
 		if (nTicks - m_nLastTicks >= m_nUpdateTicks)
 		{
 			m_nLastTicks = nTicks;
 
-			CCPUThrottle *pCPUT = CCPUThrottle::Get ();
+			CCPUThrottle *pCPUT = CCPUThrottle::Get();
 
-			nCPUTemp = pCPUT->GetTemperature ();
-			nCPUClockRate = pCPUT->GetClockRate ();
+			nCPUTemp = pCPUT->GetTemperature();
+			nCPUClockRate = pCPUT->GetClockRate();
 		}
 	}
 
-	static CStatus *Get ()
+	static CStatus *Get()
 	{
-		assert (s_pThis != 0);
+		assert(s_pThis != 0);
 		return s_pThis;
 	}
 
