@@ -19,18 +19,18 @@
 //
 #pragma once
 
-#include <string>
 #include <circle/timer.h>
+#include <string>
 
 class CPerformanceTimer
 {
 public:
-	CPerformanceTimer (const char *pName, unsigned nDeadlineMicros = 0);
+	CPerformanceTimer(const char *pName, unsigned nDeadlineMicros = 0);
 
-	void Start (void);
-	void Stop (void);
+	void Start(void);
+	void Stop(void);
 
-	void Dump (unsigned nIntervalTicks = CLOCKHZ);
+	void Dump(unsigned nIntervalTicks = CLOCKHZ);
 
 private:
 	std::string m_Name;
