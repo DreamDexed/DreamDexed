@@ -21,27 +21,31 @@
 //
 #pragma once
 
-#if RASPPI==5
-#include <circle/sysconfig.h>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
+#include <circle/interrupt.h>
+#include <circle/sysconfig.h>
+#include <circle/usb/usb.h>
+
+#if RASPPI == 5
 #warning No support for USB Gadget Mode on RPI 5 yet
 class CUSBMiniDexedMIDIGadget
 {
 public:
-	CUSBMiniDexedMIDIGadget (CInterruptSystem *pInterruptSystem)
+	CUSBMiniDexedMIDIGadget(CInterruptSystem *pInterruptSystem)
 	{
 	}
 
-	~CUSBMiniDexedMIDIGadget (void)
+	~CUSBMiniDexedMIDIGadget()
 	{
 	}
 };
 #else
+
 #include <circle/usb/gadget/usbmidigadget.h>
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
-#include <circle/sysconfig.h>
-#include <assert.h>
 
 class CUSBMiniDexedMIDIGadget : public CUSBMIDIGadget
 {
@@ -49,18 +53,17 @@ private:
 #define MDSTRINGDESCRIPTORS 3
 	const char *const s_MiniDexedStringDescriptor[MDSTRINGDESCRIPTORS] =
 	{
-		"\x04\x03\x09\x04",		// Language ID
+		"\x04\x03\x09\x04", // Language ID
 		"probonopd",
-		"MiniDexed"
-	};
+		"MiniDexed"};
 
 public:
-	CUSBMiniDexedMIDIGadget (CInterruptSystem *pInterruptSystem)
-	: CUSBMIDIGadget (pInterruptSystem)
+	CUSBMiniDexedMIDIGadget(CInterruptSystem *pInterruptSystem) :
+	CUSBMIDIGadget{pInterruptSystem}
 	{
 	}
 
-	~CUSBMiniDexedMIDIGadget (void)
+	~CUSBMiniDexedMIDIGadget()
 	{
 		assert(0);
 	}
@@ -71,23 +74,23 @@ protected:
 	// This will only act on the DESCRIPOR_STRING.
 	// All other descriptors are returned from USBMIDIGadget.
 	//
-	const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) override
+	const void *GetDescriptor(uint16_t wValue, uint16_t wIndex, size_t *pLength) override
 	{
-		assert (pLength);
+		assert(pLength);
 
-		u8 uchDescIndex = wValue & 0xFF;
+		uint8_t uchDescIndex = wValue & 0xFF;
 
 		switch (wValue >> 8)
 		{
 		case DESCRIPTOR_STRING:
 			if (!uchDescIndex)
 			{
-				*pLength = (u8) s_MiniDexedStringDescriptor[0][0];
+				*pLength = (uint8_t)s_MiniDexedStringDescriptor[0][0];
 				return s_MiniDexedStringDescriptor[0];
 			}
 			else if (uchDescIndex < MDSTRINGDESCRIPTORS)
 			{
-				return CUSBMIDIGadget::ToStringDescriptor (s_MiniDexedStringDescriptor[uchDescIndex], pLength);
+				return CUSBMIDIGadget::ToStringDescriptor(s_MiniDexedStringDescriptor[uchDescIndex], pLength);
 			}
 			break;
 
