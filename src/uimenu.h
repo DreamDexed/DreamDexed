@@ -23,7 +23,9 @@
 #pragma once
 
 #include <string>
+
 #include <circle/timer.h>
+
 #include "config.h"
 
 class CMiniDexed;
@@ -32,7 +34,7 @@ class CUserInterface;
 class CUIMenu
 {
 private:
-	static const unsigned MaxMenuDepth = 6;
+	static constexpr int MaxMenuDepth = 6;
 
 public:
 	enum TMenuEvent
@@ -56,27 +58,27 @@ public:
 	};
 
 public:
-	CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig);
+	CUIMenu(CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig);
 
-	void EventHandler (TMenuEvent Event);
-	
+	void EventHandler(TMenuEvent Event);
+
 private:
-	typedef void TMenuHandler (CUIMenu *pUIMenu, TMenuEvent Event);
+	typedef void TMenuHandler(CUIMenu *pUIMenu, TMenuEvent Event);
 
 	struct TMenuItem
 	{
 		const char *Name;
 		TMenuHandler *Handler;
 		const TMenuItem *MenuItem;
-		unsigned Parameter;
-		TMenuHandler* OnSelect;
-		TMenuHandler* StepDown;
-		TMenuHandler* StepUp;
-		unsigned Parameter2;
+		int Parameter;
+		TMenuHandler *OnSelect;
+		TMenuHandler *StepDown;
+		TMenuHandler *StepUp;
+		int Parameter2;
 		bool ShowDirect;
 	};
 
-	typedef std::string TToString (int nValue, int nWidth);
+	typedef std::string TToString(int nValue, int nWidth);
 
 	struct TParameter
 	{
@@ -87,76 +89,75 @@ private:
 	};
 
 private:
-	static void MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditGlobalParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditOPParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void SavePerformance (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event); 	
-	static void PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void SavePerformanceNewFile (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditPerformanceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowVersion (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void MenuHandler(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditGlobalParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditVoiceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditProgramNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditVoiceParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditOPParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void SavePerformance(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameter2(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameterModulation(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void PerformanceMenu(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void SavePerformanceNewFile(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditPerformanceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUTemp(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUSpeed(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowIPAddr(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowVersion(CUIMenu *pUIMenu, TMenuEvent Event);
 
+	static std::string GetGlobalValueString(int nParameter, int nValue, int nWidth);
+	static std::string GetTGValueString(int nTGParameter, int nValue, int nWidth);
+	static std::string GetFXValueString(int nFXParameter, int nValue, int nWidth);
+	static std::string GetVoiceValueString(int nVoiceParameter, int nValue, int nWidth);
+	static std::string GetOPValueString(int nOPParameter, int nValue, int nWidth);
 
-	static std::string GetGlobalValueString (unsigned nParameter, int nValue, int nWidth);
-	static std::string GetTGValueString (unsigned nTGParameter, int nValue, int nWidth);
-	static std::string GetFXValueString (unsigned nFXParameter, int nValue, int nWidth);
-	static std::string GetVoiceValueString (unsigned nVoiceParameter, int nValue, int nWidth);
-	static std::string GetOPValueString (unsigned nOPParameter, int nValue, int nWidth);
+	static std::string ToSDFilter(int nValue, int nWidth);
 
-	static std::string ToSDFilter (int nValue, int nWidth);
+	void GlobalShortcutHandler(TMenuEvent Event);
+	void TGShortcutHandler(TMenuEvent Event);
+	void OPShortcutHandler(TMenuEvent Event);
 
-	void GlobalShortcutHandler (TMenuEvent Event);
-	void TGShortcutHandler (TMenuEvent Event);
-	void OPShortcutHandler (TMenuEvent Event);
+	void PgmUpDownHandler(TMenuEvent Event);
+	void BankUpDownHandler(TMenuEvent Event);
+	void TGUpDownHandler(TMenuEvent Event);
 
-	void PgmUpDownHandler (TMenuEvent Event);
-	void BankUpDownHandler (TMenuEvent Event);
-	void TGUpDownHandler (TMenuEvent Event);
+	static void TimerHandler(TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void TimerHandlerUpdate(TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
-	static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
-	static void TimerHandlerUpdate (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void InputTxt(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void TimerHandlerNoBack(TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
-	static void InputTxt (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void InputKeyDown(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void InputShiftKeyDown(CUIMenu *pUIMenu, TMenuEvent Event);
 
-	static void InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
-
-	static void SelectCurrentEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void StepDownEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void StepUpEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static bool FXSlotFilter (CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
+	static void SelectCurrentEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepDownEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepUpEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static bool FXSlotFilter(CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
 
 private:
 	CUserInterface *m_pUI;
 	CMiniDexed *m_pMiniDexed;
 	CConfig *m_pConfig;
-	
-	unsigned m_nToneGenerators;
+
+	int m_nToneGenerators;
 
 	const TMenuItem *m_pParentMenu;
 	const TMenuItem *m_pCurrentMenu;
-	unsigned m_nCurrentMenuItem;
-	unsigned m_nCurrentSelection;
-	unsigned m_nCurrentParameter;
+	int m_nCurrentMenuItem;
+	int m_nCurrentSelection;
+	int m_nCurrentParameter;
 
 	const TMenuItem *m_MenuStackParent[MaxMenuDepth];
 	const TMenuItem *m_MenuStackMenu[MaxMenuDepth];
-	unsigned m_nMenuStackItem[MaxMenuDepth];
-	unsigned m_nMenuStackSelection[MaxMenuDepth];
-	unsigned m_nMenuStackParameter[MaxMenuDepth];
-	unsigned m_nCurrentMenuDepth;
+	int m_nMenuStackItem[MaxMenuDepth];
+	int m_nMenuStackSelection[MaxMenuDepth];
+	int m_nMenuStackParameter[MaxMenuDepth];
+	int m_nCurrentMenuDepth;
 
 	static const TMenuItem s_MenuRoot[];
 	static const TMenuItem s_MainMenu[];
@@ -195,10 +196,10 @@ private:
 	static const TMenuItem s_EditNoteLimitMenu[];
 	static const TMenuItem s_PerformanceMenu[];
 	static const TMenuItem s_StatusMenu[];
-	
+
 	static const TMenuItem s_ModulationMenu[];
 	static const TMenuItem s_ModulationMenuParameters[];
-			
+
 	static const TMenuItem s_MIDIMenu[];
 
 	static TParameter s_GlobalParameter[];
@@ -210,13 +211,12 @@ private:
 	static const char s_MIDINoteName[128][9];
 	static const char s_MIDINoteShift[49][8];
 
-	std::string m_InputText="1234567890ABCD";
-	unsigned m_InputTextPosition=0;
-	unsigned m_InputTextChar=32;
-	bool m_bPerformanceDeleteMode=false;
-	bool m_bConfirmDeletePerformance=false;
-	unsigned m_nSelectedPerformanceID =0;
-	unsigned m_nSelectedPerformanceBankID =0;
-	bool m_bSplashShow=false;
-
+	std::string m_InputText = "1234567890ABCD";
+	unsigned m_InputTextPosition = 0;
+	int m_InputTextChar = 32;
+	bool m_bPerformanceDeleteMode = false;
+	bool m_bConfirmDeletePerformance = false;
+	int m_nSelectedPerformanceID = 0;
+	int m_nSelectedPerformanceBankID = 0;
+	bool m_bSplashShow = false;
 };
