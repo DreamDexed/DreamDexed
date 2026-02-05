@@ -22,150 +22,155 @@
 //
 #pragma once
 
-#include "config.h"
-#include <fatfs/ff.h>
+#include <cstdint>
+#include <string>
+
 #include <Properties/propertiesfatfsfile.h>
+#include <fatfs/ff.h>
+
+#include "config.h"
 #include "effect.h"
+
 #define NUM_VOICE_PARAM 156
 #define NUM_PERFORMANCES 128
 #define NUM_PERFORMANCE_BANKS 128
 
-class CPerformanceConfig	// Performance configuration
+class CPerformanceConfig // Performance configuration
 {
 public:
-	CPerformanceConfig (FATFS *pFileSystem);
-	~CPerformanceConfig (void);
-	
-	bool Init (unsigned nToneGenerators);
+	CPerformanceConfig(FATFS *pFileSystem);
+	~CPerformanceConfig(void);
 
-	bool Load (void);
+	bool Init(unsigned nToneGenerators);
 
-	bool Save (void);
+	bool Load(void);
+
+	bool Save(void);
 
 	// TG#
-	unsigned GetBankNumber (unsigned nTG) const;		// 0 .. 127
-	unsigned GetVoiceNumber (unsigned nTG) const;		// 0 .. 31
-	unsigned GetMIDIChannel (unsigned nTG) const;		// 0 .. 15, omni, off
-	unsigned GetSysExChannel (unsigned nTG) const;		// 0 .. 15
-	bool GetSysExEnable (unsigned nTG) const;
-	bool GetMIDIRxSustain (unsigned nTG) const;
-	bool GetMIDIRxPortamento (unsigned nTG) const;
-	bool GetMIDIRxSostenuto (unsigned nTG) const;
-	bool GetMIDIRxHold2 (unsigned nTG) const;
-	unsigned GetVolume (unsigned nTG) const;		// 0 .. 127
-	unsigned GetPan (unsigned nTG) const;			// 0 .. 127
-	int GetDetune (unsigned nTG) const;			// -99 .. 99
-	unsigned GetCutoff (unsigned nTG) const;		// 0 .. 99
-	unsigned GetResonance (unsigned nTG) const;		// 0 .. 99
-	unsigned GetNoteLimitLow (unsigned nTG) const;		// 0 .. 127
-	unsigned GetNoteLimitHigh (unsigned nTG) const;		// 0 .. 127
-	int GetNoteShift (unsigned nTG) const;			// -24 .. 24
-	unsigned GetFX1Send (unsigned nTG) const;	// 0 .. 99
-	unsigned GetFX2Send (unsigned nTG) const;	// 0 .. 99
-	unsigned GetPitchBendRange (unsigned nTG) const;		// 0 .. 12
-	unsigned GetPitchBendStep (unsigned nTG) const;		// 0 .. 12
-	unsigned GetPortamentoMode (unsigned nTG) const;		// 0 .. 1
-	unsigned GetPortamentoGlissando (unsigned nTG) const;		// 0 .. 1
-	unsigned GetPortamentoTime (unsigned nTG) const;		// 0 .. 99
-	bool GetMonoMode (unsigned nTG) const; 				// 0 .. 1
-	unsigned GetTGLink (unsigned nTG) const;		// 0 .. 4
-	
-	unsigned GetModulationWheelRange (unsigned nTG) const; // 0 .. 99
-	unsigned GetModulationWheelTarget (unsigned nTG) const; // 0 .. 7
-	unsigned GetFootControlRange (unsigned nTG) const; // 0 .. 99
-	unsigned GetFootControlTarget (unsigned nTG) const;  // 0 .. 7
-	unsigned GetBreathControlRange (unsigned nTG) const; // 0 .. 99
-	unsigned GetBreathControlTarget (unsigned nTG) const;  // 0 .. 7
-	unsigned GetAftertouchRange (unsigned nTG) const; // 0 .. 99
-	unsigned GetAftertouchTarget (unsigned nTG) const;  // 0 .. 7
+	unsigned GetBankNumber(unsigned nTG) const; // 0 .. 127
+	unsigned GetVoiceNumber(unsigned nTG) const; // 0 .. 31
+	unsigned GetMIDIChannel(unsigned nTG) const; // 0 .. 15, omni, off
+	unsigned GetSysExChannel(unsigned nTG) const; // 0 .. 15
+	bool GetSysExEnable(unsigned nTG) const;
+	bool GetMIDIRxSustain(unsigned nTG) const;
+	bool GetMIDIRxPortamento(unsigned nTG) const;
+	bool GetMIDIRxSostenuto(unsigned nTG) const;
+	bool GetMIDIRxHold2(unsigned nTG) const;
+	unsigned GetVolume(unsigned nTG) const; // 0 .. 127
+	unsigned GetPan(unsigned nTG) const; // 0 .. 127
+	int GetDetune(unsigned nTG) const; // -99 .. 99
+	unsigned GetCutoff(unsigned nTG) const; // 0 .. 99
+	unsigned GetResonance(unsigned nTG) const; // 0 .. 99
+	unsigned GetNoteLimitLow(unsigned nTG) const; // 0 .. 127
+	unsigned GetNoteLimitHigh(unsigned nTG) const; // 0 .. 127
+	int GetNoteShift(unsigned nTG) const; // -24 .. 24
+	unsigned GetFX1Send(unsigned nTG) const; // 0 .. 99
+	unsigned GetFX2Send(unsigned nTG) const; // 0 .. 99
+	unsigned GetPitchBendRange(unsigned nTG) const; // 0 .. 12
+	unsigned GetPitchBendStep(unsigned nTG) const; // 0 .. 12
+	unsigned GetPortamentoMode(unsigned nTG) const; // 0 .. 1
+	unsigned GetPortamentoGlissando(unsigned nTG) const; // 0 .. 1
+	unsigned GetPortamentoTime(unsigned nTG) const; // 0 .. 99
+	bool GetMonoMode(unsigned nTG) const; // 0 .. 1
+	unsigned GetTGLink(unsigned nTG) const; // 0 .. 4
 
-	bool GetCompressorEnable (unsigned nTG) const; 		// 0 .. 1
-	int GetCompressorPreGain (unsigned nTG) const;
-	int GetCompressorThresh (unsigned nTG) const;
-	unsigned GetCompressorRatio (unsigned nTG) const;
-	unsigned GetCompressorAttack (unsigned nTG) const;
-	unsigned GetCompressorRelease (unsigned nTG) const;
-	int GetCompressorMakeupGain (unsigned nTG) const;
+	unsigned GetModulationWheelRange(unsigned nTG) const; // 0 .. 99
+	unsigned GetModulationWheelTarget(unsigned nTG) const; // 0 .. 7
+	unsigned GetFootControlRange(unsigned nTG) const; // 0 .. 99
+	unsigned GetFootControlTarget(unsigned nTG) const; // 0 .. 7
+	unsigned GetBreathControlRange(unsigned nTG) const; // 0 .. 99
+	unsigned GetBreathControlTarget(unsigned nTG) const; // 0 .. 7
+	unsigned GetAftertouchRange(unsigned nTG) const; // 0 .. 99
+	unsigned GetAftertouchTarget(unsigned nTG) const; // 0 .. 7
 
-	void SetBankNumber (unsigned nValue, unsigned nTG);
-	void SetVoiceNumber (unsigned nValue, unsigned nTG);
-	void SetMIDIChannel (unsigned nValue, unsigned nTG);
-	void SetSysExChannel (unsigned nValue, unsigned nTG);
-	void SetSysExEnable (bool bValue, unsigned nTG);
-	void SetMIDIRxSustain (bool bValue, unsigned nTG);
-	void SetMIDIRxPortamento (bool bValue, unsigned nTG);
-	void SetMIDIRxSostenuto (bool bValue, unsigned nTG);
-	void SetMIDIRxHold2 (bool bValue, unsigned nTG);
-	void SetVolume (unsigned nValue, unsigned nTG);
-	void SetPan (unsigned nValue, unsigned nTG);
-	void SetDetune (int nValue, unsigned nTG);
-	void SetCutoff (unsigned nValue, unsigned nTG);
-	void SetResonance (unsigned nValue, unsigned nTG);
-	void SetNoteLimitLow (unsigned nValue, unsigned nTG);
-	void SetNoteLimitHigh (unsigned nValue, unsigned nTG);
-	void SetNoteShift (int nValue, unsigned nTG);
-	void SetFX1Send (unsigned nValue, unsigned nTG);
-	void SetFX2Send (unsigned nValue, unsigned nTG);
-	void SetPitchBendRange (unsigned nValue, unsigned nTG);
-	void SetPitchBendStep (unsigned nValue, unsigned nTG);
-	void SetPortamentoMode (unsigned nValue, unsigned nTG);
-	void SetPortamentoGlissando (unsigned nValue, unsigned nTG);
-	void SetPortamentoTime (unsigned nValue, unsigned nTG);
-	void SetVoiceDataToTxt (const uint8_t *pData, unsigned nTG); 
-	uint8_t *GetVoiceDataFromTxt (unsigned nTG);
-	void SetMonoMode (bool bOKValue, unsigned nTG); 
-	void SetTGLink (unsigned nTGLink, unsigned nTG);
+	bool GetCompressorEnable(unsigned nTG) const; // 0 .. 1
+	int GetCompressorPreGain(unsigned nTG) const;
+	int GetCompressorThresh(unsigned nTG) const;
+	unsigned GetCompressorRatio(unsigned nTG) const;
+	unsigned GetCompressorAttack(unsigned nTG) const;
+	unsigned GetCompressorRelease(unsigned nTG) const;
+	int GetCompressorMakeupGain(unsigned nTG) const;
 
-	void SetModulationWheelRange (unsigned nValue, unsigned nTG);
-	void SetModulationWheelTarget (unsigned nValue, unsigned nTG);
-	void SetFootControlRange (unsigned nValue, unsigned nTG);
-	void SetFootControlTarget (unsigned nValue, unsigned nTG);
-	void SetBreathControlRange (unsigned nValue, unsigned nTG);
-	void SetBreathControlTarget (unsigned nValue, unsigned nTG);
-	void SetAftertouchRange (unsigned nValue, unsigned nTG);
-	void SetAftertouchTarget (unsigned nValue, unsigned nTG);
+	void SetBankNumber(unsigned nValue, unsigned nTG);
+	void SetVoiceNumber(unsigned nValue, unsigned nTG);
+	void SetMIDIChannel(unsigned nValue, unsigned nTG);
+	void SetSysExChannel(unsigned nValue, unsigned nTG);
+	void SetSysExEnable(bool bValue, unsigned nTG);
+	void SetMIDIRxSustain(bool bValue, unsigned nTG);
+	void SetMIDIRxPortamento(bool bValue, unsigned nTG);
+	void SetMIDIRxSostenuto(bool bValue, unsigned nTG);
+	void SetMIDIRxHold2(bool bValue, unsigned nTG);
+	void SetVolume(unsigned nValue, unsigned nTG);
+	void SetPan(unsigned nValue, unsigned nTG);
+	void SetDetune(int nValue, unsigned nTG);
+	void SetCutoff(unsigned nValue, unsigned nTG);
+	void SetResonance(unsigned nValue, unsigned nTG);
+	void SetNoteLimitLow(unsigned nValue, unsigned nTG);
+	void SetNoteLimitHigh(unsigned nValue, unsigned nTG);
+	void SetNoteShift(int nValue, unsigned nTG);
+	void SetFX1Send(unsigned nValue, unsigned nTG);
+	void SetFX2Send(unsigned nValue, unsigned nTG);
+	void SetPitchBendRange(unsigned nValue, unsigned nTG);
+	void SetPitchBendStep(unsigned nValue, unsigned nTG);
+	void SetPortamentoMode(unsigned nValue, unsigned nTG);
+	void SetPortamentoGlissando(unsigned nValue, unsigned nTG);
+	void SetPortamentoTime(unsigned nValue, unsigned nTG);
+	void SetVoiceDataToTxt(const uint8_t *pData, unsigned nTG);
+	uint8_t *GetVoiceDataFromTxt(unsigned nTG);
+	void SetMonoMode(bool bOKValue, unsigned nTG);
+	void SetTGLink(unsigned nTGLink, unsigned nTG);
 
-	void SetCompressorEnable (bool nValue, unsigned nTG);
-	void SetCompressorPreGain (int nValue, unsigned nTG);
-	void SetCompressorThresh (int nValue, unsigned nTG);
-	void SetCompressorRatio (unsigned nValue, unsigned nTG);	
-	void SetCompressorAttack (unsigned nValue, unsigned nTG);
-	void SetCompressorRelease (unsigned nValue, unsigned nTG);	
-	void SetCompressorMakeupGain (int nValue, unsigned nTG);
+	void SetModulationWheelRange(unsigned nValue, unsigned nTG);
+	void SetModulationWheelTarget(unsigned nValue, unsigned nTG);
+	void SetFootControlRange(unsigned nValue, unsigned nTG);
+	void SetFootControlTarget(unsigned nValue, unsigned nTG);
+	void SetBreathControlRange(unsigned nValue, unsigned nTG);
+	void SetBreathControlTarget(unsigned nValue, unsigned nTG);
+	void SetAftertouchRange(unsigned nValue, unsigned nTG);
+	void SetAftertouchTarget(unsigned nValue, unsigned nTG);
 
-	int GetEQLow (unsigned nTG) const;
-	int GetEQMid (unsigned nTG) const;
-	int GetEQHigh (unsigned nTG) const;
-	int GetEQGain (unsigned nTG) const;
-	unsigned GetEQLowMidFreq (unsigned nTG) const;
-	unsigned GetEQMidHighFreq (unsigned nTG) const;
-	unsigned GetEQPreLowcut (unsigned nTG) const;
-	unsigned GetEQPreHighcut (unsigned nTG) const;
+	void SetCompressorEnable(bool nValue, unsigned nTG);
+	void SetCompressorPreGain(int nValue, unsigned nTG);
+	void SetCompressorThresh(int nValue, unsigned nTG);
+	void SetCompressorRatio(unsigned nValue, unsigned nTG);
+	void SetCompressorAttack(unsigned nValue, unsigned nTG);
+	void SetCompressorRelease(unsigned nValue, unsigned nTG);
+	void SetCompressorMakeupGain(int nValue, unsigned nTG);
 
-	void SetEQLow (int nValue, unsigned nTG);
-	void SetEQMid (int nValue, unsigned nTG);
-	void SetEQHigh (int nValue, unsigned nTG);
-	void SetEQGain (int nValue, unsigned nTG);
-	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
-	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
-	void SetEQPreLowcut (unsigned nValue, unsigned nTG);
-	void SetEQPreHighcut (unsigned nValue, unsigned nTG);
+	int GetEQLow(unsigned nTG) const;
+	int GetEQMid(unsigned nTG) const;
+	int GetEQHigh(unsigned nTG) const;
+	int GetEQGain(unsigned nTG) const;
+	unsigned GetEQLowMidFreq(unsigned nTG) const;
+	unsigned GetEQMidHighFreq(unsigned nTG) const;
+	unsigned GetEQPreLowcut(unsigned nTG) const;
+	unsigned GetEQPreHighcut(unsigned nTG) const;
+
+	void SetEQLow(int nValue, unsigned nTG);
+	void SetEQMid(int nValue, unsigned nTG);
+	void SetEQHigh(int nValue, unsigned nTG);
+	void SetEQGain(int nValue, unsigned nTG);
+	void SetEQLowMidFreq(unsigned nValue, unsigned nTG);
+	void SetEQMidHighFreq(unsigned nValue, unsigned nTG);
+	void SetEQPreLowcut(unsigned nValue, unsigned nTG);
+	void SetEQPreHighcut(unsigned nValue, unsigned nTG);
 
 	// Effects
-	int GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const;
-	void SetFXParameter (FX::TFXParameter nParameter, int nValue, unsigned nFX);
+	int GetFXParameter(FX::TFXParameter nParameter, unsigned nFX) const;
+	void SetFXParameter(FX::TFXParameter nParameter, int nValue, unsigned nFX);
 
-	unsigned GetMixerDryLevel () const;
-	void SetMixerDryLevel (unsigned nValue);
+	unsigned GetMixerDryLevel() const;
+	void SetMixerDryLevel(unsigned nValue);
 
-	unsigned GetFXBypass () const;
-	void SetFXBypass (unsigned nValue);
+	unsigned GetFXBypass() const;
+	void SetFXBypass(unsigned nValue);
 
 	bool VoiceDataFilled(unsigned nTG);
-	bool ListPerformances(); 
-	//std::string m_DirName;
-	void SetNewPerformance (unsigned nID);
-	unsigned FindFirstPerformance (void);
+	bool ListPerformances();
+	// std::string m_DirName;
+	void SetNewPerformance(unsigned nID);
+	unsigned FindFirstPerformance(void);
 	std::string GetPerformanceFileName(unsigned nID);
 	std::string GetPerformanceFullFilePath(unsigned nID);
 	std::string GetPerformanceName(unsigned nID);
@@ -176,7 +181,7 @@ public:
 	void SetActualPerformanceBankID(unsigned nBankID);
 	unsigned GetActualPerformanceBankID();
 	bool CreateNewPerformanceFile(void);
-	bool GetInternalFolderOk(); 
+	bool GetInternalFolderOk();
 	std::string GetNewPerformanceDefaultName(void);
 	void SetNewPerformanceName(const std::string &Name);
 	bool DeletePerformance(unsigned nID);
@@ -184,7 +189,7 @@ public:
 	std::string AddPerformanceBankDirName(unsigned nBankID);
 	bool IsValidPerformance(unsigned nID);
 
-	bool ListPerformanceBanks(void); 
+	bool ListPerformanceBanks(void);
 	void SetNewPerformanceBank(unsigned nBankID);
 	unsigned GetPerformanceBank(void);
 	std::string GetPerformanceBankName(unsigned nBankID);
@@ -192,7 +197,7 @@ public:
 
 private:
 	CPropertiesFatFsFile m_Properties;
-	
+
 	unsigned m_nToneGenerators;
 
 	unsigned m_nBankNumber[CConfig::AllToneGenerators];
@@ -219,19 +224,19 @@ private:
 	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoGlissando[CConfig::AllToneGenerators];
 	unsigned m_nPortamentoTime[CConfig::AllToneGenerators];
-	std::string m_nVoiceDataTxt[CConfig::AllToneGenerators]; 
-	bool m_bMonoMode[CConfig::AllToneGenerators]; 
+	std::string m_nVoiceDataTxt[CConfig::AllToneGenerators];
+	bool m_bMonoMode[CConfig::AllToneGenerators];
 	unsigned m_nTGLink[CConfig::AllToneGenerators];
 
 	unsigned m_nModulationWheelRange[CConfig::AllToneGenerators];
 	unsigned m_nModulationWheelTarget[CConfig::AllToneGenerators];
-	unsigned m_nFootControlRange[CConfig::AllToneGenerators];	
-	unsigned m_nFootControlTarget[CConfig::AllToneGenerators];	
-	unsigned m_nBreathControlRange[CConfig::AllToneGenerators];	
-	unsigned m_nBreathControlTarget[CConfig::AllToneGenerators];	
-	unsigned m_nAftertouchRange[CConfig::AllToneGenerators];	
+	unsigned m_nFootControlRange[CConfig::AllToneGenerators];
+	unsigned m_nFootControlTarget[CConfig::AllToneGenerators];
+	unsigned m_nBreathControlRange[CConfig::AllToneGenerators];
+	unsigned m_nBreathControlTarget[CConfig::AllToneGenerators];
+	unsigned m_nAftertouchRange[CConfig::AllToneGenerators];
 	unsigned m_nAftertouchTarget[CConfig::AllToneGenerators];
-	
+
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
@@ -249,18 +254,18 @@ private:
 	unsigned m_nEQPreLowcut[CConfig::AllToneGenerators];
 	unsigned m_nEQPreHighcut[CConfig::AllToneGenerators];
 
-	unsigned m_nLastPerformance;  
-	unsigned m_nActualPerformance = 0;  
-	unsigned m_nActualPerformanceBank = 0;  
+	unsigned m_nLastPerformance;
+	unsigned m_nActualPerformance = 0;
+	unsigned m_nActualPerformanceBank = 0;
 	unsigned m_nPerformanceBank;
-	unsigned m_nLastPerformanceBank;  
-	bool     m_bPerformanceDirectoryExists;
-	//unsigned nMenuSelectedPerformance = 0; 
+	unsigned m_nLastPerformanceBank;
+	bool m_bPerformanceDirectoryExists;
+	// unsigned nMenuSelectedPerformance = 0;
 	std::string m_PerformanceFileName[NUM_PERFORMANCES];
 	std::string m_PerformanceBankName[NUM_PERFORMANCE_BANKS];
-	FATFS *m_pFileSystem; 
+	FATFS *m_pFileSystem;
 
-	std::string NewPerformanceName="";
+	std::string NewPerformanceName = "";
 
 	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];
 
