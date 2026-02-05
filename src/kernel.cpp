@@ -18,87 +18,93 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/logger.h>
-#include <circle/synchronize.h>
-#include <circle/gpiopin.h>
+
 #include <cassert>
+
+#include <circle/cputhrottle.h>
+#include <circle/gpiopin.h>
+#include <circle/logger.h>
+#include <circle/machineinfo.h>
+#include <circle/spimaster.h>
+#include <circle/synchronize.h>
 #include <circle/usb/usbhcidevice.h>
+
+#include "circle_stdlib_app.h"
+#include "minidexed.h"
 #include "usbminidexedmidigadget.h"
 
-#define NET_DEVICE_TYPE		NetDeviceTypeWLAN		// or: NetDeviceTypeWLAN
-
-LOGMODULE ("kernel");
+LOGMODULE("kernel");
 
 CKernel *CKernel::s_pThis = 0;
 
-CKernel::CKernel (void)
-:	
-	CStdlibAppStdio ("minidexed"),
-	m_Config (&mFileSystem),
-	m_GPIOManager (&mInterrupt),
- 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
-	m_pSPIMaster (nullptr),
-	m_pDexed (0)
+CKernel::CKernel() :
+CStdlibAppStdio{"minidexed"},
+m_Config{&mFileSystem},
+m_GPIOManager{&mInterrupt},
+m_I2CMaster{CMachineInfo::Get()->GetDevice(DeviceI2CMaster), true},
+m_pSPIMaster{},
+m_pDexed{}
 {
 	s_pThis = this;
 
 	// mActLED.Blink (5);	// show we are alive
 }
 
-CKernel::~CKernel(void)
+CKernel::~CKernel()
 {
 	s_pThis = 0;
 }
 
-static void SystemThrottledHandler (TSystemThrottledState CurrentState, void *pParam)
+static void SystemThrottledHandler(TSystemThrottledState CurrentState, void *pParam)
 {
-	LOGNOTE ("System Throttled");
+	LOGNOTE("System Throttled");
 
 	if (CurrentState & SystemStateUnderVoltageOccurred)
-		LOGNOTE ("SystemStateUnderVoltageOccurred");
+		LOGNOTE("SystemStateUnderVoltageOccurred");
 	if (CurrentState & SystemStateFrequencyCappingOccurred)
-		LOGNOTE ("SystemStateFrequencyCappingOccurred");
+		LOGNOTE("SystemStateFrequencyCappingOccurred");
 	if (CurrentState & SystemStateThrottlingOccurred)
-		LOGNOTE ("SystemStateThrottlingOccurred");
+		LOGNOTE("SystemStateThrottlingOccurred");
 	if (CurrentState & SystemStateSoftTempLimitOccurred)
-		LOGNOTE ("SystemStateSoftTempLimitOccurred");
+		LOGNOTE("SystemStateSoftTempLimitOccurred");
 
-	CCPUThrottle::Get ()->DumpStatus ();
+	CCPUThrottle::Get()->DumpStatus();
 }
 
-bool CKernel::Initialize (void)
+bool CKernel::Initialize()
 {
-	if (!CStdlibAppStdio::Initialize ())
+	if (!CStdlibAppStdio::Initialize())
 	{
-		return FALSE;
+		return false;
 	}
 
-	mLogger.RegisterPanicHandler (PanicHandler);
+	mLogger.RegisterPanicHandler(PanicHandler);
 
-	if (!m_GPIOManager.Initialize ())
+	if (!m_GPIOManager.Initialize())
 	{
-		return FALSE;
+		return false;
 	}
 
-	if (!m_I2CMaster.Initialize ())
+	if (!m_I2CMaster.Initialize())
 	{
-		return FALSE;
+		return false;
 	}
 
-	m_Config.Load ();
+	m_Config.Load();
 
-	m_CPUThrottle.DumpStatus ();
-	if (m_Config.GetLogThrottling ())
+	m_CPUThrottle.DumpStatus();
+	if (m_Config.GetLogThrottling())
 	{
-		m_CPUThrottle.RegisterSystemThrottledHandler ( SystemStateUnderVoltageOccurred |
-			SystemStateFrequencyCappingOccurred | SystemStateThrottlingOccurred |
-			SystemStateSoftTempLimitOccurred, SystemThrottledHandler, 0);
+		m_CPUThrottle.RegisterSystemThrottledHandler(SystemStateUnderVoltageOccurred |
+							     SystemStateFrequencyCappingOccurred | SystemStateThrottlingOccurred |
+							     SystemStateSoftTempLimitOccurred,
+							     SystemThrottledHandler, 0);
 	}
 
 	unsigned nSPIMaster = m_Config.GetSPIBus();
 	unsigned nSPIMode = m_Config.GetSPIMode();
-	unsigned long nSPIClock = 1000 * m_Config.GetSPIClockKHz();
-#if RASPPI<4
+	unsigned nSPIClock = 1000 * m_Config.GetSPIClockKHz();
+#if RASPPI < 4
 	// By default older RPI versions use SPI 0.
 	// It is possible to build circle to support SPI 1 for
 	// devices that use the 40-pin header, but that isn't
@@ -113,7 +119,7 @@ bool CKernel::Initialize (void)
 	{
 		unsigned nCPHA = (nSPIMode & 1) ? 1 : 0;
 		unsigned nCPOL = (nSPIMode & 2) ? 1 : 0;
-		m_pSPIMaster = new CSPIMaster (nSPIClock, nCPOL, nCPHA, nSPIMaster);
+		m_pSPIMaster = new CSPIMaster(nSPIClock, nCPOL, nCPHA, nSPIMaster);
 		if (!m_pSPIMaster->Initialize())
 		{
 			delete (m_pSPIMaster);
@@ -148,65 +154,65 @@ bool CKernel::Initialize (void)
 	{
 		if (bUSBGadgetMode)
 		{
-#if RASPPI==5
+#if RASPPI == 5
 #warning No support for USB Gadget Mode on RPI 5 yet
 #else
 			// Run the USB stack in USB Gadget (device) mode
-			m_pUSB = new CUSBMiniDexedMIDIGadget (&mInterrupt);
+			m_pUSB = new CUSBMiniDexedMIDIGadget(&mInterrupt);
 #endif
 		}
 		else
 		{
 			// Run the USB stack in USB Host (default) mode
-			m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, TRUE);
+			m_pUSB = new CUSBHCIDevice(&mInterrupt, &mTimer, true);
 		}
 		m_Config.SetUSBGadgetMode(bUSBGadgetMode);
 
-		if (!m_pUSB->Initialize ())
+		if (!m_pUSB->Initialize())
 		{
-			return FALSE;
+			return false;
 		}
 	}
-	
-	m_pDexed = new CMiniDexed (&m_Config, &mInterrupt, &m_GPIOManager, &m_I2CMaster, m_pSPIMaster,
-				   &mFileSystem);
-	assert (m_pDexed);
 
-	if (!m_pDexed->Initialize ())
+	m_pDexed = new CMiniDexed(&m_Config, &mInterrupt, &m_GPIOManager, &m_I2CMaster, m_pSPIMaster,
+				  &mFileSystem);
+	assert(m_pDexed);
+
+	if (!m_pDexed->Initialize())
 	{
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
-CStdlibApp::TShutdownMode CKernel::Run (void)
+CStdlibApp::TShutdownMode CKernel::Run(void)
 {
-	assert (m_pDexed);
+	assert(m_pDexed);
 
 	while (42 == 42)
 	{
-		boolean bUpdated = m_pUSB->UpdatePlugAndPlay ();
+		bool bUpdated = m_pUSB->UpdatePlugAndPlay();
 
 		m_pDexed->Process(bUpdated);
 
 		if (mbScreenAvailable)
 		{
-			mScreen.Update ();
+			mScreen.Update();
 		}
 
-		m_CPUThrottle.Update ();
+		m_CPUThrottle.Update();
 	}
 
 	return ShutdownHalt;
 }
 
-void CKernel::PanicHandler (void)
+void CKernel::PanicHandler(void)
 {
-	EnableIRQs ();
+	EnableIRQs();
 
 	if (s_pThis->mbScreenAvailable)
 	{
-		s_pThis->mScreen.Update (4096);
+		s_pThis->mScreen.Update(4096);
 	}
 }
