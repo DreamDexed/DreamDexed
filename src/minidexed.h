@@ -176,9 +176,6 @@ public:
 	unsigned GetPerformanceBank();
 	unsigned GetLastPerformanceBank();
 	unsigned GetActualPerformanceID();
-	void SetActualPerformanceID(unsigned nID);
-	unsigned GetActualPerformanceBankID();
-	void SetActualPerformanceBankID(unsigned nBankID);
 	bool SetNewPerformance(unsigned nID);
 	bool SetNewPerformanceBank(unsigned nBankID);
 	void SetFirstPerformance(void);

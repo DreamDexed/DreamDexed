@@ -1349,26 +1349,9 @@ unsigned CPerformanceConfig::GetLastPerformanceBank()
 	return m_nLastPerformanceBank;
 }
 
-unsigned CPerformanceConfig::GetActualPerformanceID()
+unsigned CPerformanceConfig::GetPerformanceID()
 {
-	return m_nActualPerformance;
-}
-
-void CPerformanceConfig::SetActualPerformanceID(unsigned nID)
-{
-	assert(nID < NUM_PERFORMANCES);
-	m_nActualPerformance = nID;
-}
-
-unsigned CPerformanceConfig::GetActualPerformanceBankID()
-{
-	return m_nActualPerformanceBank;
-}
-
-void CPerformanceConfig::SetActualPerformanceBankID(unsigned nBankID)
-{
-	assert(nBankID < NUM_PERFORMANCE_BANKS);
-	m_nActualPerformanceBank = nBankID;
+	return m_nPerformance;
 }
 
 bool CPerformanceConfig::GetInternalFolderOk()
@@ -1472,7 +1455,7 @@ bool CPerformanceConfig::CreateNewPerformanceFile(void)
 	}
 
 	m_nLastPerformance = nNewPerformance;
-	m_nActualPerformance = nNewPerformance;
+	m_nPerformance = nNewPerformance;
 	new (&m_Properties) CPropertiesFatFsFile(nFileName.c_str(), m_pFileSystem);
 
 	return true;
@@ -1572,7 +1555,7 @@ bool CPerformanceConfig::ListPerformances()
 void CPerformanceConfig::SetNewPerformance(unsigned nID)
 {
 	assert(nID < NUM_PERFORMANCES);
-	m_nActualPerformance = nID;
+	m_nPerformance = nID;
 	std::string FileN = GetPerformanceFullFilePath(nID);
 
 	new (&m_Properties) CPropertiesFatFsFile(FileN.c_str(), m_pFileSystem);
@@ -1632,7 +1615,7 @@ bool CPerformanceConfig::DeletePerformance(unsigned nID)
 		if (Result == FR_OK)
 		{
 			SetNewPerformance(0);
-			m_nActualPerformance = 0;
+			m_nPerformance = 0;
 			// nMenuSelectedPerformance=0;
 			m_PerformanceFileName[nID].clear();
 			// If this was the last performance in the bank...
@@ -1757,7 +1740,6 @@ void CPerformanceConfig::SetNewPerformanceBank(unsigned nBankID)
 		LOGNOTE("Selecting Performance Bank: %d", nBankID + 1);
 #endif
 		m_nPerformanceBank = nBankID;
-		m_nActualPerformanceBank = nBankID;
 		ListPerformances();
 	}
 	else
@@ -1768,7 +1750,7 @@ void CPerformanceConfig::SetNewPerformanceBank(unsigned nBankID)
 	}
 }
 
-unsigned CPerformanceConfig::GetPerformanceBank(void)
+unsigned CPerformanceConfig::GetPerformanceBankID(void)
 {
 	return m_nPerformanceBank;
 }
