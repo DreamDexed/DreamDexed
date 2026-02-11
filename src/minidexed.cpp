@@ -487,6 +487,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 	}
 
 	m_PCKeyboard.Process(bPlugAndPlayUpdated);
+	pScheduler->Yield();
 
 	if (m_bUseSerial)
 	{
@@ -501,14 +502,12 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		DoSavePerformance();
 
 		m_bSavePerformance = false;
-		pScheduler->Yield();
 	}
 
 	if (m_bSavePerformanceNewFile)
 	{
 		DoSavePerformanceNewFile();
 		m_bSavePerformanceNewFile = false;
-		pScheduler->Yield();
 	}
 
 	if (m_bSetNewPerformanceBank)
@@ -527,7 +526,6 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		{
 			DoSetFirstPerformance();
 		}
-		pScheduler->Yield();
 	}
 
 	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank)
@@ -549,20 +547,17 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 			m_bSetNewPerformance = false;
 			m_bVolRampedDown = false;
 		}
-		pScheduler->Yield();
 	}
 
 	if (m_bDeletePerformance)
 	{
 		DoDeletePerformance();
 		m_bDeletePerformance = false;
-		pScheduler->Yield();
 	}
 
 	if (m_bProfileEnabled)
 	{
 		m_GetChunkTimer.Dump();
-		pScheduler->Yield();
 	}
 
 	m_Status.Update();
