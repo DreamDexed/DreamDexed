@@ -184,7 +184,6 @@ public:
 
 	bool DoSavePerformanceNewFile(void);
 	bool DoSetNewPerformance(void);
-	bool DoSetNewPerformanceBank(void);
 	bool GetPerformanceSelectToLoad(void);
 	bool SavePerformance(bool bSaveAsDeault);
 	unsigned GetPerformanceSelectChannel(void);
