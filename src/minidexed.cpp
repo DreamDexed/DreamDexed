@@ -547,11 +547,8 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 			fx_chain[nFX]->resetState();
 		}
 
-		if (m_nSetNewPerformanceID == GetActualPerformanceID())
-		{
-			m_bSetNewPerformance = false;
-			m_bVolRampedDown = false;
-		}
+		m_bSetNewPerformance = false;
+		m_bVolRampedDown = false;
 	}
 
 	if (m_bDeletePerformance)
