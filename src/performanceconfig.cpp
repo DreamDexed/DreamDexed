@@ -576,6 +576,8 @@ bool CPerformanceConfig::Save(void)
 
 		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
 		{
+			if (Bus::s_Parameter[nParam].Flags & Bus::Flag::UIOnly) continue;
+
 			PropertyName.Format("Bus%u%s", nBus + 1, Bus::s_Parameter[nParam].Name);
 			m_Properties.SetSignedNumber(PropertyName, m_nBusParameter[nBus][nParam]);
 		}
@@ -1741,6 +1743,7 @@ void CPerformanceConfig::SetNewPerformanceBank(unsigned nBankID)
 #endif
 		m_nPerformanceBank = nBankID;
 		ListPerformances();
+		m_nPerformance = NUM_PERFORMANCES;
 	}
 	else
 	{

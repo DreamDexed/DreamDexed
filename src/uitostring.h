@@ -33,3 +33,4 @@ std::string ToPortaMode(int nValue, int nWidth);
 std::string ToPortaGlissando(int nValue, int nWidth);
 std::string ToPolyMono(int nValue, int nWidth);
 std::string ToTGLinkName(int nValue, int nWidth);
+std::string ToLoadType(int nValue, int nWidth);

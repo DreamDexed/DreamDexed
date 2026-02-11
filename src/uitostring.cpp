@@ -338,3 +338,18 @@ std::string ToTGLinkName(int nValue, int nWidth)
 	if (nValue == 0) return "-";
 	return std::string{(char)(nValue + 'A' - 1)};
 }
+
+std::string ToLoadType(int nValue, int nWidth)
+{
+	switch (nValue)
+	{
+	case 0:
+		return "Full Bus";
+	case 1:
+		return "Bus TG Only";
+	case 2:
+		return "Bus FX Only";
+	default:
+		return std::to_string(nValue);
+	}
+}

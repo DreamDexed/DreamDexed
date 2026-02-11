@@ -78,6 +78,7 @@ public:
 
 	CSysExFileLoader *GetSysExFileLoader(void);
 	CPerformanceConfig *GetPerformanceConfig(void);
+	CPerformanceConfig *GetBusPerformanceConfig(unsigned nBus);
 
 	void BankSelect(unsigned nBank, unsigned nTG);
 	void BankSelectPerformance(unsigned nBank);
@@ -215,7 +216,7 @@ public:
 	void SetFXParameter(FX::Parameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
 	int GetFXParameter(FX::Parameter Parameter, unsigned nFX);
 
-	void SetBusParameter(Bus::Parameter Parameter, int nValue, unsigned nBus);
+	void SetBusParameter(Bus::Parameter Parameter, int nValue, unsigned nBus, bool bSaveOnly = false);
 	int GetBusParameter(Bus::Parameter Parameter, unsigned nBus);
 
 	// Must match the order in CUIMenu::TGParameter
@@ -314,7 +315,8 @@ public:
 private:
 	int16_t ApplyNoteLimits(int16_t pitch, unsigned nTG); // returns < 0 to ignore note
 	uint8_t m_uchOPMask[CConfig::AllToneGenerators];
-	void LoadPerformanceParameters(void);
+	void LoadPerformanceParameters();
+	void LoadPerformanceParameters(CPerformanceConfig *config, unsigned nBusFrom, unsigned nBusCount, unsigned nBusTarget, unsigned LoadType, unsigned nChannelTarget);
 	void ProcessSound(void);
 	const char *GetNetworkDeviceShortName() const;
 
@@ -407,6 +409,8 @@ private:
 	CSysExFileLoader m_SysExFileLoader;
 	CPerformanceConfig m_PerformanceConfig;
 
+	CPerformanceConfig *m_BusPerformanceConfig[CConfig::Buses];
+
 	CMIDIKeyboard *m_pMIDIKeyboard[CConfig::MaxUSBMIDIDevices];
 	CPCKeyboard m_PCKeyboard;
 	CSerialMIDIDevice m_SerialMIDI;
@@ -456,8 +460,10 @@ private:
 	bool m_bSavePerformance;
 	bool m_bSavePerformanceNewFile;
 	bool m_bSetNewPerformance;
+	bool m_bSetNewBusPerformance;
 	unsigned m_nSetNewPerformanceID;
 	bool m_bSetNewPerformanceBank;
+	bool m_bSetNewBusPerformanceBank;
 	unsigned m_nSetNewPerformanceBankID;
 	bool m_bSetFirstPerformance;
 	bool m_bDeletePerformance;
