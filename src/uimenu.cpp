@@ -2482,7 +2482,7 @@ void CUIMenu::PerformanceMenu(CUIMenu *pUIMenu, TMenuEvent Event)
 
 	unsigned nLastPerformanceBank = pUIMenu->m_pMiniDexed->GetLastPerformanceBank();
 	unsigned nBankValue = pUIMenu->m_nSelectedPerformanceBankID;
-	unsigned nBankStart = nValue;
+	unsigned nBankStart = nBankValue;
 
 	if (pUIMenu->m_pMiniDexed->IsValidPerformance(nValue) != true)
 	{
