@@ -522,11 +522,6 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 	{
 		m_PerformanceConfig.SetNewPerformanceBank(m_nSetNewPerformanceBankID);
 
-		if (m_nSetNewPerformanceBankID == m_PerformanceConfig.GetPerformanceBankID())
-		{
-			m_bSetNewPerformanceBank = false;
-		}
-
 		// If there is no pending SetNewPerformance already, then see if we need to find the first performance to load
 		// NB: If called from the UI, then there will not be a SetNewPerformance, so load the first existing one.
 		//     If called from MIDI, there will probably be a SetNewPerformance alongside the Bank select.
@@ -534,6 +529,8 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		{
 			DoSetFirstPerformance();
 		}
+
+		m_bSetNewPerformanceBank = false;
 	}
 
 	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank)
