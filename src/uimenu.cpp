@@ -60,7 +60,7 @@ const CUIMenu::TMenuItem CUIMenu::s_MenuRoot[] =
 };
 
 // inserting menu items before "TG1" affect TGShortcutHandler()
-const CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
+CUIMenu::TMenuItem CUIMenu::s_MainMenu[] =
 {
 	{"TG1", MenuHandler, s_TGMenu, 0},
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -893,6 +893,25 @@ m_nCurrentMenuDepth(0)
 		m_nMenuStackParameter[0] = 0;
 	}
 
+	for (unsigned n = 0; n < sizeof s_MainMenu / sizeof *s_MainMenu; ++n)
+	{
+		TMenuItem *pItem = &s_MainMenu[n];
+
+		if (pItem->MenuItem == s_TGMenu && pItem->Parameter >= m_nToneGenerators)
+			pItem->Skip = true;
+
+		if (pItem->MenuItem == s_BusMenu && pItem->Parameter >= m_nToneGenerators / 8)
+			pItem->Skip = true;
+	}
+
+	for (unsigned n = 0; n < sizeof s_MixerMenu / sizeof *s_MixerMenu; ++n)
+	{
+		TMenuItem *pItem = &s_MixerMenu[n];
+
+		if (pItem->nBus >= m_nToneGenerators / 8)
+			pItem->Name = 0;
+	}
+
 	if (m_pConfig->GetEncoderEnabled())
 	{
 		s_GlobalParameter[CMiniDexed::ParameterMasterVolume].Increment = 1;
@@ -975,6 +994,8 @@ void CUIMenu::EventHandler(TMenuEvent Event)
 
 void CUIMenu::MenuHandler(CUIMenu *pUIMenu, TMenuEvent Event)
 {
+	unsigned nCurrentSelection = pUIMenu->m_nCurrentSelection;
+
 	switch (Event)
 	{
 	case MenuEventUpdate:
@@ -1015,30 +1036,32 @@ void CUIMenu::MenuHandler(CUIMenu *pUIMenu, TMenuEvent Event)
 			break;
 		}
 
-		if (pUIMenu->m_nCurrentSelection == 0)
+		while (true)
 		{
-			// If in main mennu, wrap around
-			if (pUIMenu->m_pCurrentMenu == s_MainMenu)
+			if (nCurrentSelection == 0)
 			{
-				// Find last entry with a name
-				while (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection + 1].Name)
+				while (pUIMenu->m_pCurrentMenu[nCurrentSelection].Name)
 				{
-					pUIMenu->m_nCurrentSelection++;
+					nCurrentSelection++;
 				}
+				break;
 			}
+
+			nCurrentSelection--;
+
+			// Might need to trim menu if number of TGs is configured to be less than the maximum supported
+			if (!pUIMenu->m_pCurrentMenu[nCurrentSelection].Skip)
+				break;
 		}
-		else if (pUIMenu->m_nCurrentSelection > 0)
+
+		if (pUIMenu->m_pCurrentMenu[nCurrentSelection].Name)
 		{
-			pUIMenu->m_nCurrentSelection--;
+			pUIMenu->m_nCurrentSelection = nCurrentSelection;
 		}
-		// Might need to trim menu if number of TGs is configured to be less than the maximum supported
-		while ((pUIMenu->m_pCurrentMenu == s_MainMenu) && (pUIMenu->m_nCurrentSelection > 0) &&
-		       ( // Skip any unused menus
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].MenuItem == s_TGMenu) &&
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Parameter >= pUIMenu->m_nToneGenerators) &&
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Parameter < CConfig::AllToneGenerators)))
+		else if (pUIMenu->m_pCurrentMenu == s_MainMenu)
 		{
-			pUIMenu->m_nCurrentSelection--;
+			// If in main menu, wrap around
+			pUIMenu->m_nCurrentSelection = nCurrentSelection - 1;
 		}
 		break;
 
@@ -1049,28 +1072,26 @@ void CUIMenu::MenuHandler(CUIMenu *pUIMenu, TMenuEvent Event)
 			break;
 		}
 
-		++pUIMenu->m_nCurrentSelection;
-		if (!pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Name) // more entries?
+		while (true)
 		{
-			if (pUIMenu->m_pCurrentMenu == s_MainMenu)
-			{
-				// If in main mennu, wrap around
-				pUIMenu->m_nCurrentSelection = 0;
-			}
-			else
-			{
-				// Return to last known good item
-				pUIMenu->m_nCurrentSelection--;
-			}
+			nCurrentSelection++;
+
+			if (!pUIMenu->m_pCurrentMenu[nCurrentSelection].Name)
+				break;
+
+			// Might need to trim menu if number of TGs is configured to be less than the maximum supported
+			if (!pUIMenu->m_pCurrentMenu[nCurrentSelection].Skip)
+				break;
 		}
-		// Might need to trim menu if number of TGs is configured to be less than the maximum supported
-		while ((pUIMenu->m_pCurrentMenu == s_MainMenu) && (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection + 1].Name) &&
-		       ( // Skip any unused TG menus
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].MenuItem == s_TGMenu) &&
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Parameter >= pUIMenu->m_nToneGenerators) &&
-		       (pUIMenu->m_pCurrentMenu[pUIMenu->m_nCurrentSelection].Parameter < CConfig::AllToneGenerators)))
+
+		if (pUIMenu->m_pCurrentMenu[nCurrentSelection].Name)
 		{
-			pUIMenu->m_nCurrentSelection++;
+			pUIMenu->m_nCurrentSelection = nCurrentSelection;
+		}
+		else if (pUIMenu->m_pCurrentMenu == s_MainMenu)
+		{
+			// If in main mennu, wrap around
+			pUIMenu->m_nCurrentSelection = 0;
 		}
 		break;
 
