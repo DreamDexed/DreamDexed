@@ -78,6 +78,7 @@ private:
 		int8_t nBus;
 		int8_t idFX;
 		bool ShowDirect;
+		bool Skip;
 	};
 
 	typedef std::string TToString(int nValue, int nWidth);
@@ -165,7 +166,7 @@ private:
 	int m_nCurrentMenuDepth;
 
 	static const TMenuItem s_MenuRoot[];
-	static const TMenuItem s_MainMenu[];
+	static TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_BusMenu[];
@@ -173,7 +174,7 @@ private:
 	static const TMenuItem s_SendFXMenu[];
 	static const TMenuItem s_MasterFXMenu[];
 	static const TMenuItem s_FXListMenu[];
-	static const TMenuItem s_MixerMenu[];
+	static TMenuItem s_MixerMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ZynDistortionMenu[];
 	static const TMenuItem s_YKChorusMenu[];
