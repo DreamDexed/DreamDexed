@@ -17,82 +17,122 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 #include "minidexed.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <string>
+
+#include <circle/gpiopin.h>
+#include <circle/i2cmaster.h>
+#include <circle/interrupt.h>
 #include <circle/logger.h>
 #include <circle/memory.h>
-#include <circle/sound/pwmsoundbasedevice.h>
-#include <circle/sound/i2ssoundbasedevice.h>
-#include <circle/sound/hdmisoundbasedevice.h>
-#include <circle/net/syslogdaemon.h>
+#include <circle/memorymap.h>
+#include <circle/multicore.h>
 #include <circle/net/ipaddress.h>
-#include <circle/gpiopin.h>
-#include <cstring>
-#include <cstdio>
-#include <cassert>
-#include "arm_float_to_q23.h"
-#include "arm_scale_zip_f32.h"
-#include "arm_zip_f32.h"
+#include <circle/net/netsubsystem.h>
+#include <circle/net/syslogdaemon.h>
+#include <circle/netdevice.h>
+#include <circle/sched/scheduler.h>
+#include <circle/sound/hdmisoundbasedevice.h>
+#include <circle/sound/i2ssoundbasedevice.h>
+#include <circle/sound/pwmsoundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
+#include <circle/spimaster.h>
+#include <circle/string.h>
+#include <circle/synchronize.h>
+#include <dsp/basic_math_functions.h>
+#include <fatfs/ff.h>
+#include <wlan/bcm4343.h>
+#include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
+
+#include "arm/arm_float_to_q23.h"
+#include "arm/arm_scale_zip_f32.h"
+#include "arm/arm_zip_f32.h"
+#include "bus.h"
+#include "common.h"
+#include "config.h"
+#include "dexedadapter.h"
+#include "effect.h"
+#include "effect_chain.h"
+#include "effect_compressor.h"
+#include "effect_dreamdelay.h"
+#include "effect_mixer.hpp"
+#include "midi.h"
+#include "mididevice.h"
+#include "midikeyboard.h"
+#include "net/ftpdaemon.h"
+#include "net/mdnspublisher.h"
+#include "performanceconfig.h"
+#include "sdfilter.h"
+#include "status.h"
+#include "sysexfileloader.h"
+#include "udpmididevice.h"
 
 const char WLANFirmwarePath[] = "SD:firmware/";
-const char WLANConfigFile[]   = "SD:wpa_supplicant.conf";
+const char WLANConfigFile[] = "SD:wpa_supplicant.conf";
 #define FTPUSERNAME "admin"
 #define FTPPASSWORD "admin"
 
-LOGMODULE ("minidexed");
+LOGMODULE("minidexed");
 
-CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
-			CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, FATFS *pFileSystem)
-:
+CMiniDexed::CMiniDexed(CConfig *pConfig, CInterruptSystem *pInterrupt,
+		       CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, FATFS *pFileSystem) :
 #ifdef ARM_ALLOW_MULTI_CORE
-	CMultiCoreSupport (CMemorySystem::Get ()),
+CMultiCoreSupport(CMemorySystem::Get()),
 #endif
-	m_pConfig (pConfig),
-	m_pTG {},
-	m_UI (this, pGPIOManager, pI2CMaster, pSPIMaster, pConfig),
-	m_PerformanceConfig (pFileSystem),
-	m_pMIDIKeyboard {},
-	m_PCKeyboard (this, pConfig, &m_UI),
-	m_SerialMIDI (this, pInterrupt, pConfig, &m_UI),
-	m_fMasterVolume{},
-	m_fMasterVolumeW(0),
-	m_SDFilter{},
-	m_bUseSerial (false),
-	m_bQuadDAC8Chan (false),
-	m_pSoundDevice (nullptr),
-	m_bChannelsSwapped (pConfig->GetChannelsSwapped ()),
+m_pConfig(pConfig),
+m_pTG{},
+m_UI(this, pGPIOManager, pI2CMaster, pSPIMaster, pConfig),
+m_PerformanceConfig(pFileSystem),
+m_BusPerformanceConfig{},
+m_pMIDIKeyboard{},
+m_PCKeyboard(this, pConfig, &m_UI),
+m_SerialMIDI(this, pInterrupt, pConfig, &m_UI),
+m_fMasterVolume{},
+m_fMasterVolumeW(0),
+m_SDFilter{},
+m_bUseSerial(false),
+m_bQuadDAC8Chan(false),
+m_pSoundDevice(nullptr),
+m_bChannelsSwapped(pConfig->GetChannelsSwapped()),
 #ifdef ARM_ALLOW_MULTI_CORE
-//	m_nActiveTGsLog2 (0),
+// m_nActiveTGsLog2(0),
 #endif
-	m_nLastKeyDown{},
-	m_GetChunkTimer ("GetChunk",
-			 1000000U * pConfig->GetChunkSize ()/2 / pConfig->GetSampleRate ()),
-	m_bProfileEnabled (m_pConfig->GetProfileEnabled ()),
-	fx_chain {},
-	tg_mixer {},
-	sendfx_mixer {},
-	m_pNet(nullptr),
-	m_pNetDevice(nullptr),
-	m_WLAN(nullptr),
-	m_WPASupplicant(nullptr),
-	m_bNetworkReady(false),
-	m_bNetworkInit(false),
-	m_UDPMIDI(nullptr),
-	m_pFTPDaemon(nullptr),
-	m_pmDNSPublisher (nullptr),
-	m_bSavePerformance (false),
-	m_bSavePerformanceNewFile (false),
-	m_bSetNewPerformance (false),
-	m_bSetNewPerformanceBank (false),
-	m_bSetFirstPerformance (false),
-	m_bDeletePerformance (false),
-	m_bLoadPerformanceBusy(false),
-	m_bLoadPerformanceBankBusy(false),
-	m_bVolRampDownWait{},
-	m_bVolRampedDown{},
-	m_fRamp{10.0f / pConfig->GetSampleRate()}
+m_nLastKeyDown{},
+m_GetChunkTimer("GetChunk", 1000000U * pConfig->GetChunkSize() / 2 / pConfig->GetSampleRate()),
+m_bProfileEnabled(m_pConfig->GetProfileEnabled()),
+fx_chain{},
+bus_mixer{},
+sendfx_mixer{},
+m_pNet(nullptr),
+m_pNetDevice(nullptr),
+m_WLAN(nullptr),
+m_WPASupplicant(nullptr),
+m_bNetworkReady(false),
+m_bNetworkInit(false),
+m_UDPMIDI(nullptr),
+m_pFTPDaemon(nullptr),
+m_pmDNSPublisher(nullptr),
+m_bSavePerformance(false),
+m_bSavePerformanceNewFile(false),
+m_bSetNewPerformance(false),
+m_bSetNewBusPerformance(false),
+m_bSetNewPerformanceBank(false),
+m_bSetNewBusPerformanceBank(false),
+m_bSetFirstPerformance(false),
+m_bDeletePerformance(false),
+m_bVolRampDownWait{},
+m_bVolRampedDown{},
+m_fRamp{10.0f / pConfig->GetSampleRate()}
 {
-	assert (m_pConfig);
-		
+	assert(m_pConfig);
+
 	m_nToneGenerators = m_pConfig->GetToneGenerators();
 	m_nPolyphony = m_pConfig->GetPolyphony();
 	LOGNOTE("Tone Generators=%d, Polyphony=%d", m_nToneGenerators, m_nPolyphony);
@@ -120,21 +160,21 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nPortamentoMode[i] = 0;
 		m_nPortamentoGlissando[i] = 0;
 		m_nPortamentoTime[i] = 0;
-		m_bMonoMode[i]=0; 
-		m_nTGLink[i]=0;
+		m_bMonoMode[i] = 0;
+		m_nTGLink[i] = 0;
 		m_nNoteLimitLow[i] = 0;
 		m_nNoteLimitHigh[i] = 127;
 		m_nNoteShift[i] = 0;
-		
-		m_nModulationWheelRange[i]=99;
-		m_nModulationWheelTarget[i]=7;
-		m_nFootControlRange[i]=99;
-		m_nFootControlTarget[i]=0;	
-		m_nBreathControlRange[i]=99;	
-		m_nBreathControlTarget[i]=0;	
-		m_nAftertouchRange[i]=99;	
-		m_nAftertouchTarget[i]=0;
-		
+
+		m_nModulationWheelRange[i] = 99;
+		m_nModulationWheelTarget[i] = 7;
+		m_nFootControlRange[i] = 99;
+		m_nFootControlTarget[i] = 0;
+		m_nBreathControlRange[i] = 99;
+		m_nBreathControlTarget[i] = 0;
+		m_nAftertouchRange[i] = 99;
+		m_nAftertouchTarget[i] = 0;
+
 		m_nFX1Send[i] = 25;
 		m_nFX2Send[i] = 0;
 
@@ -156,34 +196,39 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 		m_nEQPreHighcut[i] = 60;
 
 		// Active the required number of active TGs
-		if (i<m_nToneGenerators)
+		if (i < m_nToneGenerators)
 		{
-			m_uchOPMask[i] = 0b111111;	// All operators on
+			m_uchOPMask[i] = 0b111111; // All operators on
 
-			m_pTG[i] = new CDexedAdapter (m_nPolyphony, pConfig->GetSampleRate ());
-			assert (m_pTG[i]);
+			m_pTG[i] = new CDexedAdapter(m_nPolyphony, pConfig->GetSampleRate());
+			assert(m_pTG[i]);
 
-			m_pTG[i]->setEngineType(pConfig->GetEngineType ());
-			m_pTG[i]->activate ();
+			m_pTG[i]->setEngineType(pConfig->GetEngineType());
+			m_pTG[i]->activate();
 		}
 	}
 
 	unsigned nUSBGadgetPin = pConfig->GetUSBGadgetPin();
 	bool bUSBGadget = pConfig->GetUSBGadget();
 	bool bUSBGadgetMode = pConfig->GetUSBGadgetMode();
-		
+
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		m_BusPerformanceConfig[nBus] = new CPerformanceConfig(pFileSystem);
+	}
+
 	if (bUSBGadgetMode)
 	{
-#if RASPPI==5
-		LOGNOTE ("USB Gadget (Device) Mode NOT supported on RPI 5");
+#if RASPPI == 5
+		LOGNOTE("USB Gadget (Device) Mode NOT supported on RPI 5");
 #else
 		if (nUSBGadgetPin == 0)
 		{
-			LOGNOTE ("USB In Gadget (Device) Mode");
+			LOGNOTE("USB In Gadget (Device) Mode");
 		}
 		else
 		{
-			LOGNOTE ("USB In Gadget (Device) Mode [USBGadgetPin %d = LOW]", nUSBGadgetPin);
+			LOGNOTE("USB In Gadget (Device) Mode [USBGadgetPin %d = LOW]", nUSBGadgetPin);
 		}
 #endif
 	}
@@ -194,73 +239,74 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 			if (nUSBGadgetPin == 0)
 			{
 				// This shouldn't be possible...
-				LOGNOTE ("USB State Unknown");
+				LOGNOTE("USB State Unknown");
 			}
 			else
 			{
-				LOGNOTE ("USB In Host Mode [USBGadgetPin %d = HIGH]", nUSBGadgetPin);
+				LOGNOTE("USB In Host Mode [USBGadgetPin %d = HIGH]", nUSBGadgetPin);
 			}
 		}
 		else
 		{
-			LOGNOTE ("USB In Host Mode");
+			LOGNOTE("USB In Host Mode");
 		}
 	}
 
 	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
 	{
-		m_pMIDIKeyboard[i] = new CMIDIKeyboard (this, pConfig, &m_UI, i);
-		assert (m_pMIDIKeyboard[i]);
+		m_pMIDIKeyboard[i] = new CMIDIKeyboard(this, pConfig, &m_UI, i);
+		assert(m_pMIDIKeyboard[i]);
 	}
 
 	// select the sound device
-	const char *pDeviceName = pConfig->GetSoundDevice ();
-	if (strcmp (pDeviceName, "i2s") == 0)
+	const char *pDeviceName = pConfig->GetSoundDevice();
+	if (strcmp(pDeviceName, "i2s") == 0)
 	{
-		LOGNOTE ("I2S mode");
-#if RASPPI==5
+		LOGNOTE("I2S mode");
+#if RASPPI == 5
 		// Quad DAC 8-channel mono only an option for RPI 5
-		m_bQuadDAC8Chan = pConfig->GetQuadDAC8Chan ();
+		m_bQuadDAC8Chan = pConfig->GetQuadDAC8Chan();
 #endif
 		if (m_bQuadDAC8Chan && (m_nToneGenerators != 8))
 		{
 			LOGNOTE("ERROR: Quad DAC Mode is only valid when number of TGs = 8.  Defaulting to non-Quad DAC mode,");
 			m_bQuadDAC8Chan = false;
 		}
-		if (m_bQuadDAC8Chan) {
-			LOGNOTE ("Configured for Quad DAC 8-channel Mono audio");
-			m_pSoundDevice = new CI2SSoundBaseDevice (pInterrupt, pConfig->GetSampleRate (),
-								  pConfig->GetChunkSize (), false,
-								  pI2CMaster, pConfig->GetDACI2CAddress (),
-								  CI2SSoundBaseDevice::DeviceModeTXOnly,
-								  8);  // 8 channels - L+R x4 across 4 I2S lanes
+		if (m_bQuadDAC8Chan)
+		{
+			LOGNOTE("Configured for Quad DAC 8-channel Mono audio");
+			m_pSoundDevice = new CI2SSoundBaseDevice(pInterrupt, pConfig->GetSampleRate(),
+								 pConfig->GetChunkSize(), false,
+								 pI2CMaster, pConfig->GetDACI2CAddress(),
+								 CI2SSoundBaseDevice::DeviceModeTXOnly,
+								 8); // 8 channels - L+R x4 across 4 I2S lanes
 		}
 		else
 		{
-			m_pSoundDevice = new CI2SSoundBaseDevice (pInterrupt, pConfig->GetSampleRate (),
-								  pConfig->GetChunkSize (), false,
-								  pI2CMaster, pConfig->GetDACI2CAddress (),
-								  CI2SSoundBaseDevice::DeviceModeTXOnly,
-								  2);  // 2 channels - L+R
+			m_pSoundDevice = new CI2SSoundBaseDevice(pInterrupt, pConfig->GetSampleRate(),
+								 pConfig->GetChunkSize(), false,
+								 pI2CMaster, pConfig->GetDACI2CAddress(),
+								 CI2SSoundBaseDevice::DeviceModeTXOnly,
+								 2); // 2 channels - L+R
 		}
 	}
-	else if (strcmp (pDeviceName, "hdmi") == 0)
+	else if (strcmp(pDeviceName, "hdmi") == 0)
 	{
-#if RASPPI==5
-		LOGNOTE ("HDMI mode NOT supported on RPI 5.");
+#if RASPPI == 5
+		LOGNOTE("HDMI mode NOT supported on RPI 5.");
 #else
-		LOGNOTE ("HDMI mode");
+		LOGNOTE("HDMI mode");
 
-		m_pSoundDevice = new CHDMISoundBaseDevice (pInterrupt, pConfig->GetSampleRate (),
-							   pConfig->GetChunkSize ());
+		m_pSoundDevice = new CHDMISoundBaseDevice(pInterrupt, pConfig->GetSampleRate(),
+							  pConfig->GetChunkSize());
 #endif
 	}
 	else
 	{
-		LOGNOTE ("PWM mode");
+		LOGNOTE("PWM mode");
 
-		m_pSoundDevice = new CPWMSoundBaseDevice (pInterrupt, pConfig->GetSampleRate (),
-							  pConfig->GetChunkSize ());
+		m_pSoundDevice = new CPWMSoundBaseDevice(pInterrupt, pConfig->GetSampleRate(),
+							 pConfig->GetChunkSize());
 	}
 
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -270,39 +316,43 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	}
 #endif
 
-	// BEGIN setup tg_mixer
-	tg_mixer = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
-	// END setup tgmixer
-
-	for (unsigned nFX = 0; nFX < CConfig::FXMixers; nFX++)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
-		sendfx_mixer[nFX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize()/2, pConfig->GetSampleRate());
+		bus_mixer[nBus] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
+
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
+			bool bSaveOnly = p.Flags & Bus::Flag::UIOnly;
+			SetBusParameter(Bus::Parameter(nParam), p.Default, nBus, bSaveOnly);
+		}
+	}
+
+	for (unsigned nMX = 0; nMX < CConfig::FXMixers; nMX++)
+	{
+		sendfx_mixer[nMX] = new AudioStereoMixer<CConfig::AllToneGenerators>(pConfig->GetChunkSize() / 2, pConfig->GetSampleRate());
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; nFX++)
 	{
 		fx_chain[nFX] = new AudioFXChain(pConfig->GetSampleRate());
 
-		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (unsigned nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-			bool bSaveOnly = p.Flags & FX::FXComposite;
-			SetFXParameter (FX::TFXParameter(nParam), p.Default, nFX, bSaveOnly);
+			const FX::ParameterType &p = FX::s_Parameter[nParam];
+			bool bSaveOnly = p.Flags & FX::Flag::Composite;
+			SetFXParameter(FX::Parameter(nParam), p.Default, nFX, bSaveOnly);
 		}
 	}
 
-	// END setup reverb
-
-	SetParameter (ParameterMasterVolume, pConfig->GetMasterVolume());
-	SetParameter (ParameterMixerDryLevel, 99);
-	SetParameter (ParameterFXBypass, 0);
+	SetParameter(ParameterMasterVolume, pConfig->GetMasterVolume());
 
 	SetPerformanceSelectChannel(m_pConfig->GetPerformanceSelectChannel());
-		
-	SetParameter (ParameterPerformanceBank, 0);
+
+	SetParameter(ParameterPerformanceBank, 0);
 };
 
-CMiniDexed::~CMiniDexed (void)
+CMiniDexed::~CMiniDexed(void)
 {
 	delete m_WLAN;
 	delete m_WPASupplicant;
@@ -311,87 +361,103 @@ CMiniDexed::~CMiniDexed (void)
 	delete m_pmDNSPublisher;
 }
 
-bool CMiniDexed::Initialize (void)
+bool CMiniDexed::Initialize(void)
 {
 	LOGNOTE("CMiniDexed::Initialize called");
-	assert (m_pConfig);
-	assert (m_pSoundDevice);
+	assert(m_pConfig);
+	assert(m_pSoundDevice);
 
-	if (!m_UI.Initialize ())
+	if (!m_UI.Initialize())
 	{
 		return false;
 	}
 
-	m_SysExFileLoader.Load (m_pConfig->GetHeaderlessSysExVoices ());
+	m_SysExFileLoader.Load(m_pConfig->GetHeaderlessSysExVoices());
 
-	if (m_SerialMIDI.Initialize ())
+	if (m_SerialMIDI.Initialize())
 	{
-		LOGNOTE ("Serial MIDI interface enabled");
+		LOGNOTE("Serial MIDI interface enabled");
 
 		m_bUseSerial = true;
 	}
-	
+
 	if (m_pConfig->GetMIDIRXProgramChange())
 	{
 		int nPerfCh = GetParameter(ParameterPerformanceSelectChannel);
-		if (nPerfCh == CMIDIDevice::Disabled) {
+		if (nPerfCh == CMIDIDevice::Disabled)
+		{
 			LOGNOTE("Program Change: Enabled for Voices");
-		} else if (nPerfCh == CMIDIDevice::OmniMode) {
-			LOGNOTE("Program Change: Enabled for Performances (Omni)");
-		} else {
-			LOGNOTE("Program Change: Enabled for Performances (CH %d)", nPerfCh+1);
 		}
-	} else {
+		else if (nPerfCh == CMIDIDevice::OmniMode)
+		{
+			LOGNOTE("Program Change: Enabled for Performances (Omni)");
+		}
+		else
+		{
+			LOGNOTE("Program Change: Enabled for Performances (CH %d)", nPerfCh + 1);
+		}
+	}
+	else
+	{
 		LOGNOTE("Program Change: Disabled");
 	}
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
 	{
-		assert (m_pTG[i]);
+		assert(m_pTG[i]);
 
-		SetVolume (100, i);
-		SetExpression (127, i);
-		ProgramChange (0, i);
+		SetVolume(100, i);
+		SetExpression(127, i);
+		ProgramChange(0, i);
 
-		m_pTG[i]->setTranspose (24);
+		m_pTG[i]->setTranspose(24);
 
-		m_pTG[i]->setPBController (2, 0);
-		m_pTG[i]->setMWController (99, 1, 0); 
+		m_pTG[i]->setPBController(2, 0);
+		m_pTG[i]->setMWController(99, 1, 0);
 
-		m_pTG[i]->setFCController (99, 1, 0); 
-		m_pTG[i]->setBCController (99, 1, 0);
-		m_pTG[i]->setATController (99, 1, 0);
-		
-		tg_mixer->pan(i,mapfloat(m_nPan[i],0,127,0.0f,1.0f));
-		tg_mixer->gain(i,1.0f);
+		m_pTG[i]->setFCController(99, 1, 0);
+		m_pTG[i]->setBCController(99, 1, 0);
+		m_pTG[i]->setATController(99, 1, 0);
 
-		for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
+		for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 		{
-			sendfx_mixer[nFX]->pan(i,mapfloat(m_nPan[i],0,127,0.0f,1.0f));
-			sendfx_mixer[nFX]->gain(i,mapfloat(nFX == 0 ? m_nFX1Send[i] : m_nFX2Send[i],0,99,0.0f,1.0f));
+			bus_mixer[nBus]->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
+			bus_mixer[nBus]->gain(i, 1.0f);
+
+			for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
+			{
+				unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+				sendfx_mixer[nMX]->pan(i, mapfloat(m_nPan[i], 0, 127, 0.0f, 1.0f));
+				sendfx_mixer[nMX]->gain(i, mapfloat(idMX == 0 ? m_nFX1Send[i] : m_nFX2Send[i], 0, 99, 0.0f, 1.0f));
+			}
 		}
 	}
 
 	m_PerformanceConfig.Init(m_nToneGenerators);
-	if (m_PerformanceConfig.Load ())
+	if (m_PerformanceConfig.Load())
 	{
-		LoadPerformanceParameters(); 
+		LoadPerformanceParameters();
 	}
 	else
 	{
-		SetMIDIChannel (CMIDIDevice::OmniMode, 0);
+		SetMIDIChannel(CMIDIDevice::OmniMode, 0);
 	}
-	
+
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		m_BusPerformanceConfig[nBus]->Init(m_nToneGenerators);
+	}
+
 	// setup and start the sound device
-	int Channels = 1;	// 16-bit Mono
+	int Channels = 1; // 16-bit Mono
 #ifdef ARM_ALLOW_MULTI_CORE
 	if (m_bQuadDAC8Chan)
 	{
-		Channels = 8;	// 16-bit 8-channel mono
+		Channels = 8; // 16-bit 8-channel mono
 	}
 	else
 	{
-		Channels = 2;	// 16-bit Stereo
+		Channels = 2; // 16-bit Stereo
 	}
 #endif
 	// Need 2 x ChunkSize / Channel queue frames as the audio driver uses
@@ -399,83 +465,78 @@ bool CMiniDexed::Initialize (void)
 	// contains a sample for each of all the channels.
 	//
 	// See discussion here: https://github.com/rsta2/circle/discussions/453
-	if (!m_pSoundDevice->AllocateQueueFrames (2 * m_pConfig->GetChunkSize () / Channels))
+	if (!m_pSoundDevice->AllocateQueueFrames(2 * m_pConfig->GetChunkSize() / Channels))
 	{
-		LOGERR ("Cannot allocate sound queue");
+		LOGERR("Cannot allocate sound queue");
 
 		return false;
 	}
 
-	m_pSoundDevice->SetWriteFormat (SoundFormatSigned24_32, Channels);
+	m_pSoundDevice->SetWriteFormat(SoundFormatSigned24_32, Channels);
 
-	m_nQueueSizeFrames = m_pSoundDevice->GetQueueSizeFrames ();
+	m_nQueueSizeFrames = m_pSoundDevice->GetQueueSizeFrames();
 
-	m_pSoundDevice->Start ();
+	m_pSoundDevice->Start();
 
-	m_UI.LoadDefaultScreen ();
+	m_UI.LoadDefaultScreen();
 
 #ifdef ARM_ALLOW_MULTI_CORE
 	// start secondary cores
-	if (!CMultiCoreSupport::Initialize ())
+	if (!CMultiCoreSupport::Initialize())
 	{
 		return false;
 	}
 
-	InitNetwork();  // returns bool but we continue even if something goes wrong
+	InitNetwork(); // returns bool but we continue even if something goes wrong
 	LOGNOTE("CMiniDexed::Initialize: InitNetwork() called");
 #endif
 
 	return true;
 }
 
-void CMiniDexed::Process (bool bPlugAndPlayUpdated)
+void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 {
-	CScheduler* const pScheduler = CScheduler::Get();
+	CScheduler *const pScheduler = CScheduler::Get();
 #ifndef ARM_ALLOW_MULTI_CORE
-	ProcessSound ();
+	ProcessSound();
 	pScheduler->Yield();
 #endif
 
 	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
 	{
-		assert (m_pMIDIKeyboard[i]);
-		m_pMIDIKeyboard[i]->Process (bPlugAndPlayUpdated);
+		assert(m_pMIDIKeyboard[i]);
+		m_pMIDIKeyboard[i]->Process(bPlugAndPlayUpdated);
 		pScheduler->Yield();
 	}
 
-	m_PCKeyboard.Process (bPlugAndPlayUpdated);
+	m_PCKeyboard.Process(bPlugAndPlayUpdated);
+	pScheduler->Yield();
 
 	if (m_bUseSerial)
 	{
-		m_SerialMIDI.Process ();
+		m_SerialMIDI.Process();
 		pScheduler->Yield();
 	}
 
-	m_UI.Process ();
+	m_UI.Process();
 
 	if (m_bSavePerformance)
 	{
-		DoSavePerformance ();
+		DoSavePerformance();
 
 		m_bSavePerformance = false;
-		pScheduler->Yield();
 	}
 
 	if (m_bSavePerformanceNewFile)
 	{
-		DoSavePerformanceNewFile ();
+		DoSavePerformanceNewFile();
 		m_bSavePerformanceNewFile = false;
-		pScheduler->Yield();
 	}
-	
-	if (m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
+
+	if (m_bSetNewPerformanceBank)
 	{
-		DoSetNewPerformanceBank ();
-		if (m_nSetNewPerformanceBankID == GetActualPerformanceBankID())
-		{
-			m_bSetNewPerformanceBank = false;
-		}
-		
+		m_PerformanceConfig.SetNewPerformanceBank(m_nSetNewPerformanceBankID);
+
 		// If there is no pending SetNewPerformance already, then see if we need to find the first performance to load
 		// NB: If called from the UI, then there will not be a SetNewPerformance, so load the first existing one.
 		//     If called from MIDI, there will probably be a SetNewPerformance alongside the Bank select.
@@ -483,47 +544,92 @@ void CMiniDexed::Process (bool bPlugAndPlayUpdated)
 		{
 			DoSetFirstPerformance();
 		}
-		pScheduler->Yield();
+
+		m_bSetNewPerformanceBank = false;
 	}
-	
-	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
+
+	if (m_bSetNewBusPerformanceBank)
+	{
+		for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+		{
+			unsigned nBankID = m_nBusParameter[nBus][Bus::Parameter::PerformanceBank];
+			CPerformanceConfig *config = m_BusPerformanceConfig[nBus];
+			if (nBankID != config->GetPerformanceBankID())
+			{
+				config->SetNewPerformanceBank(nBankID);
+				SetBusParameter(Bus::Parameter::Performance, config->FindFirstPerformance(), nBus);
+			}
+		}
+
+		m_bSetNewBusPerformanceBank = false;
+	}
+
+	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank)
 	{
 		for (unsigned i = 0; i < m_nToneGenerators; ++i)
 		{
 			m_pTG[i]->resetState();
 		}
 
-		DoSetNewPerformance ();
+		DoSetNewPerformance();
 
 		for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 		{
 			fx_chain[nFX]->resetState();
 		}
 
-		if (m_nSetNewPerformanceID == GetActualPerformanceID())
-		{
-			m_bSetNewPerformance = false;
-			m_bVolRampedDown = false;
-		}
-		pScheduler->Yield();
+		m_bSetNewPerformance = false;
+		m_bVolRampedDown = false;
 	}
-	
-	if(m_bDeletePerformance)
+
+	if (m_bSetNewBusPerformance && m_bVolRampedDown && !m_bSetNewBusPerformanceBank)
 	{
-		DoDeletePerformance ();
-		m_bDeletePerformance = false;
-		pScheduler->Yield();
+		for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+		{
+			unsigned nPerfID = m_nBusParameter[nBus][Bus::Parameter::Performance];
+			unsigned nLoadType = m_nBusParameter[nBus][Bus::Parameter::LoadType];
+			unsigned nChannel = m_nBusParameter[nBus][Bus::Parameter::MIDIChannel];
+			CPerformanceConfig *config = m_BusPerformanceConfig[nBus];
+			if (nPerfID != config->GetPerformanceID())
+			{
+				for (unsigned i = nBus * 8; i < (nBus + 1) * 8; ++i)
+				{
+					m_pTG[i]->resetState();
+				}
+
+				config->SetNewPerformance(nPerfID);
+				if (config->Load())
+				{
+					LoadPerformanceParameters(config, 0, 1, nBus, nLoadType, nChannel);
+				}
+
+				for (unsigned idFX = 0; idFX < CConfig::BusFXChains; ++idFX)
+				{
+					unsigned nFX = idFX + nBus * CConfig::BusFXChains;
+					fx_chain[nFX]->resetState();
+				}
+			}
+		}
+
+		m_bSetNewBusPerformance = false;
+		m_bVolRampedDown = false;
 	}
-		
+
+	if (m_bDeletePerformance)
+	{
+		DoDeletePerformance();
+		m_bDeletePerformance = false;
+	}
+
 	if (m_bProfileEnabled)
 	{
-		m_GetChunkTimer.Dump ();
-		pScheduler->Yield();
+		m_GetChunkTimer.Dump();
 	}
 
 	m_Status.Update();
 
-	if (m_pNet) {
+	if (m_pNet)
+	{
 		UpdateNetwork();
 	}
 	// Allow other tasks to run
@@ -532,38 +638,38 @@ void CMiniDexed::Process (bool bPlugAndPlayUpdated)
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
-void CMiniDexed::Run (unsigned nCore)
+void CMiniDexed::Run(unsigned nCore)
 {
-	assert (1 <= nCore && nCore < CORES);
+	assert(1 <= nCore && nCore < CORES);
 
 	if (nCore == 1)
 	{
-		m_CoreStatus[nCore] = CoreStatusIdle;			// core 1 ready
+		m_CoreStatus[nCore] = CoreStatusIdle; // core 1 ready
 
 		// wait for cores 2 and 3 to be ready
 		for (unsigned nCore = 2; nCore < CORES; nCore++)
 		{
 			while (m_CoreStatus[nCore] != CoreStatusIdle)
 			{
-				WaitForEvent ();
+				WaitForEvent();
 			}
 		}
 
 		while (m_CoreStatus[nCore] != CoreStatusExit)
 		{
-			ProcessSound ();
+			ProcessSound();
 		}
 	}
-	else								// core 2 and 3
+	else // core 2 and 3
 	{
 		while (1)
 		{
-			m_CoreStatus[nCore] = CoreStatusIdle;		// ready to be kicked
-			SendIPI (1, IPI_USER);
+			m_CoreStatus[nCore] = CoreStatusIdle; // ready to be kicked
+			SendIPI(1, IPI_USER);
 
 			while (m_CoreStatus[nCore] == CoreStatusIdle)
 			{
-				WaitForEvent ();
+				WaitForEvent();
 			}
 
 			// now kicked from core 1
@@ -575,19 +681,19 @@ void CMiniDexed::Run (unsigned nCore)
 				break;
 			}
 
-			assert (m_CoreStatus[nCore] == CoreStatusBusy);
+			assert(m_CoreStatus[nCore] == CoreStatusBusy);
 
 			// process the TGs, assigned to this core (2 or 3)
 
-			assert (m_nFramesToProcess <= m_pConfig->MaxChunkSize);
-			unsigned nTG = m_pConfig->GetTGsCore1() + (nCore-2)*m_pConfig->GetTGsCore23();
+			assert(m_nFramesToProcess <= m_pConfig->MaxChunkSize);
+			unsigned nTG = m_pConfig->GetTGsCore1() + (nCore - 2) * m_pConfig->GetTGsCore23();
 			for (unsigned i = 0; i < m_pConfig->GetTGsCore23(); i++, nTG++)
 			{
-				assert (nTG < CConfig::AllToneGenerators);
+				assert(nTG < CConfig::AllToneGenerators);
 				if (nTG < m_pConfig->GetToneGenerators())
 				{
-					assert (m_pTG[nTG]);
-					m_pTG[nTG]->getSamples (m_OutputLevel[nTG],m_nFramesToProcess);
+					assert(m_pTG[nTG]);
+					m_pTG[nTG]->getSamples(m_OutputLevel[nTG], m_nFramesToProcess);
 				}
 			}
 		}
@@ -596,52 +702,59 @@ void CMiniDexed::Run (unsigned nCore)
 
 #endif
 
-CSysExFileLoader *CMiniDexed::GetSysExFileLoader (void)
+CSysExFileLoader *CMiniDexed::GetSysExFileLoader(void)
 {
 	return &m_SysExFileLoader;
 }
 
-CPerformanceConfig *CMiniDexed::GetPerformanceConfig (void)
+CPerformanceConfig *CMiniDexed::GetPerformanceConfig(void)
 {
 	return &m_PerformanceConfig;
 }
 
-void CMiniDexed::BankSelect (unsigned nBank, unsigned nTG)
+CPerformanceConfig *CMiniDexed::GetBusPerformanceConfig(unsigned nBus)
 {
-	nBank=constrain((int)nBank,0,16383);
+	assert(nBus < CConfig::Buses);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
-	
-	if (GetSysExFileLoader ()->IsValidBank(nBank))
+	return m_BusPerformanceConfig[nBus];
+}
+
+void CMiniDexed::BankSelect(unsigned nBank, unsigned nTG)
+{
+	nBank = constrain((int)nBank, 0, 16383);
+
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
+
+	if (GetSysExFileLoader()->IsValidBank(nBank))
 	{
 		// Only change if we have the bank loaded
 		m_nVoiceBankID[nTG] = nBank;
 
-		m_UI.ParameterChanged ();
+		m_UI.ParameterChanged();
 	}
 }
 
-void CMiniDexed::BankSelectPerformance (unsigned nBank)
+void CMiniDexed::BankSelectPerformance(unsigned nBank)
 {
-	nBank=constrain((int)nBank,0,16383);
+	nBank = constrain((int)nBank, 0, 16383);
 
-	if (GetPerformanceConfig ()->IsValidPerformanceBank(nBank))
+	if (GetPerformanceConfig()->IsValidPerformanceBank(nBank))
 	{
 		// Only change if we have the bank loaded
 		m_nVoiceBankIDPerformance = nBank;
-		SetNewPerformanceBank (nBank);
+		SetNewPerformanceBank(nBank);
 
-		m_UI.ParameterChanged ();
+		m_UI.ParameterChanged();
 	}
 }
 
-void CMiniDexed::BankSelectMSB (unsigned nBankMSB, unsigned nTG)
+void CMiniDexed::BankSelectMSB(unsigned nBankMSB, unsigned nTG)
 {
-	nBankMSB=constrain((int)nBankMSB,0,127);
+	nBankMSB = constrain((int)nBankMSB, 0, 127);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	// MIDI Spec 1.0 "BANK SELECT" states:
 	//   "The transmitter must transmit the MSB and LSB as a pair,
@@ -653,18 +766,18 @@ void CMiniDexed::BankSelectMSB (unsigned nBankMSB, unsigned nTG)
 	m_nVoiceBankIDMSB[nTG] = nBankMSB;
 }
 
-void CMiniDexed::BankSelectMSBPerformance (unsigned nBankMSB)
+void CMiniDexed::BankSelectMSBPerformance(unsigned nBankMSB)
 {
-	nBankMSB=constrain((int)nBankMSB,0,127);
+	nBankMSB = constrain((int)nBankMSB, 0, 127);
 	m_nVoiceBankIDMSBPerformance = nBankMSB;
 }
 
-void CMiniDexed::BankSelectLSB (unsigned nBankLSB, unsigned nTG)
+void CMiniDexed::BankSelectLSB(unsigned nBankLSB, unsigned nTG)
 {
-	nBankLSB=constrain((int)nBankLSB,0,127);
+	nBankLSB = constrain((int)nBankLSB, 0, 127);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	unsigned nBank = m_nVoiceBankID[nTG];
 	unsigned nBankMSB = m_nVoiceBankIDMSB[nTG];
@@ -674,9 +787,9 @@ void CMiniDexed::BankSelectLSB (unsigned nBankLSB, unsigned nTG)
 	BankSelect(nBank, nTG);
 }
 
-void CMiniDexed::BankSelectLSBPerformance (unsigned nBankLSB)
+void CMiniDexed::BankSelectLSBPerformance(unsigned nBankLSB)
 {
-	nBankLSB=constrain((int)nBankLSB,0,127);
+	nBankLSB = constrain((int)nBankLSB, 0, 127);
 
 	unsigned nBank = m_nVoiceBankIDPerformance;
 	unsigned nBankMSB = m_nVoiceBankIDMSBPerformance;
@@ -686,9 +799,9 @@ void CMiniDexed::BankSelectLSBPerformance (unsigned nBankLSB)
 	BankSelectPerformance(nBank);
 }
 
-void CMiniDexed::ProgramChange (unsigned nProgram, unsigned nTG)
+void CMiniDexed::ProgramChange(unsigned nProgram, unsigned nTG)
 {
-	assert (m_pConfig);
+	assert(m_pConfig);
 
 	unsigned nBankOffset;
 	bool bPCAcrossBanks = m_pConfig->GetExpandPCAcrossBanks();
@@ -703,26 +816,26 @@ void CMiniDexed::ProgramChange (unsigned nProgram, unsigned nTG)
 		//       PC 32-63  = Bank 6, Program 0-31
 		//       PC 64-95  = Bank 7, Program 0-31
 		//       PC 96-127 = Bank 8, Program 0-31
-		nProgram=constrain((int)nProgram,0,127);
+		nProgram = constrain((int)nProgram, 0, 127);
 		nBankOffset = nProgram >> 5;
 		nProgram = nProgram % 32;
 	}
 	else
 	{
 		nBankOffset = 0;
-		nProgram=constrain((int)nProgram,0,31);
+		nProgram = constrain((int)nProgram, 0, 31);
 	}
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nProgram[nTG] = nProgram;
 
 	uint8_t Buffer[156];
-	m_SysExFileLoader.GetVoice (m_nVoiceBankID[nTG]+nBankOffset, nProgram, Buffer);
+	m_SysExFileLoader.GetVoice(m_nVoiceBankID[nTG] + nBankOffset, nProgram, Buffer);
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->loadVoiceParameters (Buffer);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->loadVoiceParameters(Buffer);
 	setOPMask(0b111111, nTG);
 
 	if (m_pConfig->GetMIDIAutoVoiceDumpOnPC())
@@ -735,10 +848,10 @@ void CMiniDexed::ProgramChange (unsigned nProgram, unsigned nTG)
 		}
 	}
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::ProgramChangePerformance (unsigned nProgram)
+void CMiniDexed::ProgramChangePerformance(unsigned nProgram)
 {
 	if (m_nParameter[ParameterPerformanceSelectChannel] != CMIDIDevice::Disabled)
 	{
@@ -747,162 +860,172 @@ void CMiniDexed::ProgramChangePerformance (unsigned nProgram)
 		{
 			SetNewPerformance(nProgram);
 		}
-		m_UI.ParameterChanged ();
+		m_UI.ParameterChanged();
 	}
 }
 
-void CMiniDexed::SetVolume (unsigned nVolume, unsigned nTG)
+void CMiniDexed::SetVolume(unsigned nVolume, unsigned nTG)
 {
-	nVolume=constrain((int)nVolume,0,127);
+	nVolume = constrain((int)nVolume, 0, 127);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nVolume[nTG] = nVolume;
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setGain ((m_nVolume[nTG] * m_nExpression[nTG]) / (127.0f * 127.0f));
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setGain((m_nVolume[nTG] * m_nExpression[nTG]) / (127.0f * 127.0f));
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetExpression (unsigned nExpression, unsigned nTG)
+void CMiniDexed::SetExpression(unsigned nExpression, unsigned nTG)
 {
-	nExpression=constrain((int)nExpression,0,127);
+	nExpression = constrain((int)nExpression, 0, 127);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nExpression[nTG] = nExpression;
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setGain ((m_nVolume[nTG] * m_nExpression[nTG]) / (127.0f * 127.0f));
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setGain((m_nVolume[nTG] * m_nExpression[nTG]) / (127.0f * 127.0f));
 
 	// Expression is a "live performance" parameter only set
 	// via MIDI and not via the UI.
-	//m_UI.ParameterChanged ();
+	// m_UI.ParameterChanged ();
 }
 
-void CMiniDexed::SetPan (unsigned nPan, unsigned nTG)
+void CMiniDexed::SetPan(unsigned nPan, unsigned nTG)
 {
-	nPan=constrain((int)nPan,0,127);
+	nPan = constrain((int)nPan, 0, 127);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nPan[nTG] = nPan;
-	
-	tg_mixer->pan(nTG,mapfloat(nPan,0,127,0.0f,1.0f));
 
-	for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
-		sendfx_mixer[nFX]->pan(nTG,mapfloat(nPan,0,127,0.0f,1.0f));
+		bus_mixer[nBus]->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
+
+		for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
+		{
+			unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+			sendfx_mixer[nMX]->pan(nTG, mapfloat(nPan, 0, 127, 0.0f, 1.0f));
+		}
 	}
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetFX1Send (unsigned nFX1Send, unsigned nTG)
+void CMiniDexed::SetFX1Send(unsigned nFX1Send, unsigned nTG)
 {
-	nFX1Send=constrain((int)nFX1Send,0,99);
+	nFX1Send = constrain((int)nFX1Send, 0, 99);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 	if (0 >= CConfig::FXMixers) return;
 
 	m_nFX1Send[nTG] = nFX1Send;
 
-	sendfx_mixer[0]->gain(nTG,mapfloat(nFX1Send,0,99,0.0f,1.0f));
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		unsigned nMX = 0 + CConfig::BusFXMixers * nBus;
+		sendfx_mixer[nMX]->gain(nTG, mapfloat(nFX1Send, 0, 99, 0.0f, 1.0f));
+	}
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetFX2Send (unsigned nFX2Send, unsigned nTG)
+void CMiniDexed::SetFX2Send(unsigned nFX2Send, unsigned nTG)
 {
-	nFX2Send=constrain((int)nFX2Send,0,99);
+	nFX2Send = constrain((int)nFX2Send, 0, 99);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 	if (1 >= CConfig::FXMixers) return;
 
 	m_nFX2Send[nTG] = nFX2Send;
 
-	sendfx_mixer[1]->gain(nTG,mapfloat(nFX2Send,0,99,0.0f,1.0f));
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		unsigned nMX = 1 + CConfig::BusFXMixers * nBus;
+		sendfx_mixer[nMX]->gain(nTG, mapfloat(nFX2Send, 0, 99, 0.0f, 1.0f));
+	}
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetMasterTune (int nMasterTune, unsigned nTG)
+void CMiniDexed::SetMasterTune(int nMasterTune, unsigned nTG)
 {
-	nMasterTune=constrain((int)nMasterTune,-99,99);
+	nMasterTune = constrain((int)nMasterTune, -99, 99);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nMasterTune[nTG] = nMasterTune;
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setMasterTune ((int8_t) nMasterTune);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setMasterTune((int8_t)nMasterTune);
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCutoff (int nCutoff, unsigned nTG)
+void CMiniDexed::SetCutoff(int nCutoff, unsigned nTG)
 {
-	nCutoff = constrain (nCutoff, 0, 99);
+	nCutoff = constrain(nCutoff, 0, 99);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nCutoff[nTG] = nCutoff;
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setFilterCutoff (mapfloat (nCutoff, 0, 99, 0.0f, 1.0f));
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setFilterCutoff(mapfloat(nCutoff, 0, 99, 0.0f, 1.0f));
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetResonance (int nResonance, unsigned nTG)
+void CMiniDexed::SetResonance(int nResonance, unsigned nTG)
 {
-	nResonance = constrain (nResonance, 0, 99);
+	nResonance = constrain(nResonance, 0, 99);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_nResonance[nTG] = nResonance;
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setFilterResonance (mapfloat (nResonance, 0, 99, 0.0f, 1.0f));
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setFilterResonance(mapfloat(nResonance, 0, 99, 0.0f, 1.0f));
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-
-
-void CMiniDexed::SetMIDIChannel (uint8_t uchChannel, unsigned nTG)
+void CMiniDexed::SetMIDIChannel(uint8_t uchChannel, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (uchChannel < CMIDIDevice::ChannelUnknown);
+	assert(uchChannel < CMIDIDevice::ChannelUnknown);
 
 	m_nMIDIChannel[nTG] = uchChannel;
 
 	for (unsigned i = 0; i < CConfig::MaxUSBMIDIDevices; i++)
 	{
-		assert (m_pMIDIKeyboard[i]);
-		m_pMIDIKeyboard[i]->SetChannel (uchChannel, nTG);
+		assert(m_pMIDIKeyboard[i]);
+		m_pMIDIKeyboard[i]->SetChannel(uchChannel, nTG);
 	}
 
-	m_PCKeyboard.SetChannel (uchChannel, nTG);
+	m_PCKeyboard.SetChannel(uchChannel, nTG);
 
 	if (m_bUseSerial)
 	{
-		m_SerialMIDI.SetChannel (uchChannel, nTG);
+		m_SerialMIDI.SetChannel(uchChannel, nTG);
 	}
 	if (m_UDPMIDI)
 	{
-		m_UDPMIDI->SetChannel (uchChannel, nTG);
+		m_UDPMIDI->SetChannel(uchChannel, nTG);
 	}
 
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -922,128 +1045,126 @@ void CMiniDexed::SetMIDIChannel (uint8_t uchChannel, unsigned nTG)
 */
 #endif
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetSysExChannel (uint8_t uchChannel, unsigned nTG)
+void CMiniDexed::SetSysExChannel(uint8_t uchChannel, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (uchChannel < CMIDIDevice::Channels);
+	assert(uchChannel < CMIDIDevice::Channels);
 
 	m_nSysExChannel[nTG] = uchChannel;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetSysExEnable (bool value, unsigned nTG)
+void CMiniDexed::SetSysExEnable(bool value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_bSysExEnable[nTG] = value;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetMIDIRxSustain (bool value, unsigned nTG)
+void CMiniDexed::SetMIDIRxSustain(bool value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_bMIDIRxSustain[nTG] = value;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetMIDIRxPortamento (bool value, unsigned nTG)
+void CMiniDexed::SetMIDIRxPortamento(bool value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_bMIDIRxPortamento[nTG] = value;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetMIDIRxSostenuto (bool value, unsigned nTG)
+void CMiniDexed::SetMIDIRxSostenuto(bool value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_bMIDIRxSostenuto[nTG] = value;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetMIDIRxHold2 (bool value, unsigned nTG)
+void CMiniDexed::SetMIDIRxHold2(bool value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	m_bMIDIRxHold2[nTG] = value;
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-uint8_t CMiniDexed::GetSysExChannel (unsigned nTG)
+uint8_t CMiniDexed::GetSysExChannel(unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nSysExChannel[nTG];
 }
 
-bool CMiniDexed::GetSysExEnable (unsigned nTG)
+bool CMiniDexed::GetSysExEnable(unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bSysExEnable[nTG];
 }
 
-void CMiniDexed::keyup (int16_t pitch, unsigned nTG)
+void CMiniDexed::keyup(int16_t pitch, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	pitch = ApplyNoteLimits (pitch, nTG);
+	pitch = ApplyNoteLimits(pitch, nTG);
 	if (pitch >= 0)
 	{
-		m_pTG[nTG]->keyup (pitch);
+		m_pTG[nTG]->keyup(pitch);
 	}
 }
 
-void CMiniDexed::keydown (int16_t pitch, uint8_t velocity, unsigned nTG)
+void CMiniDexed::keydown(int16_t pitch, uint8_t velocity, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nLastKeyDown = pitch;
 
-	pitch = ApplyNoteLimits (pitch, nTG);
+	pitch = ApplyNoteLimits(pitch, nTG);
 	if (pitch >= 0)
 	{
-		m_pTG[nTG]->keydown (pitch, velocity);
+		m_pTG[nTG]->keydown(pitch, velocity);
 	}
 }
 
-int16_t CMiniDexed::ApplyNoteLimits (int16_t pitch, unsigned nTG)
+int16_t CMiniDexed::ApplyNoteLimits(int16_t pitch, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return -1;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return -1; // Not an active TG
 
-	if (   pitch < (int16_t) m_nNoteLimitLow[nTG]
-	    || pitch > (int16_t) m_nNoteLimitHigh[nTG])
+	if (pitch < (int16_t)m_nNoteLimitLow[nTG] || pitch > (int16_t)m_nNoteLimitHigh[nTG])
 	{
 		return -1;
 	}
 
 	pitch += m_nNoteShift[nTG];
 
-	if (   pitch < 0
-	    || pitch > 127)
+	if (pitch < 0 || pitch > 127)
 	{
 		return -1;
 	}
@@ -1053,11 +1174,11 @@ int16_t CMiniDexed::ApplyNoteLimits (int16_t pitch, unsigned nTG)
 
 void CMiniDexed::setSustain(bool sustain, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setSustain (sustain);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setSustain(sustain);
 
 	// TODO: use the bus MIDI channel for sustain
 	for (unsigned i = 0; i < CConfig::FXChains; ++i)
@@ -1066,102 +1187,103 @@ void CMiniDexed::setSustain(bool sustain, unsigned nTG)
 
 void CMiniDexed::setSostenuto(bool sostenuto, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setSostenuto (sostenuto);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setSostenuto(sostenuto);
 }
 
 void CMiniDexed::setHoldMode(bool holdmode, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setHold (holdmode);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setHold(holdmode);
 }
 
 void CMiniDexed::panic(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	if (value == 0) {
-		m_pTG[nTG]->panic ();
+	assert(m_pTG[nTG]);
+	if (value == 0)
+	{
+		m_pTG[nTG]->panic();
 	}
 }
 
 void CMiniDexed::notesOff(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	if (value == 0) {
-		m_pTG[nTG]->notesOff ();
+	assert(m_pTG[nTG]);
+	if (value == 0)
+	{
+		m_pTG[nTG]->notesOff();
 	}
 }
 
-void CMiniDexed::setModWheel (uint8_t value, unsigned nTG)
+void CMiniDexed::setModWheel(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setModWheel (value);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setModWheel(value);
 }
 
-
-void CMiniDexed::setFootController (uint8_t value, unsigned nTG)
+void CMiniDexed::setFootController(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setFootController (value);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setFootController(value);
 }
 
-void CMiniDexed::setBreathController (uint8_t value, unsigned nTG)
+void CMiniDexed::setBreathController(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setBreathController (value);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setBreathController(value);
 }
 
-void CMiniDexed::setAftertouch (uint8_t value, unsigned nTG)
+void CMiniDexed::setAftertouch(uint8_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setAftertouch (value);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setAftertouch(value);
 }
 
-void CMiniDexed::setPitchbend (int16_t value, unsigned nTG)
+void CMiniDexed::setPitchbend(int16_t value, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->setPitchbend (value);
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->setPitchbend(value);
 }
 
-void CMiniDexed::ControllersRefresh (unsigned nTG)
+void CMiniDexed::ControllersRefresh(unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_pTG[nTG]->ControllersRefresh ();
+	assert(m_pTG[nTG]);
+	m_pTG[nTG]->ControllersRefresh();
 }
 
-void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
+void CMiniDexed::SetParameter(TParameter Parameter, int nValue)
 {
-	assert (Parameter < ParameterUnknown);
+	assert(Parameter < ParameterUnknown);
 
 	switch (Parameter)
 	{
@@ -1174,44 +1296,36 @@ void CMiniDexed::SetParameter (TParameter Parameter, int nValue)
 		break;
 
 	case ParameterMasterVolume:
-		nValue=constrain((int)nValue,0,127);
-		setMasterVolume (nValue / 127.0f);
-		m_UI.ParameterChanged ();
+		nValue = constrain((int)nValue, 0, 127);
+		setMasterVolume(nValue / 127.0f);
+		m_UI.ParameterChanged();
 		break;
 
 	case ParameterSDFilter:
 		m_SDFilter = SDFilter::to_filter(nValue, m_pConfig->GetToneGenerators());
-		m_UI.ParameterChanged ();
-		break;
-
-	case ParameterMixerDryLevel:
-		nValue = constrain(nValue, 0, 99);
-		tg_mixer->gain(mapfloat(nValue,0,99,0.0f,1.0f));
-		break;
-
-	case ParameterFXBypass:
+		m_UI.ParameterChanged();
 		break;
 
 	default:
-		assert (0);
+		assert(0);
 		break;
 	}
 
 	m_nParameter[Parameter] = nValue;
 }
 
-int CMiniDexed::GetParameter (TParameter Parameter)
+int CMiniDexed::GetParameter(TParameter Parameter)
 {
-	assert (Parameter < ParameterUnknown);
+	assert(Parameter < ParameterUnknown);
 	return m_nParameter[Parameter];
 }
 
-void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX, bool bSaveOnly)
+void CMiniDexed::SetFXParameter(FX::Parameter Parameter, int nValue, unsigned nFX, bool bSaveOnly)
 {
-	assert (nFX < CConfig::FXChains);
-	assert (Parameter < FX::FXParameterUnknown);
+	assert(nFX < CConfig::FXChains);
+	assert(Parameter < FX::Parameter::Unknown);
 
-	const FX::FXParameterType &p = FX::s_FXParameter[Parameter];
+	const FX::ParameterType &p = FX::s_Parameter[Parameter];
 	nValue = constrain((int)nValue, p.Minimum, p.Maximum);
 
 	m_nFXParameter[nFX][Parameter] = nValue;
@@ -1220,519 +1334,590 @@ void CMiniDexed::SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigne
 
 	switch (Parameter)
 	{
-	case FX::FXParameterSlot0:
-	case FX::FXParameterSlot1:
-	case FX::FXParameterSlot2:
-		fx_chain[nFX]->setSlot(Parameter - FX::FXParameterSlot0, nValue);
+	case FX::Parameter::Slot0:
+	case FX::Parameter::Slot1:
+	case FX::Parameter::Slot2:
+		fx_chain[nFX]->setSlot(Parameter - FX::Parameter::Slot0, nValue);
 		break;
 
-	case FX::FXParameterZynDistortionPreset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_distortion.loadpreset (nValue);
-		m_FXSpinLock.Release ();
-		break;
-	
-	case FX::FXParameterZynDistortionMix:
-	case FX::FXParameterZynDistortionPanning:
-	case FX::FXParameterZynDistortionDrive:
-	case FX::FXParameterZynDistortionLevel:
-	case FX::FXParameterZynDistortionType:
-	case FX::FXParameterZynDistortionNegate:
-	case FX::FXParameterZynDistortionFiltering:
-	case FX::FXParameterZynDistortionLowcut:
-	case FX::FXParameterZynDistortionHighcut:
-	case FX::FXParameterZynDistortionStereo:
-	case FX::FXParameterZynDistortionLRCross:
-	case FX::FXParameterZynDistortionShape:
-	case FX::FXParameterZynDistortionOffset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_distortion.changepar (Parameter - FX::FXParameterZynDistortionMix, nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynDistortionPreset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_distortion.loadpreset(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynDistortionBypass:
+	case FX::Parameter::ZynDistortionMix:
+	case FX::Parameter::ZynDistortionPanning:
+	case FX::Parameter::ZynDistortionDrive:
+	case FX::Parameter::ZynDistortionLevel:
+	case FX::Parameter::ZynDistortionType:
+	case FX::Parameter::ZynDistortionNegate:
+	case FX::Parameter::ZynDistortionFiltering:
+	case FX::Parameter::ZynDistortionLowcut:
+	case FX::Parameter::ZynDistortionHighcut:
+	case FX::Parameter::ZynDistortionStereo:
+	case FX::Parameter::ZynDistortionLRCross:
+	case FX::Parameter::ZynDistortionShape:
+	case FX::Parameter::ZynDistortionOffset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_distortion.changepar(Parameter - FX::Parameter::ZynDistortionMix, nValue);
+		m_FXSpinLock.Release();
+		break;
+
+	case FX::Parameter::ZynDistortionBypass:
 		fx_chain[nFX]->zyn_distortion.bypass = nValue;
 		break;
 
-	case FX::FXParameterYKChorusMix:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->yk_chorus.setMix (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::YKChorusMix:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->yk_chorus.setMix(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusEnable1:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->yk_chorus.setChorus1 (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::YKChorusEnable1:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->yk_chorus.setChorus1(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusEnable2:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->yk_chorus.setChorus2 (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::YKChorusEnable2:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->yk_chorus.setChorus2(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusLFORate1:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->yk_chorus.setChorus1LFORate (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::YKChorusLFORate1:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->yk_chorus.setChorus1LFORate(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusLFORate2:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->yk_chorus.setChorus2LFORate (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::YKChorusLFORate2:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->yk_chorus.setChorus2LFORate(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusBypass:
+	case FX::Parameter::YKChorusBypass:
 		fx_chain[nFX]->yk_chorus.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynChorusPreset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_chorus.loadpreset (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynChorusPreset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_chorus.loadpreset(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynChorusMix:
-	case FX::FXParameterZynChorusPanning:
-	case FX::FXParameterZynChorusLFOFreq:
-	case FX::FXParameterZynChorusLFORandomness:
-	case FX::FXParameterZynChorusLFOType:
-	case FX::FXParameterZynChorusLFOLRDelay:
-	case FX::FXParameterZynChorusDepth:
-	case FX::FXParameterZynChorusDelay:
-	case FX::FXParameterZynChorusFeedback:
-	case FX::FXParameterZynChorusLRCross:
-	case FX::FXParameterZynChorusMode:
-	case FX::FXParameterZynChorusSubtractive:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_chorus.changepar(Parameter - FX::FXParameterZynChorusMix, nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynChorusMix:
+	case FX::Parameter::ZynChorusPanning:
+	case FX::Parameter::ZynChorusLFOFreq:
+	case FX::Parameter::ZynChorusLFORandomness:
+	case FX::Parameter::ZynChorusLFOType:
+	case FX::Parameter::ZynChorusLFOLRDelay:
+	case FX::Parameter::ZynChorusDepth:
+	case FX::Parameter::ZynChorusDelay:
+	case FX::Parameter::ZynChorusFeedback:
+	case FX::Parameter::ZynChorusLRCross:
+	case FX::Parameter::ZynChorusMode:
+	case FX::Parameter::ZynChorusSubtractive:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_chorus.changepar(Parameter - FX::Parameter::ZynChorusMix, nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynChorusBypass:
+	case FX::Parameter::ZynChorusBypass:
 		fx_chain[nFX]->zyn_chorus.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynSympatheticPreset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_sympathetic.loadpreset (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynSympatheticPreset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_sympathetic.loadpreset(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynSympatheticMix:
-	case FX::FXParameterZynSympatheticPanning:
-	case FX::FXParameterZynSympatheticQ:
-	case FX::FXParameterZynSympatheticQSustain:
-	case FX::FXParameterZynSympatheticDrive:
-	case FX::FXParameterZynSympatheticLevel:
-	case FX::FXParameterZynSympatheticType:
-	case FX::FXParameterZynSympatheticUnisonSize:
-	case FX::FXParameterZynSympatheticUnisonSpread:
-	case FX::FXParameterZynSympatheticStrings:
-	case FX::FXParameterZynSympatheticInterval:
-	case FX::FXParameterZynSympatheticBaseNote:
-	case FX::FXParameterZynSympatheticLowcut:
-	case FX::FXParameterZynSympatheticHighcut:
-	case FX::FXParameterZynSympatheticNegate:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::FXParameterZynSympatheticMix, nValue, true);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynSympatheticMix:
+	case FX::Parameter::ZynSympatheticPanning:
+	case FX::Parameter::ZynSympatheticQ:
+	case FX::Parameter::ZynSympatheticQSustain:
+	case FX::Parameter::ZynSympatheticDrive:
+	case FX::Parameter::ZynSympatheticLevel:
+	case FX::Parameter::ZynSympatheticType:
+	case FX::Parameter::ZynSympatheticUnisonSize:
+	case FX::Parameter::ZynSympatheticUnisonSpread:
+	case FX::Parameter::ZynSympatheticStrings:
+	case FX::Parameter::ZynSympatheticInterval:
+	case FX::Parameter::ZynSympatheticBaseNote:
+	case FX::Parameter::ZynSympatheticLowcut:
+	case FX::Parameter::ZynSympatheticHighcut:
+	case FX::Parameter::ZynSympatheticNegate:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::Parameter::ZynSympatheticMix, nValue, true);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynSympatheticBypass:
+	case FX::Parameter::ZynSympatheticBypass:
 		fx_chain[nFX]->zyn_sympathetic.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynAPhaserPreset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_aphaser.loadpreset (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynAPhaserPreset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_aphaser.loadpreset(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynAPhaserMix:
-	case FX::FXParameterZynAPhaserPanning:
-	case FX::FXParameterZynAPhaserLFOFreq:
-	case FX::FXParameterZynAPhaserLFORandomness:
-	case FX::FXParameterZynAPhaserLFOType:
-	case FX::FXParameterZynAPhaserLFOLRDelay:
-	case FX::FXParameterZynAPhaserDepth:
-	case FX::FXParameterZynAPhaserFeedback:
-	case FX::FXParameterZynAPhaserStages:
-	case FX::FXParameterZynAPhaserLRCross:
-	case FX::FXParameterZynAPhaserSubtractive:
-	case FX::FXParameterZynAPhaserWidth:
-	case FX::FXParameterZynAPhaserDistortion:
-	case FX::FXParameterZynAPhaserMismatch:
-	case FX::FXParameterZynAPhaserHyper:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_aphaser.changepar(Parameter - FX::FXParameterZynAPhaserMix, nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynAPhaserMix:
+	case FX::Parameter::ZynAPhaserPanning:
+	case FX::Parameter::ZynAPhaserLFOFreq:
+	case FX::Parameter::ZynAPhaserLFORandomness:
+	case FX::Parameter::ZynAPhaserLFOType:
+	case FX::Parameter::ZynAPhaserLFOLRDelay:
+	case FX::Parameter::ZynAPhaserDepth:
+	case FX::Parameter::ZynAPhaserFeedback:
+	case FX::Parameter::ZynAPhaserStages:
+	case FX::Parameter::ZynAPhaserLRCross:
+	case FX::Parameter::ZynAPhaserSubtractive:
+	case FX::Parameter::ZynAPhaserWidth:
+	case FX::Parameter::ZynAPhaserDistortion:
+	case FX::Parameter::ZynAPhaserMismatch:
+	case FX::Parameter::ZynAPhaserHyper:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_aphaser.changepar(Parameter - FX::Parameter::ZynAPhaserMix, nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynAPhaserBypass:
+	case FX::Parameter::ZynAPhaserBypass:
 		fx_chain[nFX]->zyn_aphaser.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynPhaserPreset:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_phaser.loadpreset (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynPhaserPreset:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_phaser.loadpreset(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynPhaserMix:
-	case FX::FXParameterZynPhaserPanning:
-	case FX::FXParameterZynPhaserLFOFreq:
-	case FX::FXParameterZynPhaserLFORandomness:
-	case FX::FXParameterZynPhaserLFOType:
-	case FX::FXParameterZynPhaserLFOLRDelay:
-	case FX::FXParameterZynPhaserDepth:
-	case FX::FXParameterZynPhaserFeedback:
-	case FX::FXParameterZynPhaserStages:
-	case FX::FXParameterZynPhaserLRCross:
-	case FX::FXParameterZynPhaserSubtractive:
-	case FX::FXParameterZynPhaserPhase:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->zyn_phaser.changepar(Parameter - FX::FXParameterZynPhaserMix, nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ZynPhaserMix:
+	case FX::Parameter::ZynPhaserPanning:
+	case FX::Parameter::ZynPhaserLFOFreq:
+	case FX::Parameter::ZynPhaserLFORandomness:
+	case FX::Parameter::ZynPhaserLFOType:
+	case FX::Parameter::ZynPhaserLFOLRDelay:
+	case FX::Parameter::ZynPhaserDepth:
+	case FX::Parameter::ZynPhaserFeedback:
+	case FX::Parameter::ZynPhaserStages:
+	case FX::Parameter::ZynPhaserLRCross:
+	case FX::Parameter::ZynPhaserSubtractive:
+	case FX::Parameter::ZynPhaserPhase:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->zyn_phaser.changepar(Parameter - FX::Parameter::ZynPhaserMix, nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynPhaserBypass:
+	case FX::Parameter::ZynPhaserBypass:
 		fx_chain[nFX]->zyn_phaser.bypass = nValue;
 		break;
 
-	case FX::FXParameterDreamDelayMix:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->dream_delay.setMix (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::DreamDelayMix:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->dream_delay.setMix(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayMode:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->dream_delay.setMode ((AudioEffectDreamDelay::Mode)nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::DreamDelayMode:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->dream_delay.setMode((AudioEffectDreamDelay::Mode)nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTime:
-		SetFXParameter (FX::FXParameterDreamDelayTimeL, nValue, nFX);
-		SetFXParameter (FX::FXParameterDreamDelayTimeR, nValue, nFX);
+	case FX::Parameter::DreamDelayTime:
+		SetFXParameter(FX::Parameter::DreamDelayTimeL, nValue, nFX);
+		SetFXParameter(FX::Parameter::DreamDelayTimeR, nValue, nFX);
 		break;
 
-	case FX::FXParameterDreamDelayTimeL:
-		m_FXSpinLock.Acquire ();
+	case FX::Parameter::DreamDelayTimeL:
+		m_FXSpinLock.Acquire();
 
 		if (nValue <= 100)
 		{
-			fx_chain[nFX]->dream_delay.setTimeL (nValue / 100.f);
-			fx_chain[nFX]->dream_delay.setTimeLSync (AudioEffectDreamDelay::SYNC_NONE);
+			fx_chain[nFX]->dream_delay.setTimeL(nValue / 100.f);
+			fx_chain[nFX]->dream_delay.setTimeLSync(AudioEffectDreamDelay::SYNC_NONE);
 		}
 		else
 		{
-			fx_chain[nFX]->dream_delay.setTimeLSync ((AudioEffectDreamDelay::Sync)(nValue - 100));
+			fx_chain[nFX]->dream_delay.setTimeLSync((AudioEffectDreamDelay::Sync)(nValue - 100));
 		}
 
-		m_FXSpinLock.Release ();
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTimeR:
-		m_FXSpinLock.Acquire ();
+	case FX::Parameter::DreamDelayTimeR:
+		m_FXSpinLock.Acquire();
 
 		if (nValue <= 100)
 		{
-			fx_chain[nFX]->dream_delay.setTimeR (nValue / 100.f);
-			fx_chain[nFX]->dream_delay.setTimeRSync (AudioEffectDreamDelay::SYNC_NONE);
+			fx_chain[nFX]->dream_delay.setTimeR(nValue / 100.f);
+			fx_chain[nFX]->dream_delay.setTimeRSync(AudioEffectDreamDelay::SYNC_NONE);
 		}
 		else
 		{
-			fx_chain[nFX]->dream_delay.setTimeRSync ((AudioEffectDreamDelay::Sync)(nValue - 100));
+			fx_chain[nFX]->dream_delay.setTimeRSync((AudioEffectDreamDelay::Sync)(nValue - 100));
 		}
 
-		m_FXSpinLock.Release ();
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTempo:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->dream_delay.setTempo (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::DreamDelayTempo:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->dream_delay.setTempo(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayFeedback:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->dream_delay.setFeedback (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::DreamDelayFeedback:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->dream_delay.setFeedback(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayHighCut:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->dream_delay.setHighCut (MIDI_EQ_HZ[nValue]);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::DreamDelayHighCut:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->dream_delay.setHighCut(MIDI_EQ_HZ[nValue]);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayBypass:
+	case FX::Parameter::DreamDelayBypass:
 		fx_chain[nFX]->dream_delay.bypass = nValue;
 		break;
 
-	case FX::FXParameterPlateReverbMix:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.set_mix (nValue / 100.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbMix:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.set_mix(nValue / 100.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbSize:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.size (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbSize:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.size(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbHighDamp:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.hidamp (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbHighDamp:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.hidamp(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbLowDamp:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.lodamp (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbLowDamp:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.lodamp(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbLowPass:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.lowpass (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbLowPass:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.lowpass(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbDiffusion:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->plate_reverb.diffusion (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::PlateReverbDiffusion:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->plate_reverb.diffusion(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbBypass:
+	case FX::Parameter::PlateReverbBypass:
 		fx_chain[nFX]->plate_reverb.bypass = nValue;
 		break;
 
-	case FX::FXParameterCloudSeed2Preset:
-		fx_chain[nFX]->cloudseed2.loadPreset (nValue);
+	case FX::Parameter::CloudSeed2Preset:
+		fx_chain[nFX]->cloudseed2.loadPreset(nValue);
 		break;
 
-	case FX::FXParameterCloudSeed2Interpolation:
-	case FX::FXParameterCloudSeed2LowCutEnabled:
-	case FX::FXParameterCloudSeed2HighCutEnabled:
-	case FX::FXParameterCloudSeed2InputMix:
-	case FX::FXParameterCloudSeed2LowCut:
-	case FX::FXParameterCloudSeed2HighCut:
-	case FX::FXParameterCloudSeed2DryOut:
-	case FX::FXParameterCloudSeed2EarlyOut:
-	case FX::FXParameterCloudSeed2LateOut:
-	case FX::FXParameterCloudSeed2TapEnabled:
-	case FX::FXParameterCloudSeed2TapCount:
-	case FX::FXParameterCloudSeed2TapDecay:
-	case FX::FXParameterCloudSeed2TapPredelay:
-	case FX::FXParameterCloudSeed2TapLength:
-	case FX::FXParameterCloudSeed2EarlyDiffuseEnabled:
-	case FX::FXParameterCloudSeed2EarlyDiffuseCount:
-	case FX::FXParameterCloudSeed2EarlyDiffuseDelay:
-	case FX::FXParameterCloudSeed2EarlyDiffuseModAmount:
-	case FX::FXParameterCloudSeed2EarlyDiffuseFeedback:
-	case FX::FXParameterCloudSeed2EarlyDiffuseModRate:
-	case FX::FXParameterCloudSeed2LateMode:
-	case FX::FXParameterCloudSeed2LateLineCount:
-	case FX::FXParameterCloudSeed2LateDiffuseEnabled:
-	case FX::FXParameterCloudSeed2LateDiffuseCount:
-	case FX::FXParameterCloudSeed2LateLineSize:
-	case FX::FXParameterCloudSeed2LateLineModAmount:
-	case FX::FXParameterCloudSeed2LateDiffuseDelay:
-	case FX::FXParameterCloudSeed2LateDiffuseModAmount:
-	case FX::FXParameterCloudSeed2LateLineDecay:
-	case FX::FXParameterCloudSeed2LateLineModRate:
-	case FX::FXParameterCloudSeed2LateDiffuseFeedback:
-	case FX::FXParameterCloudSeed2LateDiffuseModRate:
-	case FX::FXParameterCloudSeed2EqLowShelfEnabled:
-	case FX::FXParameterCloudSeed2EqHighShelfEnabled:
-	case FX::FXParameterCloudSeed2EqLowpassEnabled:
-	case FX::FXParameterCloudSeed2EqLowFreq:
-	case FX::FXParameterCloudSeed2EqHighFreq:
-	case FX::FXParameterCloudSeed2EqCutoff:
-	case FX::FXParameterCloudSeed2EqLowGain:
-	case FX::FXParameterCloudSeed2EqHighGain:
-	case FX::FXParameterCloudSeed2EqCrossSeed:
-	case FX::FXParameterCloudSeed2SeedTap:
-	case FX::FXParameterCloudSeed2SeedDiffusion:
-	case FX::FXParameterCloudSeed2SeedDelay:
-	case FX::FXParameterCloudSeed2SeedPostDiffusion:
-		fx_chain[nFX]->cloudseed2.setParameter (Parameter - FX::FXParameterCloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
+	case FX::Parameter::CloudSeed2Interpolation:
+	case FX::Parameter::CloudSeed2LowCutEnabled:
+	case FX::Parameter::CloudSeed2HighCutEnabled:
+	case FX::Parameter::CloudSeed2InputMix:
+	case FX::Parameter::CloudSeed2LowCut:
+	case FX::Parameter::CloudSeed2HighCut:
+	case FX::Parameter::CloudSeed2DryOut:
+	case FX::Parameter::CloudSeed2EarlyOut:
+	case FX::Parameter::CloudSeed2LateOut:
+	case FX::Parameter::CloudSeed2TapEnabled:
+	case FX::Parameter::CloudSeed2TapCount:
+	case FX::Parameter::CloudSeed2TapDecay:
+	case FX::Parameter::CloudSeed2TapPredelay:
+	case FX::Parameter::CloudSeed2TapLength:
+	case FX::Parameter::CloudSeed2EarlyDiffuseEnabled:
+	case FX::Parameter::CloudSeed2EarlyDiffuseCount:
+	case FX::Parameter::CloudSeed2EarlyDiffuseDelay:
+	case FX::Parameter::CloudSeed2EarlyDiffuseModAmount:
+	case FX::Parameter::CloudSeed2EarlyDiffuseFeedback:
+	case FX::Parameter::CloudSeed2EarlyDiffuseModRate:
+	case FX::Parameter::CloudSeed2LateMode:
+	case FX::Parameter::CloudSeed2LateLineCount:
+	case FX::Parameter::CloudSeed2LateDiffuseEnabled:
+	case FX::Parameter::CloudSeed2LateDiffuseCount:
+	case FX::Parameter::CloudSeed2LateLineSize:
+	case FX::Parameter::CloudSeed2LateLineModAmount:
+	case FX::Parameter::CloudSeed2LateDiffuseDelay:
+	case FX::Parameter::CloudSeed2LateDiffuseModAmount:
+	case FX::Parameter::CloudSeed2LateLineDecay:
+	case FX::Parameter::CloudSeed2LateLineModRate:
+	case FX::Parameter::CloudSeed2LateDiffuseFeedback:
+	case FX::Parameter::CloudSeed2LateDiffuseModRate:
+	case FX::Parameter::CloudSeed2EqLowShelfEnabled:
+	case FX::Parameter::CloudSeed2EqHighShelfEnabled:
+	case FX::Parameter::CloudSeed2EqLowpassEnabled:
+	case FX::Parameter::CloudSeed2EqLowFreq:
+	case FX::Parameter::CloudSeed2EqHighFreq:
+	case FX::Parameter::CloudSeed2EqCutoff:
+	case FX::Parameter::CloudSeed2EqLowGain:
+	case FX::Parameter::CloudSeed2EqHighGain:
+	case FX::Parameter::CloudSeed2EqCrossSeed:
+	case FX::Parameter::CloudSeed2SeedTap:
+	case FX::Parameter::CloudSeed2SeedDiffusion:
+	case FX::Parameter::CloudSeed2SeedDelay:
+	case FX::Parameter::CloudSeed2SeedPostDiffusion:
+		fx_chain[nFX]->cloudseed2.setParameter(Parameter - FX::Parameter::CloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
 		break;
 
-	case FX::FXParameterCloudSeed2Bypass:
+	case FX::Parameter::CloudSeed2Bypass:
 		fx_chain[nFX]->cloudseed2.bypass = nValue;
 		break;
 
-	case FX::FXParameterCompressorPreGain:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setPreGain_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorPreGain:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setPreGain_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorThresh:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setThresh_dBFS (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorThresh:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setThresh_dBFS(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorRatio:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setCompressionRatio (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorRatio:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setCompressionRatio(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorAttack:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setAttack_sec ((nValue ?: 1) / 1000.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorAttack:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setAttack_sec((nValue ?: 1) / 1000.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorRelease:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setRelease_sec ((nValue ?: 1) / 1000.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorRelease:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setRelease_sec((nValue ?: 1) / 1000.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorMakeupGain:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.setMakeupGain_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorMakeupGain:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.setMakeupGain_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorHPFilterEnable:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->compressor.enableHPFilter (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::CompressorHPFilterEnable:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->compressor.enableHPFilter(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorBypass:
+	case FX::Parameter::CompressorBypass:
 		fx_chain[nFX]->compressor.bypass = nValue;
 		break;
 
-	case FX::FXParameterEQLow:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->eq.setLow_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQLow:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->eq.setLow_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQMid:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->eq.setMid_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQMid:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->eq.setMid_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQHigh:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->eq.setHigh_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQHigh:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->eq.setHigh_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQGain:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->eq.setGain_dB (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQGain:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->eq.setGain_dB(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQLowMidFreq:
-		m_FXSpinLock.Acquire ();
-		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setLowMidFreq_n (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQLowMidFreq:
+		m_FXSpinLock.Acquire();
+		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setLowMidFreq_n(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQMidHighFreq:
-		m_FXSpinLock.Acquire ();
-		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setMidHighFreq_n (nValue);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::EQMidHighFreq:
+		m_FXSpinLock.Acquire();
+		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setMidHighFreq_n(nValue);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQPreLowCut:
-		m_FXSpinLock.Acquire ();
+	case FX::Parameter::EQPreLowCut:
+		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setPreLowCut(MIDI_EQ_HZ[nValue]);
-		m_FXSpinLock.Release ();
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQPreHighCut:
-		m_FXSpinLock.Acquire ();
+	case FX::Parameter::EQPreHighCut:
+		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setPreHighCut(MIDI_EQ_HZ[nValue]);
-		m_FXSpinLock.Release ();
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQBypass:
+	case FX::Parameter::EQBypass:
 		fx_chain[nFX]->eq.bypass = nValue;
 		break;
 
-	case FX::FXParameterReturnLevel:
-		m_FXSpinLock.Acquire ();
-		fx_chain[nFX]->set_level (nValue / 99.0f);
-		m_FXSpinLock.Release ();
+	case FX::Parameter::ReturnLevel:
+		m_FXSpinLock.Acquire();
+		fx_chain[nFX]->set_level(nValue / 99.0f);
+		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterBypass:
+	case FX::Parameter::Bypass:
 		fx_chain[nFX]->bypass = nValue;
 		break;
 
 	default:
-		assert (0);
+		assert(0);
 		break;
 	}
 }
 
-int CMiniDexed::GetFXParameter (FX::TFXParameter Parameter, unsigned nFX)
+int CMiniDexed::GetFXParameter(FX::Parameter Parameter, unsigned nFX)
 {
-	assert (nFX < CConfig::FXChains);
-	assert (Parameter < FX::FXParameterUnknown);
+	assert(nFX < CConfig::FXChains);
+	assert(Parameter < FX::Parameter::Unknown);
 
-	if (Parameter >= FX::FXParameterZynDistortionMix && Parameter <= FX::FXParameterZynDistortionOffset)
+	if (Parameter >= FX::Parameter::ZynDistortionMix && Parameter <= FX::Parameter::ZynDistortionOffset)
 	{
-		return fx_chain[nFX]->zyn_distortion.getpar (Parameter - FX::FXParameterZynDistortionMix);
+		return fx_chain[nFX]->zyn_distortion.getpar(Parameter - FX::Parameter::ZynDistortionMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynChorusMix && Parameter <= FX::FXParameterZynChorusSubtractive)
+	if (Parameter >= FX::Parameter::ZynChorusMix && Parameter <= FX::Parameter::ZynChorusSubtractive)
 	{
-		return fx_chain[nFX]->zyn_chorus.getpar (Parameter - FX::FXParameterZynChorusMix);
+		return fx_chain[nFX]->zyn_chorus.getpar(Parameter - FX::Parameter::ZynChorusMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynSympatheticMix && Parameter <= FX::FXParameterZynSympatheticNegate)
+	if (Parameter >= FX::Parameter::ZynSympatheticMix && Parameter <= FX::Parameter::ZynSympatheticNegate)
 	{
-		return fx_chain[nFX]->zyn_sympathetic.getpar (Parameter - FX::FXParameterZynSympatheticMix);
+		return fx_chain[nFX]->zyn_sympathetic.getpar(Parameter - FX::Parameter::ZynSympatheticMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynAPhaserMix && Parameter <= FX::FXParameterZynAPhaserHyper)
+	if (Parameter >= FX::Parameter::ZynAPhaserMix && Parameter <= FX::Parameter::ZynAPhaserHyper)
 	{
-		return fx_chain[nFX]->zyn_aphaser.getpar (Parameter - FX::FXParameterZynAPhaserMix);
+		return fx_chain[nFX]->zyn_aphaser.getpar(Parameter - FX::Parameter::ZynAPhaserMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynPhaserMix && Parameter <= FX::FXParameterZynPhaserPhase)
+	if (Parameter >= FX::Parameter::ZynPhaserMix && Parameter <= FX::Parameter::ZynPhaserPhase)
 	{
-		return fx_chain[nFX]->zyn_phaser.getpar (Parameter - FX::FXParameterZynPhaserMix);
+		return fx_chain[nFX]->zyn_phaser.getpar(Parameter - FX::Parameter::ZynPhaserMix);
 	}
 
-	if (Parameter >= FX::FXParameterCloudSeed2Interpolation && Parameter <= FX::FXParameterCloudSeed2SeedPostDiffusion)
+	if (Parameter >= FX::Parameter::CloudSeed2Interpolation && Parameter <= FX::Parameter::CloudSeed2SeedPostDiffusion)
 	{
-		const FX::FXParameterType &p = FX::s_FXParameter[Parameter];
-		return mapfloat(fx_chain[nFX]->cloudseed2.getParameter (Parameter - FX::FXParameterCloudSeed2Interpolation), 0.0f, 1.0f, p.Minimum, p.Maximum);
+		const FX::ParameterType &p = FX::s_Parameter[Parameter];
+		return mapfloat(fx_chain[nFX]->cloudseed2.getParameter(Parameter - FX::Parameter::CloudSeed2Interpolation), 0.0f, 1.0f, p.Minimum, p.Maximum);
 	}
 
 	return m_nFXParameter[nFX][Parameter];
 }
 
-void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nTG)
+void CMiniDexed::SetBusParameter(Bus::Parameter Parameter, int nValue, unsigned nBus, bool bSaveOnly)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nBus < CConfig::Buses);
+	assert(Parameter < Bus::Parameter::Unknown);
 
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	const Bus::ParameterType &p = Bus::s_Parameter[Parameter];
+	nValue = constrain((int)nValue, p.Minimum, p.Maximum);
+
+	m_nBusParameter[nBus][Parameter] = nValue;
+
+	if (bSaveOnly) return;
+
+	switch (Parameter)
+	{
+	case Bus::Parameter::PerformanceBank:
+		if (m_BusPerformanceConfig[nBus]->IsValidPerformanceBank(nValue))
+			m_bSetNewBusPerformanceBank = true;
+		break;
+	case Bus::Parameter::Performance:
+		if (m_BusPerformanceConfig[nBus]->IsValidPerformance(nValue))
+		{
+			m_bSetNewBusPerformance = true;
+			if (!m_bVolRampedDown)
+				m_bVolRampDownWait = true;
+		}
+		break;
+	case Bus::Parameter::LoadType:
+		break;
+	case Bus::Parameter::MIDIChannel:
+	{
+		if (nValue == CMIDIDevice::Disabled) break;
+
+		unsigned nFromTG = nBus * 8;
+		unsigned nToTG = (nBus + 1) * 8;
+
+		unsigned nMinCh = *std::min_element(&m_nMIDIChannel[nFromTG], &m_nMIDIChannel[nToTG]);
+
+		for (unsigned nTG = nFromTG; nTG < nToTG; ++nTG)
+		{
+			unsigned nCh = m_nMIDIChannel[nTG];
+			if (nCh != CMIDIDevice::Disabled)
+			{
+				if (nValue == CMIDIDevice::OmniMode)
+					nCh = CMIDIDevice::OmniMode;
+				else if (nValue < CMIDIDevice::Channels)
+					nCh = (nCh + nValue - nMinCh) % CMIDIDevice::Channels;
+
+				SetMIDIChannel(nCh, nTG);
+			}
+		}
+	}
+	break;
+	case Bus::Parameter::MixerDryLevel:
+		bus_mixer[nBus]->gain(mapfloat(nValue, 0, 99, 0.0f, 1.0f));
+		break;
+	case Bus::Parameter::FXBypass:
+		break;
+	default:
+		assert(0);
+		break;
+	}
+}
+
+int CMiniDexed::GetBusParameter(Bus::Parameter Parameter, unsigned nBus)
+{
+	assert(nBus < CConfig::Buses);
+	assert(Parameter < Bus::Parameter::Unknown);
+
+	return m_nBusParameter[nBus][Parameter];
+}
+
+void CMiniDexed::SetTGParameter(TTGParameter Parameter, int nValue, unsigned nTG)
+{
+	assert(nTG < CConfig::AllToneGenerators);
+
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	unsigned nTGLink = m_nTGLink[nTG];
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
 	{
-		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink))
+		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink || i / 8 != nTG / 8))
 			continue;
 
 		if (i != nTG && Parameter == TGParameterTGLink)
@@ -1746,184 +1931,366 @@ void CMiniDexed::SetTGParameter (TTGParameter Parameter, int nValue, unsigned nT
 
 		switch (Parameter)
 		{
-		case TGParameterVoiceBank:	BankSelect (nValue, i);	break;
-		case TGParameterVoiceBankMSB:	BankSelectMSB (nValue, i);	break;
-		case TGParameterVoiceBankLSB:	BankSelectLSB (nValue, i);	break;
-		case TGParameterProgram:	ProgramChange (nValue, i);	break;
-		case TGParameterVolume:		SetVolume (nValue, i);	break;
-		case TGParameterPan:		SetPan (nValue, i);		break;
-		case TGParameterMasterTune:	SetMasterTune (nValue, i);	break;
-		case TGParameterCutoff:		SetCutoff (nValue, i);	break;
-		case TGParameterResonance:	SetResonance (nValue, i);	break;
-		case TGParameterPitchBendRange:	setPitchbendRange (nValue, i);	break;
-		case TGParameterPitchBendStep:	setPitchbendStep (nValue, i);	break;
-		case TGParameterPortamentoMode:		setPortamentoMode (nValue, i);	break;
-		case TGParameterPortamentoGlissando:	setPortamentoGlissando (nValue, i);	break;
-		case TGParameterPortamentoTime:		setPortamentoTime (nValue, i);	break;
-		case TGParameterNoteLimitLow:		setNoteLimitLow (nValue, i);		break;
-		case TGParameterNoteLimitHigh:		setNoteLimitHigh (nValue, i);		break;
-		case TGParameterNoteShift:		setNoteShift (nValue, i);		break;
-		case TGParameterMonoMode:		setMonoMode (nValue , i);	break; 
-		case TGParameterTGLink:			setTGLink(nValue, i);		break;
-
-		case TGParameterMWRange:					setModController(0, 0, nValue, i); break;
-		case TGParameterMWPitch:					setModController(0, 1, nValue, i); break;
-		case TGParameterMWAmplitude:				setModController(0, 2, nValue, i); break;
-		case TGParameterMWEGBias:					setModController(0, 3, nValue, i); break;
-		
-		case TGParameterFCRange:					setModController(1, 0, nValue, i); break;
-		case TGParameterFCPitch:					setModController(1, 1, nValue, i); break;
-		case TGParameterFCAmplitude:				setModController(1, 2, nValue, i); break;
-		case TGParameterFCEGBias:					setModController(1, 3, nValue, i); break;
-		
-		case TGParameterBCRange:					setModController(2, 0, nValue, i); break;
-		case TGParameterBCPitch:					setModController(2, 1, nValue, i); break;
-		case TGParameterBCAmplitude:				setModController(2, 2, nValue, i); break;
-		case TGParameterBCEGBias:					setModController(2, 3, nValue, i); break;
-		
-		case TGParameterATRange:					setModController(3, 0, nValue, i); break;
-		case TGParameterATPitch:					setModController(3, 1, nValue, i); break;
-		case TGParameterATAmplitude:				setModController(3, 2, nValue, i); break;
-		case TGParameterATEGBias:					setModController(3, 3, nValue, i); break;
-		
-		
-		case TGParameterMIDIChannel:
-			assert (0 <= nValue && nValue <= 255);
-			SetMIDIChannel ((uint8_t) nValue, i);
+		case TGParameterVoiceBank:
+			BankSelect(nValue, i);
+			break;
+		case TGParameterVoiceBankMSB:
+			BankSelectMSB(nValue, i);
+			break;
+		case TGParameterVoiceBankLSB:
+			BankSelectLSB(nValue, i);
+			break;
+		case TGParameterProgram:
+			ProgramChange(nValue, i);
+			break;
+		case TGParameterVolume:
+			SetVolume(nValue, i);
+			break;
+		case TGParameterPan:
+			SetPan(nValue, i);
+			break;
+		case TGParameterMasterTune:
+			SetMasterTune(nValue, i);
+			break;
+		case TGParameterCutoff:
+			SetCutoff(nValue, i);
+			break;
+		case TGParameterResonance:
+			SetResonance(nValue, i);
+			break;
+		case TGParameterPitchBendRange:
+			setPitchbendRange(nValue, i);
+			break;
+		case TGParameterPitchBendStep:
+			setPitchbendStep(nValue, i);
+			break;
+		case TGParameterPortamentoMode:
+			setPortamentoMode(nValue, i);
+			break;
+		case TGParameterPortamentoGlissando:
+			setPortamentoGlissando(nValue, i);
+			break;
+		case TGParameterPortamentoTime:
+			setPortamentoTime(nValue, i);
+			break;
+		case TGParameterNoteLimitLow:
+			setNoteLimitLow(nValue, i);
+			break;
+		case TGParameterNoteLimitHigh:
+			setNoteLimitHigh(nValue, i);
+			break;
+		case TGParameterNoteShift:
+			setNoteShift(nValue, i);
+			break;
+		case TGParameterMonoMode:
+			setMonoMode(nValue, i);
+			break;
+		case TGParameterTGLink:
+			setTGLink(nValue, i);
 			break;
 
-		case TGParameterSysExChannel:		SetSysExChannel (nValue, i); break;
-		case TGParameterSysExEnable:		SetSysExEnable (nValue, i); break;
+		case TGParameterMWRange:
+			setModController(0, 0, nValue, i);
+			break;
+		case TGParameterMWPitch:
+			setModController(0, 1, nValue, i);
+			break;
+		case TGParameterMWAmplitude:
+			setModController(0, 2, nValue, i);
+			break;
+		case TGParameterMWEGBias:
+			setModController(0, 3, nValue, i);
+			break;
 
-		case TGParameterMIDIRxSustain:		SetMIDIRxSustain (nValue, i); break;
-		case TGParameterMIDIRxPortamento:	SetMIDIRxPortamento (nValue, i); break;
-		case TGParameterMIDIRxSostenuto:	SetMIDIRxSostenuto (nValue, i); break;
-		case TGParameterMIDIRxHold2:		SetMIDIRxHold2 (nValue, i); break;
+		case TGParameterFCRange:
+			setModController(1, 0, nValue, i);
+			break;
+		case TGParameterFCPitch:
+			setModController(1, 1, nValue, i);
+			break;
+		case TGParameterFCAmplitude:
+			setModController(1, 2, nValue, i);
+			break;
+		case TGParameterFCEGBias:
+			setModController(1, 3, nValue, i);
+			break;
 
-		case TGParameterFX1Send:			SetFX1Send (nValue, i); break;
-		case TGParameterFX2Send:			SetFX2Send (nValue, i); break;
+		case TGParameterBCRange:
+			setModController(2, 0, nValue, i);
+			break;
+		case TGParameterBCPitch:
+			setModController(2, 1, nValue, i);
+			break;
+		case TGParameterBCAmplitude:
+			setModController(2, 2, nValue, i);
+			break;
+		case TGParameterBCEGBias:
+			setModController(2, 3, nValue, i);
+			break;
 
-		case TGParameterCompressorEnable:	SetCompressorEnable (nValue, i); break;
-		case TGParameterCompressorPreGain:	SetCompressorPreGain (nValue, i); break;
-		case TGParameterCompressorThresh:	SetCompressorThresh (nValue, i); break;
-		case TGParameterCompressorRatio:	SetCompressorRatio (nValue, i); break;
-		case TGParameterCompressorAttack:	SetCompressorAttack (nValue, i); break;
-		case TGParameterCompressorRelease:	SetCompressorRelease (nValue, i); break;
-		case TGParameterCompressorMakeupGain:	SetCompressorMakeupGain (nValue, i); break;
+		case TGParameterATRange:
+			setModController(3, 0, nValue, i);
+			break;
+		case TGParameterATPitch:
+			setModController(3, 1, nValue, i);
+			break;
+		case TGParameterATAmplitude:
+			setModController(3, 2, nValue, i);
+			break;
+		case TGParameterATEGBias:
+			setModController(3, 3, nValue, i);
+			break;
 
-		case TGParameterEQLow:			SetEQLow (nValue, i); break;
-		case TGParameterEQMid:			SetEQMid (nValue, i); break;
-		case TGParameterEQHigh:			SetEQHigh (nValue, i); break;
-		case TGParameterEQGain:			SetEQGain (nValue, i); break;
-		case TGParameterEQLowMidFreq:		SetEQLowMidFreq (nValue, i); break;
-		case TGParameterEQMidHighFreq:		SetEQMidHighFreq (nValue, i); break;
-		case TGParameterEQPreLowcut:		SetEQPreLowcut (nValue, i); break;
-		case TGParameterEQPreHighcut:		SetEQPreHighcut (nValue, i); break;
+		case TGParameterMIDIChannel:
+			assert(0 <= nValue && nValue <= 255);
+			SetMIDIChannel((uint8_t)nValue, i);
+			break;
+
+		case TGParameterSysExChannel:
+			SetSysExChannel(nValue, i);
+			break;
+		case TGParameterSysExEnable:
+			SetSysExEnable(nValue, i);
+			break;
+
+		case TGParameterMIDIRxSustain:
+			SetMIDIRxSustain(nValue, i);
+			break;
+		case TGParameterMIDIRxPortamento:
+			SetMIDIRxPortamento(nValue, i);
+			break;
+		case TGParameterMIDIRxSostenuto:
+			SetMIDIRxSostenuto(nValue, i);
+			break;
+		case TGParameterMIDIRxHold2:
+			SetMIDIRxHold2(nValue, i);
+			break;
+
+		case TGParameterFX1Send:
+			SetFX1Send(nValue, i);
+			break;
+		case TGParameterFX2Send:
+			SetFX2Send(nValue, i);
+			break;
+
+		case TGParameterCompressorEnable:
+			SetCompressorEnable(nValue, i);
+			break;
+		case TGParameterCompressorPreGain:
+			SetCompressorPreGain(nValue, i);
+			break;
+		case TGParameterCompressorThresh:
+			SetCompressorThresh(nValue, i);
+			break;
+		case TGParameterCompressorRatio:
+			SetCompressorRatio(nValue, i);
+			break;
+		case TGParameterCompressorAttack:
+			SetCompressorAttack(nValue, i);
+			break;
+		case TGParameterCompressorRelease:
+			SetCompressorRelease(nValue, i);
+			break;
+		case TGParameterCompressorMakeupGain:
+			SetCompressorMakeupGain(nValue, i);
+			break;
+
+		case TGParameterEQLow:
+			SetEQLow(nValue, i);
+			break;
+		case TGParameterEQMid:
+			SetEQMid(nValue, i);
+			break;
+		case TGParameterEQHigh:
+			SetEQHigh(nValue, i);
+			break;
+		case TGParameterEQGain:
+			SetEQGain(nValue, i);
+			break;
+		case TGParameterEQLowMidFreq:
+			SetEQLowMidFreq(nValue, i);
+			break;
+		case TGParameterEQMidHighFreq:
+			SetEQMidHighFreq(nValue, i);
+			break;
+		case TGParameterEQPreLowcut:
+			SetEQPreLowcut(nValue, i);
+			break;
+		case TGParameterEQPreHighcut:
+			SetEQPreHighcut(nValue, i);
+			break;
 
 		default:
-			assert (0);
+			assert(0);
 			break;
 		}
 	}
 }
 
-int CMiniDexed::GetTGParameter (TTGParameter Parameter, unsigned nTG)
+int CMiniDexed::GetTGParameter(TTGParameter Parameter, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 
 	switch (Parameter)
 	{
-	case TGParameterVoiceBank:	return m_nVoiceBankID[nTG];
-	case TGParameterVoiceBankMSB:	return m_nVoiceBankID[nTG] >> 7;
-	case TGParameterVoiceBankLSB:	return m_nVoiceBankID[nTG] & 0x7F;
-	case TGParameterProgram:	return m_nProgram[nTG];
-	case TGParameterVolume:		return m_nVolume[nTG];
-	case TGParameterPan:		return m_nPan[nTG];
-	case TGParameterMasterTune:	return m_nMasterTune[nTG];
-	case TGParameterCutoff:		return m_nCutoff[nTG];
-	case TGParameterResonance:	return m_nResonance[nTG];
-	case TGParameterMIDIChannel:	return m_nMIDIChannel[nTG];
-	case TGParameterSysExChannel:	return m_nSysExChannel[nTG];
-	case TGParameterSysExEnable:	return m_bSysExEnable[nTG];
-	case TGParameterMIDIRxSustain:	return m_bMIDIRxSustain[nTG];
-	case TGParameterMIDIRxPortamento:	return m_bMIDIRxPortamento[nTG];
-	case TGParameterMIDIRxSostenuto:	return m_bMIDIRxSostenuto[nTG];
-	case TGParameterMIDIRxHold2:	return m_bMIDIRxHold2[nTG];
-	case TGParameterFX1Send:	return m_nFX1Send[nTG];
-	case TGParameterFX2Send:	return m_nFX2Send[nTG];
-	case TGParameterPitchBendRange:	return m_nPitchBendRange[nTG];
-	case TGParameterPitchBendStep:	return m_nPitchBendStep[nTG];
-	case TGParameterPortamentoMode:		return m_nPortamentoMode[nTG];
-	case TGParameterPortamentoGlissando:	return m_nPortamentoGlissando[nTG];
-	case TGParameterPortamentoTime:		return m_nPortamentoTime[nTG];
-	case TGParameterNoteLimitLow:		return m_nNoteLimitLow[nTG];
-	case TGParameterNoteLimitHigh:		return m_nNoteLimitHigh[nTG];
-	case TGParameterNoteShift:		return m_nNoteShift[nTG];
-	case TGParameterMonoMode:		return m_bMonoMode[nTG] ? 1 : 0; 
+	case TGParameterVoiceBank:
+		return m_nVoiceBankID[nTG];
+	case TGParameterVoiceBankMSB:
+		return m_nVoiceBankID[nTG] >> 7;
+	case TGParameterVoiceBankLSB:
+		return m_nVoiceBankID[nTG] & 0x7F;
+	case TGParameterProgram:
+		return m_nProgram[nTG];
+	case TGParameterVolume:
+		return m_nVolume[nTG];
+	case TGParameterPan:
+		return m_nPan[nTG];
+	case TGParameterMasterTune:
+		return m_nMasterTune[nTG];
+	case TGParameterCutoff:
+		return m_nCutoff[nTG];
+	case TGParameterResonance:
+		return m_nResonance[nTG];
+	case TGParameterMIDIChannel:
+		return m_nMIDIChannel[nTG];
+	case TGParameterSysExChannel:
+		return m_nSysExChannel[nTG];
+	case TGParameterSysExEnable:
+		return m_bSysExEnable[nTG];
+	case TGParameterMIDIRxSustain:
+		return m_bMIDIRxSustain[nTG];
+	case TGParameterMIDIRxPortamento:
+		return m_bMIDIRxPortamento[nTG];
+	case TGParameterMIDIRxSostenuto:
+		return m_bMIDIRxSostenuto[nTG];
+	case TGParameterMIDIRxHold2:
+		return m_bMIDIRxHold2[nTG];
+	case TGParameterFX1Send:
+		return m_nFX1Send[nTG];
+	case TGParameterFX2Send:
+		return m_nFX2Send[nTG];
+	case TGParameterPitchBendRange:
+		return m_nPitchBendRange[nTG];
+	case TGParameterPitchBendStep:
+		return m_nPitchBendStep[nTG];
+	case TGParameterPortamentoMode:
+		return m_nPortamentoMode[nTG];
+	case TGParameterPortamentoGlissando:
+		return m_nPortamentoGlissando[nTG];
+	case TGParameterPortamentoTime:
+		return m_nPortamentoTime[nTG];
+	case TGParameterNoteLimitLow:
+		return m_nNoteLimitLow[nTG];
+	case TGParameterNoteLimitHigh:
+		return m_nNoteLimitHigh[nTG];
+	case TGParameterNoteShift:
+		return m_nNoteShift[nTG];
+	case TGParameterMonoMode:
+		return m_bMonoMode[nTG] ? 1 : 0;
 
-	case TGParameterTGLink:			return m_nTGLink[nTG];
-	
-	case TGParameterMWRange:					return getModController(0, 0, nTG);
-	case TGParameterMWPitch:					return getModController(0, 1, nTG);
-	case TGParameterMWAmplitude:				return getModController(0, 2, nTG); 
-	case TGParameterMWEGBias:					return getModController(0, 3, nTG); 
-	
-	case TGParameterFCRange:					return getModController(1, 0,  nTG); 
-	case TGParameterFCPitch:					return getModController(1, 1,  nTG); 
-	case TGParameterFCAmplitude:				return getModController(1, 2,  nTG); 
-	case TGParameterFCEGBias:					return getModController(1, 3,  nTG); 
-	
-	case TGParameterBCRange:					return getModController(2, 0,  nTG); 
-	case TGParameterBCPitch:					return getModController(2, 1,  nTG); 
-	case TGParameterBCAmplitude:				return getModController(2, 2,  nTG); 
-	case TGParameterBCEGBias:					return getModController(2, 3,  nTG); 
-	
-	case TGParameterATRange:					return getModController(3, 0,  nTG); 
-	case TGParameterATPitch:					return getModController(3, 1,  nTG); 
-	case TGParameterATAmplitude:				return getModController(3, 2,  nTG); 
-	case TGParameterATEGBias:					return getModController(3, 3,  nTG); 
-	
-	case TGParameterCompressorEnable:	return m_bCompressorEnable[nTG];
-	case TGParameterCompressorPreGain:	return m_nCompressorPreGain[nTG];
-	case TGParameterCompressorThresh:	return m_nCompressorThresh[nTG];
-	case TGParameterCompressorRatio:	return m_nCompressorRatio[nTG];	
-	case TGParameterCompressorAttack:	return m_nCompressorAttack[nTG];
-	case TGParameterCompressorRelease:	return m_nCompressorRelease[nTG];
-	case TGParameterCompressorMakeupGain:	return m_nCompressorMakeupGain[nTG];
+	case TGParameterTGLink:
+		return m_nTGLink[nTG];
 
-	case TGParameterEQLow:			return m_nEQLow[nTG]; break;
-	case TGParameterEQMid:			return m_nEQMid[nTG]; break;
-	case TGParameterEQHigh:			return m_nEQHigh[nTG]; break;
-	case TGParameterEQGain:			return m_nEQGain[nTG]; break;
-	case TGParameterEQLowMidFreq:		return m_nEQLowMidFreq[nTG]; break;
-	case TGParameterEQMidHighFreq:		return m_nEQMidHighFreq[nTG]; break;
-	case TGParameterEQPreLowcut:		return m_nEQPreLowcut[nTG]; break;
-	case TGParameterEQPreHighcut:		return m_nEQPreHighcut[nTG]; break;
+	case TGParameterMWRange:
+		return getModController(0, 0, nTG);
+	case TGParameterMWPitch:
+		return getModController(0, 1, nTG);
+	case TGParameterMWAmplitude:
+		return getModController(0, 2, nTG);
+	case TGParameterMWEGBias:
+		return getModController(0, 3, nTG);
+
+	case TGParameterFCRange:
+		return getModController(1, 0, nTG);
+	case TGParameterFCPitch:
+		return getModController(1, 1, nTG);
+	case TGParameterFCAmplitude:
+		return getModController(1, 2, nTG);
+	case TGParameterFCEGBias:
+		return getModController(1, 3, nTG);
+
+	case TGParameterBCRange:
+		return getModController(2, 0, nTG);
+	case TGParameterBCPitch:
+		return getModController(2, 1, nTG);
+	case TGParameterBCAmplitude:
+		return getModController(2, 2, nTG);
+	case TGParameterBCEGBias:
+		return getModController(2, 3, nTG);
+
+	case TGParameterATRange:
+		return getModController(3, 0, nTG);
+	case TGParameterATPitch:
+		return getModController(3, 1, nTG);
+	case TGParameterATAmplitude:
+		return getModController(3, 2, nTG);
+	case TGParameterATEGBias:
+		return getModController(3, 3, nTG);
+
+	case TGParameterCompressorEnable:
+		return m_bCompressorEnable[nTG];
+	case TGParameterCompressorPreGain:
+		return m_nCompressorPreGain[nTG];
+	case TGParameterCompressorThresh:
+		return m_nCompressorThresh[nTG];
+	case TGParameterCompressorRatio:
+		return m_nCompressorRatio[nTG];
+	case TGParameterCompressorAttack:
+		return m_nCompressorAttack[nTG];
+	case TGParameterCompressorRelease:
+		return m_nCompressorRelease[nTG];
+	case TGParameterCompressorMakeupGain:
+		return m_nCompressorMakeupGain[nTG];
+
+	case TGParameterEQLow:
+		return m_nEQLow[nTG];
+		break;
+	case TGParameterEQMid:
+		return m_nEQMid[nTG];
+		break;
+	case TGParameterEQHigh:
+		return m_nEQHigh[nTG];
+		break;
+	case TGParameterEQGain:
+		return m_nEQGain[nTG];
+		break;
+	case TGParameterEQLowMidFreq:
+		return m_nEQLowMidFreq[nTG];
+		break;
+	case TGParameterEQMidHighFreq:
+		return m_nEQMidHighFreq[nTG];
+		break;
+	case TGParameterEQPreLowcut:
+		return m_nEQPreLowcut[nTG];
+		break;
+	case TGParameterEQPreHighcut:
+		return m_nEQPreHighcut[nTG];
+		break;
 
 	default:
-		assert (0);
+		assert(0);
 		return 0;
 	}
 }
 
-void CMiniDexed::SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigned nOP, unsigned nTG)
+void CMiniDexed::SetVoiceParameter(uint8_t uchOffset, uint8_t uchValue, unsigned nOP, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	assert (nOP <= 6);
+	assert(m_pTG[nTG]);
+	assert(nOP <= 6);
 
 	if (nOP < 6)
 	{
-		nOP = 5 - nOP;		// OPs are in reverse order
+		nOP = 5 - nOP; // OPs are in reverse order
 	}
 
 	unsigned nTGLink = m_nTGLink[nTG];
 
 	for (unsigned i = 0; i < m_nToneGenerators; i++)
 	{
-		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink))
+		if (i != nTG && (!nTGLink || m_nTGLink[i] != nTGLink || i / 8 != nTG / 8))
 			continue;
 
 		if (nOP < 6)
@@ -1939,29 +2306,28 @@ void CMiniDexed::SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigne
 					setOPMask(m_uchOPMask[i] & ~(1 << nOP), i);
 				}
 
-
 				continue;
-			}		
+			}
 		}
 
 		uint8_t offset = uchOffset + nOP * 21;
-		assert (offset < 156);
+		assert(offset < 156);
 
-		m_pTG[i]->setVoiceDataElement (offset, uchValue);
+		m_pTG[i]->setVoiceDataElement(offset, uchValue);
 	}
 }
 
-uint8_t CMiniDexed::GetVoiceParameter (uint8_t uchOffset, unsigned nOP, unsigned nTG)
+uint8_t CMiniDexed::GetVoiceParameter(uint8_t uchOffset, unsigned nOP, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return 0;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return 0; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	assert (nOP <= 6);
+	assert(m_pTG[nTG]);
+	assert(nOP <= 6);
 
 	if (nOP < 6)
 	{
-		nOP = 5 - nOP;		// OPs are in reverse order
+		nOP = 5 - nOP; // OPs are in reverse order
 
 		if (uchOffset == DEXED_OP_ENABLE)
 		{
@@ -1970,69 +2336,69 @@ uint8_t CMiniDexed::GetVoiceParameter (uint8_t uchOffset, unsigned nOP, unsigned
 	}
 
 	uchOffset += nOP * 21;
-	assert (uchOffset < 156);
+	assert(uchOffset < 156);
 
-	return m_pTG[nTG]->getVoiceDataElement (uchOffset);
+	return m_pTG[nTG]->getVoiceDataElement(uchOffset);
 }
 
-std::string CMiniDexed::GetVoiceName (unsigned nTG)
+std::string CMiniDexed::GetVoiceName(unsigned nTG)
 {
 	char VoiceName[11];
-	memset (VoiceName, 0, sizeof VoiceName);
+	memset(VoiceName, 0, sizeof VoiceName);
 	VoiceName[0] = 32; // space
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 
 	if (nTG < m_nToneGenerators)
 	{
-		assert (m_pTG[nTG]);
-		m_pTG[nTG]->getName (VoiceName);
+		assert(m_pTG[nTG]);
+		m_pTG[nTG]->getName(VoiceName);
 	}
-	std::string Result (VoiceName);
+	std::string Result(VoiceName);
 	return Result;
 }
 
 #ifndef ARM_ALLOW_MULTI_CORE
 
-void CMiniDexed::ProcessSound (void)
+void CMiniDexed::ProcessSound(void)
 {
-	assert (m_pSoundDevice);
+	assert(m_pSoundDevice);
 
-	unsigned nFrames = m_nQueueSizeFrames - m_pSoundDevice->GetQueueFramesAvail ();
-	if (nFrames >= m_nQueueSizeFrames/2)
+	unsigned nFrames = m_nQueueSizeFrames - m_pSoundDevice->GetQueueFramesAvail();
+	if (nFrames >= m_nQueueSizeFrames / 2)
 	{
 		if (m_bProfileEnabled)
 		{
-			m_GetChunkTimer.Start ();
+			m_GetChunkTimer.Start();
 		}
 
 		float32_t SampleBuffer[nFrames];
-		m_pTG[0]->getSamples (SampleBuffer, nFrames);
+		m_pTG[0]->getSamples(SampleBuffer, nFrames);
 
 		// Convert single float array (mono) to int16 array
 		int32_t tmp_int[nFrames];
-		arm_float_to_q23(SampleBuffer,tmp_int,nFrames);
+		arm_float_to_q23(SampleBuffer, tmp_int, nFrames);
 
-		if (m_pSoundDevice->Write (tmp_int, sizeof(tmp_int)) != (int) sizeof(tmp_int))
+		if (m_pSoundDevice->Write(tmp_int, sizeof(tmp_int)) != (int)sizeof(tmp_int))
 		{
-			LOGERR ("Sound data dropped");
+			LOGERR("Sound data dropped");
 		}
 
 		if (m_bProfileEnabled)
 		{
-			m_GetChunkTimer.Stop ();
+			m_GetChunkTimer.Stop();
 		}
 	}
 }
 
-#else	// #ifdef ARM_ALLOW_MULTI_CORE
+#else // #ifdef ARM_ALLOW_MULTI_CORE
 
-void CMiniDexed::ProcessSound (void)
+void CMiniDexed::ProcessSound(void)
 {
-	assert (m_pSoundDevice);
-	assert (m_pConfig);
+	assert(m_pSoundDevice);
+	assert(m_pConfig);
 
-	unsigned nFrames = m_nQueueSizeFrames - m_pSoundDevice->GetQueueFramesAvail ();
-	if (nFrames >= m_nQueueSizeFrames/2)
+	unsigned nFrames = m_nQueueSizeFrames - m_pSoundDevice->GetQueueFramesAvail();
+	if (nFrames >= m_nQueueSizeFrames / 2)
 	{
 		// only process the minimum number of frames (== chunksize / 2)
 		// as the tg_mixer cannot process more
@@ -2040,7 +2406,7 @@ void CMiniDexed::ProcessSound (void)
 
 		if (m_bProfileEnabled)
 		{
-			m_GetChunkTimer.Start ();
+			m_GetChunkTimer.Start();
 		}
 
 		m_nFramesToProcess = nFrames;
@@ -2048,17 +2414,17 @@ void CMiniDexed::ProcessSound (void)
 		// kick secondary cores
 		for (unsigned nCore = 2; nCore < CORES; nCore++)
 		{
-			assert (m_CoreStatus[nCore] == CoreStatusIdle);
+			assert(m_CoreStatus[nCore] == CoreStatusIdle);
 			m_CoreStatus[nCore] = CoreStatusBusy;
-			SendIPI (nCore, IPI_USER);
+			SendIPI(nCore, IPI_USER);
 		}
 
 		// process the TGs assigned to core 1
-		assert (nFrames <= CConfig::MaxChunkSize);
+		assert(nFrames <= CConfig::MaxChunkSize);
 		for (unsigned i = 0; i < m_pConfig->GetTGsCore1(); i++)
 		{
-			assert (m_pTG[i]);
-			m_pTG[i]->getSamples (m_OutputLevel[i], nFrames);
+			assert(m_pTG[i]);
+			m_pTG[i]->getSamples(m_OutputLevel[i], nFrames);
 		}
 
 		// wait for cores 2 and 3 to complete their work
@@ -2066,7 +2432,7 @@ void CMiniDexed::ProcessSound (void)
 		{
 			while (m_CoreStatus[nCore] != CoreStatusIdle)
 			{
-				WaitForEvent ();
+				WaitForEvent();
 			}
 		}
 
@@ -2074,104 +2440,128 @@ void CMiniDexed::ProcessSound (void)
 		// Audio signal path after tone generators starts here
 		//
 
-		if (m_bQuadDAC8Chan) {
+		if (m_bQuadDAC8Chan)
+		{
 			// This is only supported when there are 8 TGs
-			assert (m_nToneGenerators == 8);
+			assert(m_nToneGenerators == 8);
 
 			// No mixing is performed by MiniDexed, sound is output in 8 channels.
 			// Note: one TG per audio channel; output=mono; no processing.
-			const int Channels = 8;  // One TG per channel
-			float32_t tmp_float[nFrames*Channels];
-			int32_t tmp_int[nFrames*Channels];
+			const int Channels = 8; // One TG per channel
+			float tmp_float[nFrames * Channels];
+			int32_t tmp_int[nFrames * Channels];
 
 			// Convert dual float array (8 chan) to single int16 array (8 chan)
-			for(uint16_t i=0; i<nFrames;i++)
+			for (uint16_t i = 0; i < nFrames; i++)
 			{
 				// TGs will alternate on L/R channels for each output
 				// reading directly from the TG OutputLevel buffer with
 				// no additional processing.
 				for (uint8_t tg = 0; tg < Channels; tg++)
 				{
-					tmp_float[(i*Channels)+tg]=m_OutputLevel[tg][i] * m_fMasterVolumeW;
+					tmp_float[(i * Channels) + tg] = m_OutputLevel[tg][i] * m_fMasterVolumeW;
 				}
 			}
 
-			arm_float_to_q23(tmp_float,tmp_int,nFrames*Channels);
+			arm_float_to_q23(tmp_float, tmp_int, nFrames * Channels);
 
 			// Prevent PCM510x analog mute from kicking in
-			for (uint8_t tg = 0; tg < Channels; tg++) 
+			for (uint8_t tg = 0; tg < Channels; tg++)
 			{
 				if (tmp_int[(nFrames - 1) * Channels + tg] == 0)
 				{
 					tmp_int[(nFrames - 1) * Channels + tg]++;
 				}
 			}
-			
-			if (m_pSoundDevice->Write (tmp_int, sizeof(tmp_int)) != (int) sizeof(tmp_int))
+
+			if (m_pSoundDevice->Write(tmp_int, sizeof(tmp_int)) != (int)sizeof(tmp_int))
 			{
-				LOGERR ("Sound data dropped");
+				LOGERR("Sound data dropped");
 			}
 		}
 		else
 		{
-			// Mix everything down to stereo		
-			uint8_t indexL=0, indexR=1;
+			// Mix everything down to stereo
+			uint8_t indexL = 0, indexR = 1;
 
 			// BEGIN TG mixing
-			float32_t tmp_float[nFrames*2];
-			int32_t tmp_int[nFrames*2];
+			float tmp_float[nFrames * 2];
+			int32_t tmp_int[nFrames * 2];
 
 			// get the mix buffer of all TGs
-			float32_t *SampleBuffer[2];
-			tg_mixer->getBuffers(SampleBuffer);
+			float *MasterBuffer[2];
+			bus_mixer[0]->getBuffers(MasterBuffer);
 
-			tg_mixer->zeroFill();
-
-			for (uint8_t i = 0; i < m_nToneGenerators; i++)
+			for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 			{
-				tg_mixer->doAddMix(i,m_OutputLevel[i]);
-			}
-			// END TG mixing
+				if (m_nToneGenerators <= nBus * 8)
+					continue;
 
-			// BEGIN adding sendFX
-			float32_t *FXSendBuffer[2];
+				float *SampleBuffer[2];
+				bus_mixer[nBus]->getBuffers(SampleBuffer);
+				bus_mixer[nBus]->zeroFill();
 
-			for (unsigned nFX = 0; nFX < CConfig::FXMixers; ++nFX)
-			{
-				if (fx_chain[nFX]->get_level() == 0.0f) continue;
-
-				sendfx_mixer[nFX]->getBuffers(FXSendBuffer);
-				sendfx_mixer[nFX]->zeroFill();
-
-				for (uint8_t i = 0; i < m_nToneGenerators; i++)
+				for (uint8_t i = nBus * 8; i < m_nToneGenerators; i++)
 				{
-					sendfx_mixer[nFX]->doAddMix(i,m_OutputLevel[i]);
+					if (i < (nBus + 1) * 8)
+					{
+						bus_mixer[nBus]->doAddMix(i, m_OutputLevel[i]);
+					}
 				}
 
-				if (!m_nParameter[ParameterFXBypass])
+				// BEGIN adding sendFX
+				float *FXSendBuffer[2];
+
+				for (unsigned idMX = 0; idMX < CConfig::BusFXMixers; ++idMX)
 				{
-					m_FXSpinLock.Acquire ();
-					fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
-					m_FXSpinLock.Release ();
+					unsigned nMX = idMX + CConfig::BusFXMixers * nBus;
+					unsigned nFX = idMX + CConfig::BusFXChains * nBus;
+
+					if (fx_chain[nFX]->get_level() == 0.0f) continue;
+
+					sendfx_mixer[nMX]->getBuffers(FXSendBuffer);
+					sendfx_mixer[nMX]->zeroFill();
+
+					for (uint8_t i = nBus * 8; i < m_nToneGenerators; i++)
+					{
+						if (i < (nBus + 1) * 8)
+						{
+							sendfx_mixer[nMX]->doAddMix(i, m_OutputLevel[i]);
+						}
+					}
+
+					if (!m_nBusParameter[nBus][Bus::Parameter::FXBypass])
+					{
+						m_FXSpinLock.Acquire();
+						fx_chain[nFX]->process(FXSendBuffer[0], FXSendBuffer[1], nFrames);
+						m_FXSpinLock.Release();
+					}
+
+					arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
+					arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
+				}
+				// END adding sendFX
+
+				if (!m_nBusParameter[nBus][Bus::Parameter::FXBypass])
+				{
+					unsigned nMasterFX = CConfig::BusMasterFX + CConfig::BusFXChains * nBus;
+					m_FXSpinLock.Acquire();
+					fx_chain[nMasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
+					m_FXSpinLock.Release();
 				}
 
-				arm_add_f32(SampleBuffer[0], FXSendBuffer[0], SampleBuffer[0], nFrames);
-				arm_add_f32(SampleBuffer[1], FXSendBuffer[1], SampleBuffer[1], nFrames);
-			}
-			// END adding sendFX
-
-			if (!m_nParameter[ParameterFXBypass])
-			{
-				m_FXSpinLock.Acquire ();
-				fx_chain[CConfig::MasterFX]->process(SampleBuffer[0], SampleBuffer[1], nFrames);
-				m_FXSpinLock.Release ();
+				if (nBus != 0)
+				{
+					arm_add_f32(MasterBuffer[0], SampleBuffer[0], MasterBuffer[0], nFrames);
+					arm_add_f32(MasterBuffer[1], SampleBuffer[1], MasterBuffer[1], nFrames);
+				}
 			}
 
 			// swap stereo channels if needed prior to writing back out
 			if (m_bChannelsSwapped)
 			{
-				indexL=1;
-				indexR=0;
+				indexL = 1;
+				indexR = 0;
 			}
 
 			// Convert dual float array (left, right) to single int32 (q23) array (left/right)
@@ -2179,9 +2569,9 @@ void CMiniDexed::ProcessSound (void)
 			{
 				float targetVol = 0.0f;
 
-				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], targetVol, m_fRamp, SampleBuffer[0], nFrames);
-				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], targetVol, m_fRamp, SampleBuffer[1], nFrames);
-				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
+				scale_ramp_f32(MasterBuffer[0], &m_fMasterVolume[0], targetVol, m_fRamp, MasterBuffer[0], nFrames);
+				scale_ramp_f32(MasterBuffer[1], &m_fMasterVolume[1], targetVol, m_fRamp, MasterBuffer[1], nFrames);
+				arm_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], tmp_float, nFrames);
 
 				if (targetVol == m_fMasterVolume[0] && targetVol == m_fMasterVolume[1])
 				{
@@ -2191,72 +2581,72 @@ void CMiniDexed::ProcessSound (void)
 			}
 			else if (m_bVolRampedDown)
 			{
-				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], 0.0f, tmp_float, nFrames);
+				arm_scale_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], 0.0f, tmp_float, nFrames);
 			}
 			else if (m_fMasterVolume[0] == m_fMasterVolumeW && m_fMasterVolume[1] == m_fMasterVolumeW)
 			{
-				arm_scale_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], m_fMasterVolumeW, tmp_float, nFrames);
+				arm_scale_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], m_fMasterVolumeW, tmp_float, nFrames);
 			}
 			else
 			{
-				scale_ramp_f32(SampleBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, m_fRamp, SampleBuffer[0], nFrames);
-				scale_ramp_f32(SampleBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, m_fRamp, SampleBuffer[1], nFrames);
-				arm_zip_f32(SampleBuffer[indexL], SampleBuffer[indexR], tmp_float, nFrames);
+				scale_ramp_f32(MasterBuffer[0], &m_fMasterVolume[0], m_fMasterVolumeW, m_fRamp, MasterBuffer[0], nFrames);
+				scale_ramp_f32(MasterBuffer[1], &m_fMasterVolume[1], m_fMasterVolumeW, m_fRamp, MasterBuffer[1], nFrames);
+				arm_zip_f32(MasterBuffer[indexL], MasterBuffer[indexR], tmp_float, nFrames);
 			}
 
-			arm_float_to_q23(tmp_float,tmp_int,nFrames*2);
+			arm_float_to_q23(tmp_float, tmp_int, nFrames * 2);
 
 			// Prevent PCM510x analog mute from kicking in
 			if (tmp_int[nFrames * 2 - 1] == 0)
 			{
 				tmp_int[nFrames * 2 - 1]++;
 			}
-			
-			if (m_pSoundDevice->Write (tmp_int, sizeof(tmp_int)) != (int) sizeof(tmp_int))
+
+			if (m_pSoundDevice->Write(tmp_int, sizeof(tmp_int)) != (int)sizeof(tmp_int))
 			{
-				LOGERR ("Sound data dropped");
+				LOGERR("Sound data dropped");
 			}
 		} // End of Stereo mixing
 
 		if (m_bProfileEnabled)
 		{
-			m_GetChunkTimer.Stop ();
+			m_GetChunkTimer.Stop();
 		}
 	}
 }
 
 #endif
 
-unsigned CMiniDexed::GetPerformanceSelectChannel (void)
+unsigned CMiniDexed::GetPerformanceSelectChannel(void)
 {
 	// Stores and returns Select Channel using MIDI Device Channel definitions
-	return (unsigned) GetParameter (ParameterPerformanceSelectChannel);
+	return (unsigned)GetParameter(ParameterPerformanceSelectChannel);
 }
 
-void CMiniDexed::SetPerformanceSelectChannel (unsigned uCh)
+void CMiniDexed::SetPerformanceSelectChannel(unsigned uCh)
 {
 	// Turns a configuration setting to MIDI Device Channel definitions
 	// Mirrors the logic in Performance Config for handling MIDI channel configuration
 	if (uCh == 0)
 	{
-		SetParameter (ParameterPerformanceSelectChannel, CMIDIDevice::Disabled);
+		SetParameter(ParameterPerformanceSelectChannel, CMIDIDevice::Disabled);
 	}
 	else if (uCh < CMIDIDevice::Channels)
 	{
-		SetParameter (ParameterPerformanceSelectChannel, uCh - 1);
+		SetParameter(ParameterPerformanceSelectChannel, uCh - 1);
 	}
 	else
 	{
-		SetParameter (ParameterPerformanceSelectChannel, CMIDIDevice::OmniMode);
+		SetParameter(ParameterPerformanceSelectChannel, CMIDIDevice::OmniMode);
 	}
 }
 
-bool CMiniDexed::SavePerformance (bool bSaveAsDeault)
+bool CMiniDexed::SavePerformance(bool bSaveAsDeault)
 {
 	if (m_PerformanceConfig.GetInternalFolderOk())
 	{
 		m_bSavePerformance = true;
-		m_bSaveAsDeault=bSaveAsDeault;
+		m_bSaveAsDeault = bSaveAsDeault;
 
 		return true;
 	}
@@ -2266,250 +2656,257 @@ bool CMiniDexed::SavePerformance (bool bSaveAsDeault)
 	}
 }
 
-bool CMiniDexed::DoSavePerformance (void)
+bool CMiniDexed::DoSavePerformance(void)
 {
 	for (unsigned nTG = 0; nTG < CConfig::AllToneGenerators; nTG++)
 	{
-		m_PerformanceConfig.SetBankNumber (m_nVoiceBankID[nTG], nTG);
-		m_PerformanceConfig.SetVoiceNumber (m_nProgram[nTG], nTG);
-		m_PerformanceConfig.SetMIDIChannel (m_nMIDIChannel[nTG], nTG);
-		m_PerformanceConfig.SetSysExChannel (m_nSysExChannel[nTG], nTG);
-		m_PerformanceConfig.SetSysExEnable (m_bSysExEnable[nTG], nTG);
-		m_PerformanceConfig.SetMIDIRxSustain (m_bMIDIRxSustain[nTG], nTG);
-		m_PerformanceConfig.SetMIDIRxPortamento (m_bMIDIRxPortamento[nTG], nTG);
-		m_PerformanceConfig.SetMIDIRxSostenuto (m_bMIDIRxSostenuto[nTG], nTG);
-		m_PerformanceConfig.SetMIDIRxHold2 (m_bMIDIRxHold2[nTG], nTG);
-		m_PerformanceConfig.SetVolume (m_nVolume[nTG], nTG);
-		m_PerformanceConfig.SetPan (m_nPan[nTG], nTG);
-		m_PerformanceConfig.SetDetune (m_nMasterTune[nTG], nTG);
-		m_PerformanceConfig.SetCutoff (m_nCutoff[nTG], nTG);
-		m_PerformanceConfig.SetResonance (m_nResonance[nTG], nTG);
-		m_PerformanceConfig.SetPitchBendRange (m_nPitchBendRange[nTG], nTG);
-		m_PerformanceConfig.SetPitchBendStep	(m_nPitchBendStep[nTG], nTG);
-		m_PerformanceConfig.SetPortamentoMode (m_nPortamentoMode[nTG], nTG);
-		m_PerformanceConfig.SetPortamentoGlissando (m_nPortamentoGlissando[nTG], nTG);
-		m_PerformanceConfig.SetPortamentoTime (m_nPortamentoTime[nTG], nTG);
+		m_PerformanceConfig.SetBankNumber(m_nVoiceBankID[nTG], nTG);
+		m_PerformanceConfig.SetVoiceNumber(m_nProgram[nTG], nTG);
+		m_PerformanceConfig.SetMIDIChannel(m_nMIDIChannel[nTG], nTG);
+		m_PerformanceConfig.SetSysExChannel(m_nSysExChannel[nTG], nTG);
+		m_PerformanceConfig.SetSysExEnable(m_bSysExEnable[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxSustain(m_bMIDIRxSustain[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxPortamento(m_bMIDIRxPortamento[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxSostenuto(m_bMIDIRxSostenuto[nTG], nTG);
+		m_PerformanceConfig.SetMIDIRxHold2(m_bMIDIRxHold2[nTG], nTG);
+		m_PerformanceConfig.SetVolume(m_nVolume[nTG], nTG);
+		m_PerformanceConfig.SetPan(m_nPan[nTG], nTG);
+		m_PerformanceConfig.SetDetune(m_nMasterTune[nTG], nTG);
+		m_PerformanceConfig.SetCutoff(m_nCutoff[nTG], nTG);
+		m_PerformanceConfig.SetResonance(m_nResonance[nTG], nTG);
+		m_PerformanceConfig.SetPitchBendRange(m_nPitchBendRange[nTG], nTG);
+		m_PerformanceConfig.SetPitchBendStep(m_nPitchBendStep[nTG], nTG);
+		m_PerformanceConfig.SetPortamentoMode(m_nPortamentoMode[nTG], nTG);
+		m_PerformanceConfig.SetPortamentoGlissando(m_nPortamentoGlissando[nTG], nTG);
+		m_PerformanceConfig.SetPortamentoTime(m_nPortamentoTime[nTG], nTG);
 
-		m_PerformanceConfig.SetNoteLimitLow (m_nNoteLimitLow[nTG], nTG);
-		m_PerformanceConfig.SetNoteLimitHigh (m_nNoteLimitHigh[nTG], nTG);
-		m_PerformanceConfig.SetNoteShift (m_nNoteShift[nTG], nTG);
+		m_PerformanceConfig.SetNoteLimitLow(m_nNoteLimitLow[nTG], nTG);
+		m_PerformanceConfig.SetNoteLimitHigh(m_nNoteLimitHigh[nTG], nTG);
+		m_PerformanceConfig.SetNoteShift(m_nNoteShift[nTG], nTG);
 		if (nTG < m_pConfig->GetToneGenerators())
 		{
 			m_pTG[nTG]->getVoiceData(m_nRawVoiceData);
-		} else {
-			// Not an active TG so provide default voice by asking for an invalid voice ID.
-			m_SysExFileLoader.GetVoice(CSysExFileLoader::MaxVoiceBankID, CSysExFileLoader::VoicesPerBank+1, m_nRawVoiceData);
 		}
-		m_PerformanceConfig.SetVoiceDataToTxt (m_nRawVoiceData, nTG); 
-		m_PerformanceConfig.SetMonoMode (m_bMonoMode[nTG], nTG); 
-		m_PerformanceConfig.SetTGLink (m_nTGLink[nTG], nTG);
+		else
+		{
+			// Not an active TG so provide default voice by asking for an invalid voice ID.
+			m_SysExFileLoader.GetVoice(CSysExFileLoader::MaxVoiceBankID, CSysExFileLoader::VoicesPerBank + 1, m_nRawVoiceData);
+		}
+		m_PerformanceConfig.SetVoiceDataToTxt(m_nRawVoiceData, nTG);
+		m_PerformanceConfig.SetMonoMode(m_bMonoMode[nTG], nTG);
+		m_PerformanceConfig.SetTGLink(m_nTGLink[nTG], nTG);
 
-		m_PerformanceConfig.SetModulationWheelRange (m_nModulationWheelRange[nTG], nTG);
-		m_PerformanceConfig.SetModulationWheelTarget (m_nModulationWheelTarget[nTG], nTG);
-		m_PerformanceConfig.SetFootControlRange (m_nFootControlRange[nTG], nTG);
-		m_PerformanceConfig.SetFootControlTarget (m_nFootControlTarget[nTG], nTG);
-		m_PerformanceConfig.SetBreathControlRange (m_nBreathControlRange[nTG], nTG);
-		m_PerformanceConfig.SetBreathControlTarget (m_nBreathControlTarget[nTG], nTG);
-		m_PerformanceConfig.SetAftertouchRange (m_nAftertouchRange[nTG], nTG);
-		m_PerformanceConfig.SetAftertouchTarget (m_nAftertouchTarget[nTG], nTG);
-		
-		m_PerformanceConfig.SetFX1Send (m_nFX1Send[nTG], nTG);
-		m_PerformanceConfig.SetFX2Send (m_nFX2Send[nTG], nTG);
+		m_PerformanceConfig.SetModulationWheelRange(m_nModulationWheelRange[nTG], nTG);
+		m_PerformanceConfig.SetModulationWheelTarget(m_nModulationWheelTarget[nTG], nTG);
+		m_PerformanceConfig.SetFootControlRange(m_nFootControlRange[nTG], nTG);
+		m_PerformanceConfig.SetFootControlTarget(m_nFootControlTarget[nTG], nTG);
+		m_PerformanceConfig.SetBreathControlRange(m_nBreathControlRange[nTG], nTG);
+		m_PerformanceConfig.SetBreathControlTarget(m_nBreathControlTarget[nTG], nTG);
+		m_PerformanceConfig.SetAftertouchRange(m_nAftertouchRange[nTG], nTG);
+		m_PerformanceConfig.SetAftertouchTarget(m_nAftertouchTarget[nTG], nTG);
 
-		m_PerformanceConfig.SetCompressorEnable (m_bCompressorEnable[nTG], nTG);
-		m_PerformanceConfig.SetCompressorPreGain (m_nCompressorPreGain[nTG], nTG);
-		m_PerformanceConfig.SetCompressorThresh (m_nCompressorThresh[nTG], nTG);
-		m_PerformanceConfig.SetCompressorRatio (m_nCompressorRatio[nTG], nTG);		
-		m_PerformanceConfig.SetCompressorAttack (m_nCompressorAttack[nTG], nTG);
-		m_PerformanceConfig.SetCompressorRelease (m_nCompressorRelease[nTG], nTG);	
-		m_PerformanceConfig.SetCompressorMakeupGain (m_nCompressorMakeupGain[nTG], nTG);
+		m_PerformanceConfig.SetFX1Send(m_nFX1Send[nTG], nTG);
+		m_PerformanceConfig.SetFX2Send(m_nFX2Send[nTG], nTG);
 
-		m_PerformanceConfig.SetEQLow (m_nEQLow[nTG], nTG);
-		m_PerformanceConfig.SetEQMid (m_nEQMid[nTG], nTG);
-		m_PerformanceConfig.SetEQHigh (m_nEQHigh[nTG], nTG);
-		m_PerformanceConfig.SetEQGain (m_nEQGain[nTG], nTG);
-		m_PerformanceConfig.SetEQLowMidFreq (m_nEQLowMidFreq[nTG], nTG);
-		m_PerformanceConfig.SetEQMidHighFreq (m_nEQMidHighFreq[nTG], nTG);
-		m_PerformanceConfig.SetEQPreLowcut (m_nEQPreLowcut[nTG], nTG);
-		m_PerformanceConfig.SetEQPreHighcut (m_nEQPreHighcut[nTG], nTG);
+		m_PerformanceConfig.SetCompressorEnable(m_bCompressorEnable[nTG], nTG);
+		m_PerformanceConfig.SetCompressorPreGain(m_nCompressorPreGain[nTG], nTG);
+		m_PerformanceConfig.SetCompressorThresh(m_nCompressorThresh[nTG], nTG);
+		m_PerformanceConfig.SetCompressorRatio(m_nCompressorRatio[nTG], nTG);
+		m_PerformanceConfig.SetCompressorAttack(m_nCompressorAttack[nTG], nTG);
+		m_PerformanceConfig.SetCompressorRelease(m_nCompressorRelease[nTG], nTG);
+		m_PerformanceConfig.SetCompressorMakeupGain(m_nCompressorMakeupGain[nTG], nTG);
+
+		m_PerformanceConfig.SetEQLow(m_nEQLow[nTG], nTG);
+		m_PerformanceConfig.SetEQMid(m_nEQMid[nTG], nTG);
+		m_PerformanceConfig.SetEQHigh(m_nEQHigh[nTG], nTG);
+		m_PerformanceConfig.SetEQGain(m_nEQGain[nTG], nTG);
+		m_PerformanceConfig.SetEQLowMidFreq(m_nEQLowMidFreq[nTG], nTG);
+		m_PerformanceConfig.SetEQMidHighFreq(m_nEQMidHighFreq[nTG], nTG);
+		m_PerformanceConfig.SetEQPreLowcut(m_nEQPreLowcut[nTG], nTG);
+		m_PerformanceConfig.SetEQPreHighcut(m_nEQPreHighcut[nTG], nTG);
 	}
 
 	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
-		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (unsigned nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			FX::TFXParameter param = FX::TFXParameter (nParam);
-			m_PerformanceConfig.SetFXParameter (param, GetFXParameter (param, nFX), nFX);
+			FX::Parameter param = FX::Parameter(nParam);
+			m_PerformanceConfig.SetFXParameter(param, GetFXParameter(param, nFX), nFX);
 		}
 	}
 
-	m_PerformanceConfig.SetMixerDryLevel (m_nParameter[ParameterMixerDryLevel]);
-	m_PerformanceConfig.SetFXBypass (m_nParameter[ParameterFXBypass]);
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			Bus::Parameter param = Bus::Parameter(nParam);
+			m_PerformanceConfig.SetBusParameter(param, GetBusParameter(param, nBus), nBus);
+		}
+	}
 
-	if(m_bSaveAsDeault)
+	if (m_bSaveAsDeault)
 	{
 		m_PerformanceConfig.SetNewPerformanceBank(0);
 		m_PerformanceConfig.SetNewPerformance(0);
-		
 	}
-	return m_PerformanceConfig.Save ();
+	return m_PerformanceConfig.Save();
 }
 
 void CMiniDexed::SetCompressorEnable(bool compressor, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_bCompressorEnable[nTG] = compressor;
-	m_pTG[nTG]->setCompressorEnable (compressor);
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->setCompressorEnable(compressor);
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorPreGain (int preGain, unsigned nTG)
+void CMiniDexed::SetCompressorPreGain(int preGain, unsigned nTG)
 {
-	preGain = constrain (preGain, -20, 20);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	preGain = constrain(preGain, -20, 20);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorPreGain[nTG] = preGain;
-	m_pTG[nTG]->Compr.setPreGain_dB (preGain);
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setPreGain_dB(preGain);
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorThresh (int thresh, unsigned nTG)
+void CMiniDexed::SetCompressorThresh(int thresh, unsigned nTG)
 {
-	thresh = constrain (thresh, -60, 0);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	thresh = constrain(thresh, -60, 0);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorThresh[nTG] = thresh;
-	m_pTG[nTG]->Compr.setThresh_dBFS (thresh);
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setThresh_dBFS(thresh);
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorRatio (unsigned ratio, unsigned nTG)
+void CMiniDexed::SetCompressorRatio(unsigned ratio, unsigned nTG)
 {
-	ratio = constrain (ratio, 1u, CMiniDexed::CompressorRatioInf);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	ratio = constrain(ratio, 1u, AudioEffectCompressor::CompressorRatioInf);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorRatio[nTG] = ratio;
-	m_pTG[nTG]->Compr.setCompressionRatio (ratio == CompressorRatioInf ? INFINITY : ratio);
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setCompressionRatio(ratio == AudioEffectCompressor::CompressorRatioInf ? INFINITY : ratio);
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorAttack (unsigned attack, unsigned nTG)
+void CMiniDexed::SetCompressorAttack(unsigned attack, unsigned nTG)
 {
-	attack = constrain (attack, 0u, 1000u);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	attack = constrain(attack, 0u, 1000u);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorAttack[nTG] = attack;
-	m_pTG[nTG]->Compr.setAttack_sec ((attack ?: 1) / 1000.0f, m_pConfig->GetSampleRate ());
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setAttack_sec((attack ?: 1) / 1000.0f, m_pConfig->GetSampleRate());
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorRelease (unsigned release, unsigned nTG)
+void CMiniDexed::SetCompressorRelease(unsigned release, unsigned nTG)
 {
-	release = constrain (release, 0u, 2000u);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	release = constrain(release, 0u, 2000u);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorRelease[nTG] = release;
-	m_pTG[nTG]->Compr.setRelease_sec ((release ?: 1) / 1000.0, m_pConfig->GetSampleRate ());
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setRelease_sec((release ?: 1) / 1000.0, m_pConfig->GetSampleRate());
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetCompressorMakeupGain (int makeupGain, unsigned nTG)
+void CMiniDexed::SetCompressorMakeupGain(int makeupGain, unsigned nTG)
 {
-	makeupGain = constrain (makeupGain, -20, 20);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	makeupGain = constrain(makeupGain, -20, 20);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nCompressorMakeupGain[nTG] = makeupGain;
-	m_pTG[nTG]->Compr.setMakeupGain_dB (makeupGain);
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->Compr.setMakeupGain_dB(makeupGain);
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::SetEQLow (int nValue, unsigned nTG)
+void CMiniDexed::SetEQLow(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQLow[nTG] = nValue;
 	m_pTG[nTG]->EQ.setLow_dB(nValue);
 }
 
-void CMiniDexed::SetEQMid (int nValue, unsigned nTG)
+void CMiniDexed::SetEQMid(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQMid[nTG] = nValue;
 	m_pTG[nTG]->EQ.setMid_dB(nValue);
 }
 
-void CMiniDexed::SetEQHigh (int nValue, unsigned nTG)
+void CMiniDexed::SetEQHigh(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQHigh[nTG] = nValue;
 	m_pTG[nTG]->EQ.setHigh_dB(nValue);
 }
 
-void CMiniDexed::SetEQGain (int nValue, unsigned nTG)
+void CMiniDexed::SetEQGain(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, -24, 24);
 	m_nEQGain[nTG] = nValue;
 	m_pTG[nTG]->EQ.setGain_dB(nValue);
 }
 
-void CMiniDexed::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
+void CMiniDexed::SetEQLowMidFreq(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, 0u, 46u);
 	m_nEQLowMidFreq[nTG] = m_pTG[nTG]->EQ.setLowMidFreq_n(nValue);
 }
 
-void CMiniDexed::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
+void CMiniDexed::SetEQMidHighFreq(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, 28u, 59u);
 	m_nEQMidHighFreq[nTG] = m_pTG[nTG]->EQ.setMidHighFreq_n(nValue);
 }
 
-void CMiniDexed::SetEQPreLowcut (unsigned nValue, unsigned nTG)
+void CMiniDexed::SetEQPreLowcut(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, 0u, 60u);
 	m_nEQPreLowcut[nTG] = nValue;
 	m_pTG[nTG]->EQ.setPreLowCut(MIDI_EQ_HZ[nValue]);
 }
 
-void CMiniDexed::SetEQPreHighcut (unsigned nValue, unsigned nTG)
+void CMiniDexed::SetEQPreHighcut(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
 	nValue = constrain(nValue, 0u, 60u);
 	m_nEQPreHighcut[nTG] = nValue;
@@ -2518,268 +2915,268 @@ void CMiniDexed::SetEQPreHighcut (unsigned nValue, unsigned nTG)
 
 void CMiniDexed::setMonoMode(uint8_t mono, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_bMonoMode[nTG]= mono != 0; 
+	assert(m_pTG[nTG]);
+	m_bMonoMode[nTG] = mono != 0;
 	m_pTG[nTG]->setMonoMode(constrain(mono, 0, 1));
 	m_pTG[nTG]->doRefreshVoice();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setTGLink(uint8_t nTGLink, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
-	m_nTGLink[nTG]= constrain(nTGLink, 0, 4);
-	m_UI.ParameterChanged ();
+	assert(m_pTG[nTG]);
+	m_nTGLink[nTG] = constrain(nTGLink, 0, 4);
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setPitchbendRange(uint8_t range, uint8_t nTG)
 {
-	range = constrain (range, 0, 12);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	range = constrain(range, 0, 12);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nPitchBendRange[nTG] = range;
-	
+
 	m_pTG[nTG]->setPitchbendRange(range);
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setPitchbendStep(uint8_t step, uint8_t nTG)
 {
-	step= constrain (step, 0, 12);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	step = constrain(step, 0, 12);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nPitchBendStep[nTG] = step;
-	
+
 	m_pTG[nTG]->setPitchbendStep(step);
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setPortamentoMode(uint8_t mode, uint8_t nTG)
 {
-	mode= constrain (mode, 0, 1);
+	mode = constrain(mode, 0, 1);
 
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nPortamentoMode[nTG] = mode;
-	
+
 	m_pTG[nTG]->setPortamentoMode(mode);
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setPortamentoGlissando(uint8_t glissando, uint8_t nTG)
 {
-	glissando = constrain (glissando, 0, 1);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	glissando = constrain(glissando, 0, 1);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nPortamentoGlissando[nTG] = glissando;
-	
+
 	m_pTG[nTG]->setPortamentoGlissando(glissando);
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setPortamentoTime(uint8_t time, uint8_t nTG)
 {
-	time = constrain (time, 0, 99);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	time = constrain(time, 0, 99);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	m_nPortamentoTime[nTG] = time;
-	
+
 	m_pTG[nTG]->setPortamentoTime(time);
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setNoteLimitLow(unsigned limit, uint8_t nTG)
 {
-	limit = constrain (limit, 0u, 127u);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	limit = constrain(limit, 0u, 127u);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nNoteLimitLow[nTG] = limit;
 
 	// reset all notes, so they don't stay down
 	m_pTG[nTG]->deactivate();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setNoteLimitHigh(unsigned limit, uint8_t nTG)
 {
-	limit = constrain (limit, 0u, 127u);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	limit = constrain(limit, 0u, 127u);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nNoteLimitHigh[nTG] = limit;
 
 	// reset all notes, so they don't stay down
 	m_pTG[nTG]->deactivate();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setNoteShift(int shift, uint8_t nTG)
 {
-	shift = constrain (shift, -24, 24);
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	shift = constrain(shift, -24, 24);
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nNoteShift[nTG] = shift;
 
 	// reset all notes, so they don't stay down
 	m_pTG[nTG]->deactivate();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setModWheelRange(uint8_t range, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nModulationWheelRange[nTG] = range;
 	m_pTG[nTG]->setMWController(range, m_pTG[nTG]->getModWheelTarget(), 0);
-//	m_pTG[nTG]->setModWheelRange(constrain(range, 0, 99));  replaces with the above due to wrong constrain on dexed_synth module. 
+	//	m_pTG[nTG]->setModWheelRange(constrain(range, 0, 99));  replaces with the above due to wrong constrain on dexed_synth module.
 
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setModWheelTarget(uint8_t target, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nModulationWheelTarget[nTG] = target;
 
 	m_pTG[nTG]->setModWheelTarget(constrain(target, 0, 7));
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setFootControllerRange(uint8_t range, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	m_nFootControlRange[nTG]=range;
+	m_nFootControlRange[nTG] = range;
 	m_pTG[nTG]->setFCController(range, m_pTG[nTG]->getFootControllerTarget(), 0);
-//	m_pTG[nTG]->setFootControllerRange(constrain(range, 0, 99));  replaces with the above due to wrong constrain on dexed_synth module. 
+	//	m_pTG[nTG]->setFootControllerRange(constrain(range, 0, 99));  replaces with the above due to wrong constrain on dexed_synth module.
 
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setFootControllerTarget(uint8_t target, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nFootControlTarget[nTG] = target;
 
 	m_pTG[nTG]->setFootControllerTarget(constrain(target, 0, 7));
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setBreathControllerRange(uint8_t range, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	m_nBreathControlRange[nTG]=range;
+	m_nBreathControlRange[nTG] = range;
 	m_pTG[nTG]->setBCController(range, m_pTG[nTG]->getBreathControllerTarget(), 0);
-	//m_pTG[nTG]->setBreathControllerRange(constrain(range, 0, 99));
+	// m_pTG[nTG]->setBreathControllerRange(constrain(range, 0, 99));
 
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setBreathControllerTarget(uint8_t target, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nBreathControlTarget[nTG] = target;
 
 	m_pTG[nTG]->setBreathControllerTarget(constrain(target, 0, 7));
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setAftertouchRange(uint8_t range, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	m_nAftertouchRange[nTG]=range;
+	m_nAftertouchRange[nTG] = range;
 	m_pTG[nTG]->setATController(range, m_pTG[nTG]->getAftertouchTarget(), 0);
-//	m_pTG[nTG]->setAftertouchRange(constrain(range, 0, 99));
+	//	m_pTG[nTG]->setAftertouchRange(constrain(range, 0, 99));
 
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setAftertouchTarget(uint8_t target, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	m_nAftertouchTarget[nTG] = target;
 
 	m_pTG[nTG]->setAftertouchTarget(constrain(target, 0, 7));
 	m_pTG[nTG]->ControllersRefresh();
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
-void CMiniDexed::loadVoiceParameters(const uint8_t* data, uint8_t nTG)
+void CMiniDexed::loadVoiceParameters(const uint8_t *data, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
 	uint8_t voice[161];
 
-	memcpy(voice, data, sizeof(uint8_t)*161);
+	memcpy(voice, data, sizeof(uint8_t) * 161);
 
 	// fix voice name
 	for (uint8_t i = 0; i < 10; i++)
@@ -2792,45 +3189,45 @@ void CMiniDexed::loadVoiceParameters(const uint8_t* data, uint8_t nTG)
 	m_pTG[nTG]->doRefreshVoice();
 	setOPMask(0b111111, nTG);
 
-	m_UI.ParameterChanged ();
+	m_UI.ParameterChanged();
 }
 
 void CMiniDexed::setVoiceDataElement(uint8_t data, uint8_t number, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	m_pTG[nTG]->setVoiceDataElement(constrain(data, 0, 155),constrain(number, 0, 99));
-	m_UI.ParameterChanged ();
+	m_pTG[nTG]->setVoiceDataElement(constrain(data, 0, 155), constrain(number, 0, 99));
+	m_UI.ParameterChanged();
 }
 
-int16_t CMiniDexed::checkSystemExclusive(const uint8_t* pMessage,const  uint16_t nLength, uint8_t nTG)
+int16_t CMiniDexed::checkSystemExclusive(const uint8_t *pMessage, const uint16_t nLength, uint8_t nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return 0;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return 0; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 
-	return(m_pTG[nTG]->checkSystemExclusive(pMessage, nLength));
+	return (m_pTG[nTG]->checkSystemExclusive(pMessage, nLength));
 }
 
-void CMiniDexed::getSysExVoiceDump(uint8_t* dest, uint8_t nTG)
+void CMiniDexed::getSysExVoiceDump(uint8_t *dest, uint8_t nTG)
 {
 	uint8_t checksum = 0;
 	uint8_t data[155];
 
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	if (nTG < m_nToneGenerators)
 	{
-		assert (m_pTG[nTG]);
+		assert(m_pTG[nTG]);
 		m_pTG[nTG]->getVoiceData(data);
 	}
 	else
 	{
 		// Not an active TG so grab a default voice
-		m_SysExFileLoader.GetVoice(CSysExFileLoader::MaxVoiceBankID, CSysExFileLoader::VoicesPerBank+1, data);
+		m_SysExFileLoader.GetVoice(CSysExFileLoader::MaxVoiceBankID, CSysExFileLoader::VoicesPerBank + 1, data);
 	}
 
 	dest[0] = 0xF0; // SysEx start
@@ -2850,32 +3247,36 @@ void CMiniDexed::getSysExVoiceDump(uint8_t* dest, uint8_t nTG)
 
 void CMiniDexed::setOPMask(uint8_t uchOPMask, uint8_t nTG)
 {
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 	m_uchOPMask[nTG] = uchOPMask;
-	m_pTG[nTG]->setOPAll (m_uchOPMask[nTG]);
+	m_pTG[nTG]->setOPAll(m_uchOPMask[nTG]);
 }
 
-void CMiniDexed::setMasterVolume(float32_t vol)
+void CMiniDexed::setMasterVolume(float vol)
 {
-    if (vol < 0.0)
-        vol = 0.0;
-    else if (vol > 1.0)
-        vol = 1.0;
+	if (vol < 0.0)
+		vol = 0.0;
+	else if (vol > 1.0)
+		vol = 1.0;
 
-    // Apply logarithmic scaling to match perceived loudness
-    vol = powf(vol, 2.0f);
+	// Apply logarithmic scaling to match perceived loudness
+	vol = powf(vol, 2.0f);
 
-    m_fMasterVolumeW = vol;
+	m_fMasterVolumeW = vol;
 }
 
-bool CMiniDexed::SDFilterOut (uint8_t nTG)
+bool CMiniDexed::SDFilterOut(uint8_t nTG)
 {
 	switch (m_SDFilter.type)
 	{
-	case SDFilter::Type::TGLink: return m_nTGLink[nTG] != m_SDFilter.param;
-	case SDFilter::Type::TG: return nTG != m_SDFilter.param;
-	case SDFilter::Type::MIDIChannel: return m_nMIDIChannel[nTG] != m_SDFilter.param;
-	default: return false;
+	case SDFilter::Type::TGLink:
+		return m_nTGLink[nTG] != m_SDFilter.param;
+	case SDFilter::Type::TG:
+		return nTG != m_SDFilter.param;
+	case SDFilter::Type::MIDIChannel:
+		return m_nMIDIChannel[nTG] != m_SDFilter.param;
+	default:
+		return false;
 	}
 }
 
@@ -2896,7 +3297,7 @@ unsigned CMiniDexed::GetLastPerformance()
 
 unsigned CMiniDexed::GetPerformanceBank()
 {
-	return m_PerformanceConfig.GetPerformanceBank();
+	return m_PerformanceConfig.GetPerformanceBankID();
 }
 
 unsigned CMiniDexed::GetLastPerformanceBank()
@@ -2906,22 +3307,7 @@ unsigned CMiniDexed::GetLastPerformanceBank()
 
 unsigned CMiniDexed::GetActualPerformanceID()
 {
-	return m_PerformanceConfig.GetActualPerformanceID();
-}
-
-void CMiniDexed::SetActualPerformanceID(unsigned nID)
-{
-	m_PerformanceConfig.SetActualPerformanceID(nID);
-}
-
-unsigned CMiniDexed::GetActualPerformanceBankID()
-{
-	return m_PerformanceConfig.GetActualPerformanceBankID();
-}
-
-void CMiniDexed::SetActualPerformanceBankID(unsigned nBankID)
-{
-	m_PerformanceConfig.SetActualPerformanceBankID(nBankID);
+	return m_PerformanceConfig.GetPerformanceID();
 }
 
 bool CMiniDexed::SetNewPerformance(unsigned nID)
@@ -2948,36 +3334,21 @@ void CMiniDexed::SetFirstPerformance(void)
 	return;
 }
 
-bool CMiniDexed::DoSetNewPerformance (void)
+bool CMiniDexed::DoSetNewPerformance(void)
 {
-	m_bLoadPerformanceBusy = true;
-	
 	unsigned nID = m_nSetNewPerformanceID;
 	m_PerformanceConfig.SetNewPerformance(nID);
-	
-	if (m_PerformanceConfig.Load ())
+
+	if (m_PerformanceConfig.Load())
 	{
 		LoadPerformanceParameters();
-		m_bLoadPerformanceBusy = false;
 		return true;
 	}
 	else
 	{
-		SetMIDIChannel (CMIDIDevice::OmniMode, 0);
-		m_bLoadPerformanceBusy = false;
+		SetMIDIChannel(CMIDIDevice::OmniMode, 0);
 		return false;
 	}
-}
-
-bool CMiniDexed::DoSetNewPerformanceBank (void)
-{
-	m_bLoadPerformanceBankBusy = true;
-	
-	unsigned nBankID = m_nSetNewPerformanceBankID;
-	m_PerformanceConfig.SetNewPerformanceBank(nBankID);
-	
-	m_bLoadPerformanceBankBusy = false;
-	return true;
 }
 
 void CMiniDexed::DoSetFirstPerformance(void)
@@ -2988,17 +3359,17 @@ void CMiniDexed::DoSetFirstPerformance(void)
 	return;
 }
 
-bool CMiniDexed::SavePerformanceNewFile ()
+bool CMiniDexed::SavePerformanceNewFile()
 {
 	m_bSavePerformanceNewFile = m_PerformanceConfig.GetInternalFolderOk() && m_PerformanceConfig.CheckFreePerformanceSlot();
 	return m_bSavePerformanceNewFile;
 }
 
-bool CMiniDexed::DoSavePerformanceNewFile (void)
+bool CMiniDexed::DoSavePerformanceNewFile(void)
 {
 	if (m_PerformanceConfig.CreateNewPerformanceFile())
 	{
-		if(SavePerformance(false))
+		if (SavePerformance(false))
 		{
 			return true;
 		}
@@ -3011,96 +3382,147 @@ bool CMiniDexed::DoSavePerformanceNewFile (void)
 	{
 		return false;
 	}
-	
 }
 
-
-void CMiniDexed::LoadPerformanceParameters(void)
+void CMiniDexed::LoadPerformanceParameters()
 {
+	LoadPerformanceParameters(&m_PerformanceConfig, 0, CConfig::Buses, 0, Bus::LoadType::Full, CMIDIDevice::Disabled);
+}
+
+void CMiniDexed::LoadPerformanceParameters(CPerformanceConfig *config, unsigned nBusFrom, unsigned nBusCount, unsigned nBusTarget, unsigned LoadType, unsigned nChannelTarget)
+{
+	unsigned nMinCh = CMIDIDevice::ChannelUnknown - 1;
+
+	if (nChannelTarget < CMIDIDevice::Channels)
+	{
+		unsigned nFromTG = nBusFrom * 8;
+		unsigned nToTG = (nBusFrom + nBusCount) * 8;
+
+		for (unsigned nTG = nFromTG; nTG < nToTG; nTG++)
+		{
+			unsigned nCh = config->GetMIDIChannel(nTG);
+			if (nCh < nMinCh) nMinCh = nCh;
+		}
+	}
+
 	for (unsigned nTG = 0; nTG < CConfig::AllToneGenerators; nTG++)
 	{
-		BankSelect (m_PerformanceConfig.GetBankNumber (nTG), nTG);
-		ProgramChange (m_PerformanceConfig.GetVoiceNumber (nTG), nTG);
-		SetMIDIChannel (m_PerformanceConfig.GetMIDIChannel (nTG), nTG);
-		SetSysExChannel (m_PerformanceConfig.GetSysExChannel (nTG), nTG);
-		SetSysExEnable (m_PerformanceConfig.GetSysExEnable (nTG), nTG);
-		SetMIDIRxSustain (m_PerformanceConfig.GetMIDIRxSustain (nTG), nTG);
-		SetMIDIRxPortamento (m_PerformanceConfig.GetMIDIRxPortamento (nTG), nTG);
-		SetMIDIRxSostenuto (m_PerformanceConfig.GetMIDIRxSostenuto (nTG), nTG);
-		SetMIDIRxHold2 (m_PerformanceConfig.GetMIDIRxHold2 (nTG), nTG);
-		SetVolume (m_PerformanceConfig.GetVolume (nTG), nTG);
-		SetPan (m_PerformanceConfig.GetPan (nTG), nTG);
-		SetMasterTune (m_PerformanceConfig.GetDetune (nTG), nTG);
-		SetCutoff (m_PerformanceConfig.GetCutoff (nTG), nTG);
-		SetResonance (m_PerformanceConfig.GetResonance (nTG), nTG);
-		setPitchbendRange (m_PerformanceConfig.GetPitchBendRange (nTG), nTG);
-		setPitchbendStep (m_PerformanceConfig.GetPitchBendStep (nTG), nTG);
-		setPortamentoMode (m_PerformanceConfig.GetPortamentoMode (nTG), nTG);
-		setPortamentoGlissando (m_PerformanceConfig.GetPortamentoGlissando  (nTG), nTG);
-		setPortamentoTime (m_PerformanceConfig.GetPortamentoTime (nTG), nTG);
+		if (LoadType == Bus::LoadType::BusFXOnly) continue;
+		if (nTG < nBusFrom * 8 || nTG >= (nBusFrom + nBusCount) * 8) continue;
+		unsigned nTTG = nTG + nBusTarget * 8;
 
-		setNoteLimitLow(m_PerformanceConfig.GetNoteLimitLow (nTG), nTG);
-		setNoteLimitHigh(m_PerformanceConfig.GetNoteLimitHigh (nTG), nTG);
-		setNoteShift(m_PerformanceConfig.GetNoteShift (nTG), nTG);
-		
-		if(m_PerformanceConfig.VoiceDataFilled(nTG) && nTG < m_nToneGenerators) 
+		BankSelect(config->GetBankNumber(nTG), nTTG);
+		ProgramChange(config->GetVoiceNumber(nTG), nTTG);
+
+		unsigned nCh = config->GetMIDIChannel(nTG);
+		if (nCh != CMIDIDevice::Disabled)
 		{
-			uint8_t* tVoiceData = m_PerformanceConfig.GetVoiceDataFromTxt(nTG);
-			m_pTG[nTG]->loadVoiceParameters(tVoiceData); 
-			setOPMask(0b111111, nTG);
+			if (nChannelTarget < CMIDIDevice::Channels)
+				nCh = (nCh + nChannelTarget - nMinCh) % CMIDIDevice::Channels;
+			else if (nChannelTarget == CMIDIDevice::OmniMode)
+				nCh = CMIDIDevice::OmniMode;
 		}
 
-		setMonoMode(m_PerformanceConfig.GetMonoMode(nTG) ? 1 : 0, nTG); 
-		setTGLink(m_PerformanceConfig.GetTGLink(nTG), nTG);
+		SetMIDIChannel(nCh, nTTG);
+		SetSysExChannel(config->GetSysExChannel(nTG), nTTG);
+		SetSysExEnable(config->GetSysExEnable(nTG), nTTG);
+		SetMIDIRxSustain(config->GetMIDIRxSustain(nTG), nTTG);
+		SetMIDIRxPortamento(config->GetMIDIRxPortamento(nTG), nTTG);
+		SetMIDIRxSostenuto(config->GetMIDIRxSostenuto(nTG), nTTG);
+		SetMIDIRxHold2(config->GetMIDIRxHold2(nTG), nTTG);
+		SetVolume(config->GetVolume(nTG), nTTG);
+		SetPan(config->GetPan(nTG), nTTG);
+		SetMasterTune(config->GetDetune(nTG), nTTG);
+		SetCutoff(config->GetCutoff(nTG), nTTG);
+		SetResonance(config->GetResonance(nTG), nTTG);
+		setPitchbendRange(config->GetPitchBendRange(nTG), nTTG);
+		setPitchbendStep(config->GetPitchBendStep(nTG), nTTG);
+		setPortamentoMode(config->GetPortamentoMode(nTG), nTTG);
+		setPortamentoGlissando(config->GetPortamentoGlissando(nTG), nTTG);
+		setPortamentoTime(config->GetPortamentoTime(nTG), nTTG);
 
-		SetFX1Send (m_PerformanceConfig.GetFX1Send (nTG), nTG);
-		SetFX2Send (m_PerformanceConfig.GetFX2Send (nTG), nTG);
+		setNoteLimitLow(config->GetNoteLimitLow(nTG), nTTG);
+		setNoteLimitHigh(config->GetNoteLimitHigh(nTG), nTTG);
+		setNoteShift(config->GetNoteShift(nTG), nTTG);
 
-		setModWheelRange (m_PerformanceConfig.GetModulationWheelRange (nTG),  nTG);
-		setModWheelTarget (m_PerformanceConfig.GetModulationWheelTarget (nTG),  nTG);
-		setFootControllerRange (m_PerformanceConfig.GetFootControlRange (nTG),  nTG);
-		setFootControllerTarget (m_PerformanceConfig.GetFootControlTarget (nTG),  nTG);
-		setBreathControllerRange (m_PerformanceConfig.GetBreathControlRange (nTG),  nTG);
-		setBreathControllerTarget (m_PerformanceConfig.GetBreathControlTarget (nTG),  nTG);
-		setAftertouchRange (m_PerformanceConfig.GetAftertouchRange (nTG),  nTG);
-		setAftertouchTarget (m_PerformanceConfig.GetAftertouchTarget (nTG),  nTG);
+		if (config->VoiceDataFilled(nTG) && nTTG < m_nToneGenerators)
+		{
+			uint8_t *tVoiceData = config->GetVoiceDataFromTxt(nTG);
+			m_pTG[nTTG]->loadVoiceParameters(tVoiceData);
+			setOPMask(0b111111, nTTG);
+		}
 
-		SetCompressorEnable (m_PerformanceConfig.GetCompressorEnable (nTG), nTG);
-		SetCompressorPreGain (m_PerformanceConfig.GetCompressorPreGain (nTG), nTG);
-		SetCompressorThresh (m_PerformanceConfig.GetCompressorThresh (nTG), nTG);
-		SetCompressorRatio (m_PerformanceConfig.GetCompressorRatio (nTG), nTG);		
-		SetCompressorAttack (m_PerformanceConfig.GetCompressorAttack (nTG), nTG);;
-		SetCompressorRelease (m_PerformanceConfig.GetCompressorRelease (nTG), nTG);
-		SetCompressorMakeupGain (m_PerformanceConfig.GetCompressorMakeupGain (nTG), nTG);
+		setMonoMode(config->GetMonoMode(nTG) ? 1 : 0, nTTG);
+		setTGLink(config->GetTGLink(nTG), nTTG);
 
-		SetEQLow (m_PerformanceConfig.GetEQLow (nTG), nTG);
-		SetEQMid (m_PerformanceConfig.GetEQMid (nTG), nTG);
-		SetEQHigh (m_PerformanceConfig.GetEQHigh (nTG), nTG);
-		SetEQGain (m_PerformanceConfig.GetEQGain (nTG), nTG);
-		SetEQLowMidFreq (m_PerformanceConfig.GetEQLowMidFreq (nTG), nTG);
-		SetEQMidHighFreq (m_PerformanceConfig.GetEQMidHighFreq (nTG), nTG);
-		SetEQPreLowcut (m_PerformanceConfig.GetEQPreLowcut (nTG), nTG);
-		SetEQPreHighcut (m_PerformanceConfig.GetEQPreHighcut (nTG), nTG);
+		SetFX1Send(config->GetFX1Send(nTG), nTTG);
+		SetFX2Send(config->GetFX2Send(nTG), nTTG);
+
+		setModWheelRange(config->GetModulationWheelRange(nTG), nTTG);
+		setModWheelTarget(config->GetModulationWheelTarget(nTG), nTTG);
+		setFootControllerRange(config->GetFootControlRange(nTG), nTTG);
+		setFootControllerTarget(config->GetFootControlTarget(nTG), nTTG);
+		setBreathControllerRange(config->GetBreathControlRange(nTG), nTTG);
+		setBreathControllerTarget(config->GetBreathControlTarget(nTG), nTTG);
+		setAftertouchRange(config->GetAftertouchRange(nTG), nTTG);
+		setAftertouchTarget(config->GetAftertouchTarget(nTG), nTTG);
+
+		SetCompressorEnable(config->GetCompressorEnable(nTG), nTTG);
+		SetCompressorPreGain(config->GetCompressorPreGain(nTG), nTTG);
+		SetCompressorThresh(config->GetCompressorThresh(nTG), nTTG);
+		SetCompressorRatio(config->GetCompressorRatio(nTG), nTTG);
+		SetCompressorAttack(config->GetCompressorAttack(nTG), nTTG);
+
+		SetCompressorRelease(config->GetCompressorRelease(nTG), nTTG);
+		SetCompressorMakeupGain(config->GetCompressorMakeupGain(nTG), nTTG);
+
+		SetEQLow(config->GetEQLow(nTG), nTTG);
+		SetEQMid(config->GetEQMid(nTG), nTTG);
+		SetEQHigh(config->GetEQHigh(nTG), nTTG);
+		SetEQGain(config->GetEQGain(nTG), nTTG);
+		SetEQLowMidFreq(config->GetEQLowMidFreq(nTG), nTTG);
+		SetEQMidHighFreq(config->GetEQMidHighFreq(nTG), nTTG);
+		SetEQPreLowcut(config->GetEQPreLowcut(nTG), nTTG);
+		SetEQPreHighcut(config->GetEQPreHighcut(nTG), nTTG);
 	}
 
-	for (unsigned nFX=0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
-		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		if (LoadType == Bus::LoadType::BusTGOnly) continue;
+		if (nBus < nBusFrom || nBus >= nBusFrom + nBusCount) continue;
+
+		unsigned nTBus = nBus + nBusTarget;
+		if (nTBus >= CConfig::Buses) break;
+
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
 		{
-			FX::TFXParameter param = FX::TFXParameter(nParam);
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-			bool bSaveOnly = p.Flags & FX::FXComposite;
-			SetFXParameter (param, m_PerformanceConfig.GetFXParameter (param, nFX), nFX, bSaveOnly);
+			Bus::Parameter param = Bus::Parameter(nParam);
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
+
+			if (p.Flags & Bus::Flag::UIOnly) continue;
+			if (param == Bus::MIDIChannel && LoadType != Bus::LoadType::Full) continue;
+
+			SetBusParameter(param, config->GetBusParameter(param, nBus), nTBus);
+		}
+
+		for (unsigned idFX = 0; idFX < CConfig::BusFXChains; ++idFX)
+		{
+			unsigned nFX = idFX + nBus * CConfig::BusFXChains;
+			unsigned nTFX = idFX + nTBus * CConfig::BusFXChains;
+			for (unsigned nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
+			{
+				FX::Parameter param = FX::Parameter(nParam);
+				const FX::ParameterType &p = FX::s_Parameter[nParam];
+				bool bSaveOnly = p.Flags & FX::Flag::Composite;
+				SetFXParameter(param, config->GetFXParameter(param, nFX), nTFX, bSaveOnly);
+			}
 		}
 	}
 
-	SetParameter (ParameterMixerDryLevel, m_PerformanceConfig.GetMixerDryLevel ());
-	SetParameter (ParameterFXBypass, m_PerformanceConfig.GetFXBypass ());
-
-	m_UI.DisplayChanged ();
+	m_UI.DisplayChanged();
 }
 
-std::string CMiniDexed::GetNewPerformanceDefaultName(void)	
+std::string CMiniDexed::GetNewPerformanceDefaultName(void)
 {
 	return m_PerformanceConfig.GetNewPerformanceDefaultName();
 }
@@ -3125,16 +3547,16 @@ int CMiniDexed::GetLastKeyDown()
 	return m_nLastKeyDown;
 }
 
-void CMiniDexed::SetVoiceName (const std::string &VoiceName, unsigned nTG)
+void CMiniDexed::SetVoiceName(const std::string &VoiceName, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
-	if (nTG >= m_nToneGenerators) return;  // Not an active TG
+	assert(nTG < CConfig::AllToneGenerators);
+	if (nTG >= m_nToneGenerators) return; // Not an active TG
 
-	assert (m_pTG[nTG]);
+	assert(m_pTG[nTG]);
 	char Name[11];
-	strncpy(Name, VoiceName.c_str(),10);
+	strncpy(Name, VoiceName.c_str(), 10);
 	Name[10] = '\0';
-	m_pTG[nTG]->setName (Name);
+	m_pTG[nTG]->setName(Name);
 }
 
 bool CMiniDexed::DeletePerformance(unsigned nID)
@@ -3155,19 +3577,19 @@ bool CMiniDexed::DeletePerformance(unsigned nID)
 bool CMiniDexed::DoDeletePerformance(void)
 {
 	unsigned nID = m_nDeletePerformanceID;
-	if(m_PerformanceConfig.DeletePerformance(nID))
+	if (m_PerformanceConfig.DeletePerformance(nID))
 	{
-		if (m_PerformanceConfig.Load ())
+		if (m_PerformanceConfig.Load())
 		{
 			LoadPerformanceParameters();
 			return true;
 		}
 		else
 		{
-			SetMIDIChannel (CMIDIDevice::OmniMode, 0);
+			SetMIDIChannel(CMIDIDevice::OmniMode, 0);
 		}
 	}
-	
+
 	return false;
 }
 
@@ -3176,140 +3598,139 @@ bool CMiniDexed::GetPerformanceSelectToLoad(void)
 	return m_pConfig->GetPerformanceSelectToLoad();
 }
 
-void CMiniDexed::setModController (unsigned controller, unsigned parameter, uint8_t value, uint8_t nTG)
+void CMiniDexed::setModController(unsigned controller, unsigned parameter, uint8_t value, uint8_t nTG)
 {
-	 uint8_t nBits;
-	
+	uint8_t nBits;
+
 	switch (controller)
 	{
-		case 0:
-			if (parameter == 0)
-			{
-				setModWheelRange(value, nTG);
-			}
-			else
-			{
-				value=constrain(value, 0, 1);
-				nBits=m_nModulationWheelTarget[nTG];
-				value == 1 ?  nBits |= 1 << (parameter-1) : nBits &= ~(1 << (parameter-1)); 
-				setModWheelTarget(nBits , nTG); 
-			}
+	case 0:
+		if (parameter == 0)
+		{
+			setModWheelRange(value, nTG);
+		}
+		else
+		{
+			value = constrain(value, 0, 1);
+			nBits = m_nModulationWheelTarget[nTG];
+			value == 1 ? nBits |= 1 << (parameter - 1) : nBits &= ~(1 << (parameter - 1));
+			setModWheelTarget(nBits, nTG);
+		}
 		break;
-		
-		case 1:
-			if (parameter == 0)
-			{
-				setFootControllerRange(value, nTG);
-			}
-			else
-			{
-				value=constrain(value, 0, 1);
-				nBits=m_nFootControlTarget[nTG];
-				value == 1 ?  nBits |= 1 << (parameter-1) : nBits &= ~(1 << (parameter-1)); 
-				setFootControllerTarget(nBits , nTG); 
-			}
-		break;	
 
-		case 2:
-			if (parameter == 0)
-			{
-				setBreathControllerRange(value, nTG);
-			}
-			else
-			{
-				value=constrain(value, 0, 1);
-				nBits=m_nBreathControlTarget[nTG];
-				value == 1 ?  nBits |= 1 << (parameter-1) : nBits &= ~(1 << (parameter-1));
-				setBreathControllerTarget(nBits , nTG); 
-			}
-		break;			
-		
-		case 3:
-			if (parameter == 0)
-			{
-				setAftertouchRange(value, nTG);
-			}
-			else
-			{
-				value=constrain(value, 0, 1);
-				nBits=m_nAftertouchTarget[nTG];
-				value == 1 ?  nBits |= 1 << (parameter-1) : nBits &= ~(1 << (parameter-1));
-				setAftertouchTarget(nBits , nTG); 
-			}
-		break;	
-		default:
+	case 1:
+		if (parameter == 0)
+		{
+			setFootControllerRange(value, nTG);
+		}
+		else
+		{
+			value = constrain(value, 0, 1);
+			nBits = m_nFootControlTarget[nTG];
+			value == 1 ? nBits |= 1 << (parameter - 1) : nBits &= ~(1 << (parameter - 1));
+			setFootControllerTarget(nBits, nTG);
+		}
+		break;
+
+	case 2:
+		if (parameter == 0)
+		{
+			setBreathControllerRange(value, nTG);
+		}
+		else
+		{
+			value = constrain(value, 0, 1);
+			nBits = m_nBreathControlTarget[nTG];
+			value == 1 ? nBits |= 1 << (parameter - 1) : nBits &= ~(1 << (parameter - 1));
+			setBreathControllerTarget(nBits, nTG);
+		}
+		break;
+
+	case 3:
+		if (parameter == 0)
+		{
+			setAftertouchRange(value, nTG);
+		}
+		else
+		{
+			value = constrain(value, 0, 1);
+			nBits = m_nAftertouchTarget[nTG];
+			value == 1 ? nBits |= 1 << (parameter - 1) : nBits &= ~(1 << (parameter - 1));
+			setAftertouchTarget(nBits, nTG);
+		}
+		break;
+	default:
 		break;
 	}
 }
 
-unsigned CMiniDexed::getModController (unsigned controller, unsigned parameter, uint8_t nTG)
+unsigned CMiniDexed::getModController(unsigned controller, unsigned parameter, uint8_t nTG)
 {
 	unsigned nBits;
 	switch (controller)
 	{
-		case 0:
-			if (parameter == 0)
-			{
-			    return m_nModulationWheelRange[nTG];
-			}
-			else
-			{
-	
-				nBits=m_nModulationWheelTarget[nTG];
-				nBits &= 1 << (parameter-1);				
-				return (nBits != 0 ? 1 : 0) ; 
-			}
+	case 0:
+		if (parameter == 0)
+		{
+			return m_nModulationWheelRange[nTG];
+		}
+		else
+		{
+			nBits = m_nModulationWheelTarget[nTG];
+			nBits &= 1 << (parameter - 1);
+			return (nBits != 0 ? 1 : 0);
+		}
 		break;
-		
-		case 1:
-			if (parameter == 0)
-			{
-				return m_nFootControlRange[nTG];
-			}
-			else
-			{
-				nBits=m_nFootControlTarget[nTG];
-				nBits &= 1 << (parameter-1)	;			
-				return (nBits != 0 ? 1 : 0) ; 
-			}
-		break;	
 
-		case 2:
-			if (parameter == 0)
-			{
-				return m_nBreathControlRange[nTG];
-			}
-			else
-			{
-				nBits=m_nBreathControlTarget[nTG];	
-				nBits &= 1 << (parameter-1)	;			
-				return (nBits != 0 ? 1 : 0) ; 
-			}
-		break;			
-		
-		case 3:
-			if (parameter == 0)
-			{
-				return m_nAftertouchRange[nTG];
-			}
-			else
-			{
-				nBits=m_nAftertouchTarget[nTG];
-				nBits &= 1 << (parameter-1)	;			
-				return (nBits != 0 ? 1 : 0) ; 
-			}
-		break;	
-		
-		default:
-			return 0;
+	case 1:
+		if (parameter == 0)
+		{
+			return m_nFootControlRange[nTG];
+		}
+		else
+		{
+			nBits = m_nFootControlTarget[nTG];
+			nBits &= 1 << (parameter - 1);
+			return (nBits != 0 ? 1 : 0);
+		}
+		break;
+
+	case 2:
+		if (parameter == 0)
+		{
+			return m_nBreathControlRange[nTG];
+		}
+		else
+		{
+			nBits = m_nBreathControlTarget[nTG];
+			nBits &= 1 << (parameter - 1);
+			return (nBits != 0 ? 1 : 0);
+		}
+		break;
+
+	case 3:
+		if (parameter == 0)
+		{
+			return m_nAftertouchRange[nTG];
+		}
+		else
+		{
+			nBits = m_nAftertouchTarget[nTG];
+			nBits &= 1 << (parameter - 1);
+			return (nBits != 0 ? 1 : 0);
+		}
+		break;
+
+	default:
+		return 0;
 		break;
 	}
-	
 }
 
 void CMiniDexed::UpdateNetwork()
 {
-	if (!m_pNet) {
+	if (!m_pNet)
+	{
 		LOGNOTE("CMiniDexed::UpdateNetwork: m_pNet is nullptr, returning early");
 		return;
 	}
@@ -3319,7 +3740,7 @@ void CMiniDexed::UpdateNetwork()
 		bNetIsRunning &= m_pNetDevice->IsLinkUp();
 	else if (m_pNetDevice->GetType() == NetDeviceTypeWLAN)
 		bNetIsRunning &= (m_WPASupplicant && m_WPASupplicant->IsConnected());
-	
+
 	if (!m_bNetworkInit && bNetIsRunning)
 	{
 		LOGNOTE("CMiniDexed::UpdateNetwork: Network became ready, initializing network services");
@@ -3332,7 +3753,8 @@ void CMiniDexed::UpdateNetwork()
 			m_UDPMIDI->Initialize();
 		}
 
-		if (m_pConfig->GetNetworkFTPEnabled()) {
+		if (m_pConfig->GetNetworkFTPEnabled())
+		{
 			m_pFTPDaemon = new CFTPDaemon(FTPUSERNAME, FTPPASSWORD, m_pmDNSPublisher, m_pConfig);
 
 			if (!m_pFTPDaemon->Initialize())
@@ -3341,52 +3763,54 @@ void CMiniDexed::UpdateNetwork()
 				delete m_pFTPDaemon;
 				m_pFTPDaemon = nullptr;
 			}
-			else 
+			else
 			{
 				LOGNOTE("FTP daemon initialized");
 			}
-		} else {
+		}
+		else
+		{
 			LOGNOTE("FTP daemon not started (NetworkFTPEnabled=0)");
 		}
 
-		m_pmDNSPublisher = new CmDNSPublisher (m_pNet);
-		assert (m_pmDNSPublisher);
-		
-		if (!m_pmDNSPublisher->PublishService (m_pConfig->GetNetworkHostname(), CmDNSPublisher::ServiceTypeAppleMIDI,
-						     5004))
+		m_pmDNSPublisher = new CmDNSPublisher(m_pNet);
+		assert(m_pmDNSPublisher);
+
+		if (!m_pmDNSPublisher->PublishService(m_pConfig->GetNetworkHostname(), CmDNSPublisher::ServiceTypeAppleMIDI,
+						      5004))
 		{
-			LOGPANIC ("Cannot publish mdns service");
+			LOGPANIC("Cannot publish mdns service");
 		}
 
 		static constexpr const char *ServiceTypeFTP = "_ftp._tcp";
-		static const char *ftpTxt[] = { "app=MiniDexed", nullptr };
-		if (!m_pmDNSPublisher->PublishService (m_pConfig->GetNetworkHostname(), ServiceTypeFTP, 21, ftpTxt))
+		static const char *ftpTxt[] = {"app=MiniDexed", nullptr};
+		if (!m_pmDNSPublisher->PublishService(m_pConfig->GetNetworkHostname(), ServiceTypeFTP, 21, ftpTxt))
 		{
-			LOGPANIC ("Cannot publish mdns service");
+			LOGPANIC("Cannot publish mdns service");
 		}
 
 		if (m_pConfig->GetSyslogEnabled())
 		{
-			LOGNOTE ("Syslog server is enabled in configuration");
-			const CIPAddress& ServerIP = m_pConfig->GetNetworkSyslogServerIPAddress();
-			if (ServerIP.IsSet () && !ServerIP.IsNull ())
+			LOGNOTE("Syslog server is enabled in configuration");
+			const CIPAddress &ServerIP = m_pConfig->GetNetworkSyslogServerIPAddress();
+			if (ServerIP.IsSet() && !ServerIP.IsNull())
 			{
-				static const u16 usServerPort = 8514;
+				static const uint16_t usServerPort = 8514;
 				CString IPString;
-				ServerIP.Format (&IPString);
-				LOGNOTE ("Sending log messages to syslog server %s:%u",
-					(const char *) IPString, (unsigned) usServerPort);
+				ServerIP.Format(&IPString);
+				LOGNOTE("Sending log messages to syslog server %s:%u",
+					(const char *)IPString, (unsigned)usServerPort);
 
-				new CSysLogDaemon (m_pNet, ServerIP, usServerPort);
+				new CSysLogDaemon(m_pNet, ServerIP, usServerPort);
 			}
 			else
 			{
-				LOGNOTE ("Syslog server IP not set");
-			}	
+				LOGNOTE("Syslog server IP not set");
+			}
 		}
 		else
 		{
-			LOGNOTE ("Syslog server is not enabled in configuration");
+			LOGNOTE("Syslog server is not enabled in configuration");
 		}
 		m_bNetworkReady = true;
 	}
@@ -3395,31 +3819,30 @@ void CMiniDexed::UpdateNetwork()
 	{
 		LOGNOTE("CMiniDexed::UpdateNetwork: Network disconnected");
 		m_bNetworkReady = false;
-		m_pmDNSPublisher->UnpublishService (m_pConfig->GetNetworkHostname());
+		m_pmDNSPublisher->UnpublishService(m_pConfig->GetNetworkHostname());
 		LOGNOTE("Network disconnected.");
 	}
 	else if (!m_bNetworkReady && bNetIsRunning)
 	{
 		LOGNOTE("CMiniDexed::UpdateNetwork: Network connection reestablished");
 		m_bNetworkReady = true;
-		
-		if (!m_pmDNSPublisher->PublishService (m_pConfig->GetNetworkHostname(), CmDNSPublisher::ServiceTypeAppleMIDI,
-						     5004))
+
+		if (!m_pmDNSPublisher->PublishService(m_pConfig->GetNetworkHostname(), CmDNSPublisher::ServiceTypeAppleMIDI,
+						      5004))
 		{
-			LOGPANIC ("Cannot publish mdns service");
+			LOGPANIC("Cannot publish mdns service");
 		}
 
 		static constexpr const char *ServiceTypeFTP = "_ftp._tcp";
-		static const char *ftpTxt[] = { "app=MiniDexed", nullptr };
-		if (!m_pmDNSPublisher->PublishService (m_pConfig->GetNetworkHostname(), ServiceTypeFTP, 21, ftpTxt))
+		static const char *ftpTxt[] = {"app=MiniDexed", nullptr};
+		if (!m_pmDNSPublisher->PublishService(m_pConfig->GetNetworkHostname(), ServiceTypeFTP, 21, ftpTxt))
 		{
-			LOGPANIC ("Cannot publish mdns service");
+			LOGPANIC("Cannot publish mdns service");
 		}
-		
-		m_bNetworkReady = true;
-		
-		LOGNOTE("Network connection reestablished.");
 
+		m_bNetworkReady = true;
+
+		LOGNOTE("Network connection reestablished.");
 	}
 }
 
@@ -3448,7 +3871,8 @@ bool CMiniDexed::InitNetwork()
 			else
 			{
 				LOGERR("CMiniDexed::InitNetwork: Failed to initialize WLAN, maybe firmware files are missing?");
-				delete m_WLAN; m_WLAN = nullptr;
+				delete m_WLAN;
+				m_WLAN = nullptr;
 				return false;
 			}
 		}
@@ -3457,12 +3881,12 @@ bool CMiniDexed::InitNetwork()
 			LOGNOTE("CMiniDexed::InitNetwork: Initializing Ethernet");
 			NetDeviceType = NetDeviceTypeEthernet;
 		}
-		else 
+		else
 		{
 			LOGERR("CMiniDexed::InitNetwork: Network type is not set, please check your minidexed configuration file.");
 			NetDeviceType = NetDeviceTypeUnknown;
 		}
-		
+
 		if (NetDeviceType != NetDeviceTypeUnknown)
 		{
 			if (m_pConfig->GetNetworkDHCP())
@@ -3473,28 +3897,30 @@ bool CMiniDexed::InitNetwork()
 			else if (m_pConfig->GetNetworkIPAddress().IsSet() && m_pConfig->GetNetworkSubnetMask().IsSet())
 			{
 				CString IPString, SubnetString;
-				m_pConfig->GetNetworkIPAddress().Format (&IPString);
-				m_pConfig->GetNetworkSubnetMask().Format (&SubnetString);
-				LOGNOTE("CMiniDexed::InitNetwork: Creating CNetSubSystem with IP: %s / %s", (const char*)IPString, (const char*)SubnetString);
+				m_pConfig->GetNetworkIPAddress().Format(&IPString);
+				m_pConfig->GetNetworkSubnetMask().Format(&SubnetString);
+				LOGNOTE("CMiniDexed::InitNetwork: Creating CNetSubSystem with IP: %s / %s", (const char *)IPString, (const char *)SubnetString);
 				m_pNet = new CNetSubSystem(
-					m_pConfig->GetNetworkIPAddress().Get(),
-					m_pConfig->GetNetworkSubnetMask().Get(),
-					m_pConfig->GetNetworkDefaultGateway().IsSet() ? m_pConfig->GetNetworkDefaultGateway().Get() : 0,
-					m_pConfig->GetNetworkDNSServer().IsSet() ? m_pConfig->GetNetworkDNSServer().Get() : 0,
-					m_pConfig->GetNetworkHostname(),
-					NetDeviceType);
+				m_pConfig->GetNetworkIPAddress().Get(),
+				m_pConfig->GetNetworkSubnetMask().Get(),
+				m_pConfig->GetNetworkDefaultGateway().IsSet() ? m_pConfig->GetNetworkDefaultGateway().Get() : 0,
+				m_pConfig->GetNetworkDNSServer().IsSet() ? m_pConfig->GetNetworkDNSServer().Get() : 0,
+				m_pConfig->GetNetworkHostname(),
+				NetDeviceType);
 			}
 			else
 			{
-				LOGNOTE ("CMiniDexed::InitNetwork: Neither DHCP nor IP address/subnet mask is set, using DHCP (Hostname: %s)", m_pConfig->GetNetworkHostname());
+				LOGNOTE("CMiniDexed::InitNetwork: Neither DHCP nor IP address/subnet mask is set, using DHCP (Hostname: %s)", m_pConfig->GetNetworkHostname());
 				m_pNet = new CNetSubSystem(0, 0, 0, 0, m_pConfig->GetNetworkHostname(), NetDeviceType);
 			}
 
 			if (!m_pNet || !m_pNet->Initialize(false)) // Check if m_pNet allocation succeeded
 			{
 				LOGERR("CMiniDexed::InitNetwork: Failed to initialize network subsystem");
-				delete m_pNet; m_pNet = nullptr; // Clean up if failed
-				delete m_WLAN; m_WLAN = nullptr; // Clean up WLAN if allocated
+				delete m_pNet;
+				m_pNet = nullptr; // Clean up if failed
+				delete m_WLAN;
+				m_WLAN = nullptr; // Clean up WLAN if allocated
 				return false; // Return false as network init failed
 			}
 			// WPASupplicant needs to be started after netdevice available
@@ -3502,21 +3928,25 @@ bool CMiniDexed::InitNetwork()
 			{
 				LOGNOTE("CMiniDexed::InitNetwork: Initializing WPASupplicant");
 				m_WPASupplicant = new CWPASupplicant(WLANConfigFile); // Allocate m_WPASupplicant
-				if (!m_WPASupplicant || !m_WPASupplicant->Initialize()) 
+				if (!m_WPASupplicant || !m_WPASupplicant->Initialize())
 				{
-					LOGERR("CMiniDexed::InitNetwork: Failed to initialize WPASupplicant, maybe wlan config is missing?"); 
-					delete m_WPASupplicant; m_WPASupplicant = nullptr; // Clean up if failed
-					// Continue without supplicant? Or return false? Decided to continue for now.
+					LOGERR("CMiniDexed::InitNetwork: Failed to initialize WPASupplicant, maybe wlan config is missing?");
+					delete m_WPASupplicant;
+					m_WPASupplicant = nullptr; // Clean up if failed
+								   // Continue without supplicant? Or return false? Decided to continue for now.
 				}
 			}
 			m_pNetDevice = CNetDevice::GetNetDevice(NetDeviceType);
 
 			// Allocate UDP MIDI device now that network might be up
 			m_UDPMIDI = new CUDPMIDIDevice(this, m_pConfig, &m_UI); // Allocate m_UDPMIDI
-			if (!m_UDPMIDI) {
+			if (!m_UDPMIDI)
+			{
 				LOGERR("CMiniDexed::InitNetwork: Failed to allocate UDP MIDI device");
 				// Clean up other network resources if needed, or handle error appropriately
-			} else {
+			}
+			else
+			{
 				// Synchronize UDP MIDI channels with current assignments
 				for (unsigned nTG = 0; nTG < m_nToneGenerators; ++nTG)
 					m_UDPMIDI->SetChannel(m_nMIDIChannel[nTG], nTG);
@@ -3532,7 +3962,7 @@ bool CMiniDexed::InitNetwork()
 	}
 }
 
-const CIPAddress& CMiniDexed::GetNetworkIPAddress()
+const CIPAddress &CMiniDexed::GetNetworkIPAddress()
 {
 	if (m_pNet)
 		return *m_pNet->GetConfig()->GetIPAddress();

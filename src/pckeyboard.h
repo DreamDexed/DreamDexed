@@ -17,40 +17,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _pckeyboard_h
-#define _pckeyboard_h
+#pragma once
 
-#include "mididevice.h"
-#include "config.h"
-#include <circle/usb/usbkeyboard.h>
 #include <circle/device.h>
-#include <circle/types.h>
+#include <circle/usb/usbkeyboard.h>
+#include <cstdint>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
 
 class CMiniDexed;
 
 class CPCKeyboard : public CMIDIDevice
 {
 public:
-	CPCKeyboard (CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
-	~CPCKeyboard (void);
+	CPCKeyboard(CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
+	~CPCKeyboard(void);
 
-	void Process (boolean bPlugAndPlayUpdated);
-
-private:
-	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
-
-	static u8 GetKeyNumber (u8 ucKeyCode);
-
-	static boolean FindByte (const u8 *pBuffer, u8 ucByte, unsigned nLength);
-
-	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+	void Process(bool bPlugAndPlayUpdated);
 
 private:
-	CUSBKeyboardDevice * volatile m_pKeyboard;
+	static void KeyStatusHandlerRaw(unsigned char ucModifiers, const unsigned char RawKeys[6]);
 
-	u8 m_LastKeys[6];
+	static uint8_t GetKeyNumber(uint8_t ucKeyCode);
+
+	static bool FindByte(const uint8_t *pBuffer, uint8_t ucByte, unsigned nLength);
+
+	static void DeviceRemovedHandler(CDevice *pDevice, void *pContext);
+
+private:
+	CUSBKeyboardDevice *volatile m_pKeyboard;
+
+	uint8_t m_LastKeys[6];
 
 	static CPCKeyboard *s_pThis;
 };
-
-#endif

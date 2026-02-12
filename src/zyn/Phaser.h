@@ -25,10 +25,13 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
+#include <string>
 
 #include "EffectLFO.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class Phaser
 {
@@ -44,7 +47,8 @@ public:
 
 	static constexpr unsigned max_stages = 12;
 	static constexpr unsigned presets_num = 7;
-	enum Parameter {
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterLFOFreq,
@@ -60,22 +64,22 @@ public:
 		ParameterCount
 	};
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
+	static const char *ToPresetNameChar(int nValue);
 	static unsigned ToIDFromPreset(const char *preset);
 
 private:
-	EffectLFO lfo; 		//Phaser modulator
+	EffectLFO lfo; // Phaser modulator
 
 	unsigned Ppreset;
 
-	//Parametrii Phaser
+	// Parametrii Phaser
 	int Pmix;
 	int Ppanning;
-	int Pdepth;		//the depth of the Phaser
-	int Pfb;		//feedback
-	int Plrcross;		//feedback
+	int Pdepth; // the depth of the Phaser
+	int Pfb; // feedback
+	int Plrcross; // feedback
 	int Pstages;
-	int Psubtractive;		//if I wish to substract the output instead of the adding it
+	int Psubtractive; // if I wish to substract the output instead of the adding it
 	int Pphase;
 
 	void setmix(int Pmix);
@@ -86,11 +90,11 @@ private:
 	void setstages(int Pstages);
 	void setphase(int Pphase);
 
-	//Valorile interne
+	// Valorile interne
 	float dry, wet, panl, panr, fb, depth, lrcross, fbl, fbr, phase;
 	float oldl[max_stages * 2];
 	float oldr[max_stages * 2];
 	float oldlgain, oldrgain;
 };
 
-}
+} // namespace zyn

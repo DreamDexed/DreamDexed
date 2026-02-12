@@ -20,34 +20,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/logger.h>
-#include <arm_math.h>
+
 #include "performanceconfig.h"
-#include "mididevice.h"
+
+#include <cassert>
+#include <cctype>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <string>
+
+#include <Properties/propertiesfatfsfile.h>
+#include <circle/logger.h>
+#include <circle/string.h>
+#include <fatfs/ff.h>
+
+#include "bus.h"
 #include "common.h"
-#include <cstring> 
-#include <algorithm>
+#include "config.h"
+#include "effect.h"
+#include "mididevice.h"
 
-LOGMODULE ("Performance");
+LOGMODULE("Performance");
 
-//#define VERBOSE_DEBUG
+// #define VERBOSE_DEBUG
 
-#define PERFORMANCE_DIR "performance" 
+#define PERFORMANCE_DIR "performance"
 #define DEFAULT_PERFORMANCE_FILENAME "performance.ini"
 #define DEFAULT_PERFORMANCE_NAME "Default"
 
-
-CPerformanceConfig::CPerformanceConfig (FATFS *pFileSystem)
-:	m_Properties (DEFAULT_PERFORMANCE_FILENAME, pFileSystem)
+CPerformanceConfig::CPerformanceConfig(FATFS *pFileSystem) : m_Properties(DEFAULT_PERFORMANCE_FILENAME, pFileSystem)
 {
-	m_pFileSystem = pFileSystem; 
+	m_pFileSystem = pFileSystem;
 }
 
-CPerformanceConfig::~CPerformanceConfig (void)
+CPerformanceConfig::~CPerformanceConfig(void)
 {
 }
 
-bool CPerformanceConfig::Init (unsigned nToneGenerators)
+bool CPerformanceConfig::Init(unsigned nToneGenerators)
 {
 	// Different versions of Pi allow different TG configurations.
 	// On loading, performances will load up to the number of
@@ -64,25 +75,25 @@ bool CPerformanceConfig::Init (unsigned nToneGenerators)
 	// Check intermal performance directory exists
 	DIR Directory;
 	FRESULT Result;
-	//Check if internal "performance" directory exists
-	Result = f_opendir (&Directory, "SD:/" PERFORMANCE_DIR);
+	// Check if internal "performance" directory exists
+	Result = f_opendir(&Directory, "SD:/" PERFORMANCE_DIR);
 	if (Result == FR_OK)
 	{
-		m_bPerformanceDirectoryExists=true;		
-		Result = f_closedir (&Directory);
+		m_bPerformanceDirectoryExists = true;
+		Result = f_closedir(&Directory);
 	}
 	else
 	{
 		m_bPerformanceDirectoryExists = false;
 	}
-	
+
 	// List banks if present
 	ListPerformanceBanks();
 
 #ifdef VERBOSE_DEBUG
 #warning "PerformanceConfig in verbose debug printing mode"
 	LOGNOTE("Testing loading of banks");
-	for (unsigned i=0; i<NUM_PERFORMANCE_BANKS; i++)
+	for (unsigned i = 0; i < NUM_PERFORMANCE_BANKS; i++)
 	{
 		if (!m_PerformanceBankName[i].empty())
 		{
@@ -95,14 +106,14 @@ bool CPerformanceConfig::Init (unsigned nToneGenerators)
 	SetNewPerformanceBank(0);
 	SetNewPerformance(0);
 
-	LOGNOTE ("Loaded Default Performance Bank - Last Performance: %d", m_nLastPerformance + 1); // Show "user facing" index
+	LOGNOTE("Loaded Default Performance Bank - Last Performance: %d", m_nLastPerformance + 1); // Show "user facing" index
 
 	return true;
 }
 
-bool CPerformanceConfig::Load (void)
+bool CPerformanceConfig::Load(void)
 {
-	if (!m_Properties.Load ())
+	if (!m_Properties.Load())
 	{
 		return false;
 	}
@@ -113,25 +124,25 @@ bool CPerformanceConfig::Load (void)
 	{
 		CString PropertyName;
 
-		PropertyName.Format ("BankNumber%u", nTG+1);
-		m_nBankNumber[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("BankNumber%u", nTG + 1);
+		m_nBankNumber[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("VoiceNumber%u", nTG+1);
-		m_nVoiceNumber[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("VoiceNumber%u", nTG + 1);
+		m_nVoiceNumber[nTG] = m_Properties.GetNumber(PropertyName, 1);
 		if (m_nVoiceNumber[nTG] > 0)
 		{
 			m_nVoiceNumber[nTG]--;
 		}
 
-		PropertyName.Format ("MIDIChannel%u", nTG+1);
-		unsigned nMIDIChannel = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("MIDIChannel%u", nTG + 1);
+		unsigned nMIDIChannel = m_Properties.GetNumber(PropertyName, 0);
 		if (nMIDIChannel == 0)
 		{
 			m_nMIDIChannel[nTG] = CMIDIDevice::Disabled;
 		}
 		else if (nMIDIChannel <= CMIDIDevice::Channels)
 		{
-			m_nMIDIChannel[nTG] = nMIDIChannel-1;
+			m_nMIDIChannel[nTG] = nMIDIChannel - 1;
 			bResult = true;
 		}
 		else
@@ -140,240 +151,249 @@ bool CPerformanceConfig::Load (void)
 			bResult = true;
 		}
 
-		PropertyName.Format ("SysExChannel%u", nTG+1);
-		unsigned nSysExChannel = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("SysExChannel%u", nTG + 1);
+		unsigned nSysExChannel = m_Properties.GetNumber(PropertyName, 1);
 		if (nSysExChannel > 0 && nSysExChannel <= CMIDIDevice::Channels)
 		{
-			m_nSysExChannel[nTG] = nSysExChannel-1;
+			m_nSysExChannel[nTG] = nSysExChannel - 1;
 		}
 		else
 		{
 			m_nSysExChannel[nTG] = 0;
 		}
 
-		PropertyName.Format ("SysExEnable%u", nTG+1);
-		m_bSysExEnable[nTG]  = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("SysExEnable%u", nTG + 1);
+		m_bSysExEnable[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("MIDIRxSustain%u", nTG+1);
-		m_bMIDIRxSustain[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("MIDIRxSustain%u", nTG + 1);
+		m_bMIDIRxSustain[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("MIDIRxPortamento%u", nTG+1);
-		m_bMIDIRxPortamento[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("MIDIRxPortamento%u", nTG + 1);
+		m_bMIDIRxPortamento[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("MIDIRxSostenuto%u", nTG+1);
-		m_bMIDIRxSostenuto[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("MIDIRxSostenuto%u", nTG + 1);
+		m_bMIDIRxSostenuto[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("MIDIRxHold2%u", nTG+1);
-		m_bMIDIRxHold2[nTG] = m_Properties.GetNumber (PropertyName, 1);
+		PropertyName.Format("MIDIRxHold2%u", nTG + 1);
+		m_bMIDIRxHold2[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("Volume%u", nTG+1);
-		m_nVolume[nTG] = m_Properties.GetNumber (PropertyName, 100);
+		PropertyName.Format("Volume%u", nTG + 1);
+		m_nVolume[nTG] = m_Properties.GetNumber(PropertyName, 100);
 
-		PropertyName.Format ("Pan%u", nTG+1);
-		m_nPan[nTG] = m_Properties.GetNumber (PropertyName, 64);
+		PropertyName.Format("Pan%u", nTG + 1);
+		m_nPan[nTG] = m_Properties.GetNumber(PropertyName, 64);
 
-		PropertyName.Format ("Detune%u", nTG+1);
-		m_nDetune[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("Detune%u", nTG + 1);
+		m_nDetune[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
 
-		PropertyName.Format ("Cutoff%u", nTG+1);
-		m_nCutoff[nTG] = m_Properties.GetNumber (PropertyName, 99);
+		PropertyName.Format("Cutoff%u", nTG + 1);
+		m_nCutoff[nTG] = m_Properties.GetNumber(PropertyName, 99);
 
-		PropertyName.Format ("Resonance%u", nTG+1);
-		m_nResonance[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("Resonance%u", nTG + 1);
+		m_nResonance[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("NoteLimitLow%u", nTG+1);
-		m_nNoteLimitLow[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("NoteLimitLow%u", nTG + 1);
+		m_nNoteLimitLow[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("NoteLimitHigh%u", nTG+1);
-		m_nNoteLimitHigh[nTG] = m_Properties.GetNumber (PropertyName, 127);
+		PropertyName.Format("NoteLimitHigh%u", nTG + 1);
+		m_nNoteLimitHigh[nTG] = m_Properties.GetNumber(PropertyName, 127);
 
-		PropertyName.Format ("NoteShift%u", nTG+1);
-		m_nNoteShift[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("NoteShift%u", nTG + 1);
+		m_nNoteShift[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
 
-		PropertyName.Format ("FX1Send%u", nTG+1);
-		m_nFX1Send[nTG] = m_Properties.GetNumber (PropertyName, 25);
+		PropertyName.Format("FX1Send%u", nTG + 1);
+		m_nFX1Send[nTG] = m_Properties.GetNumber(PropertyName, 25);
 
-		PropertyName.Format ("FX2Send%u", nTG+1);
-		m_nFX2Send[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("FX2Send%u", nTG + 1);
+		m_nFX2Send[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
 		// compatibility ReverbSend[n] => FX1Send[n]
-		PropertyName.Format ("ReverbSend%u", nTG+1);
-		if (m_Properties.IsSet (PropertyName))
+		PropertyName.Format("ReverbSend%u", nTG + 1);
+		if (m_Properties.IsSet(PropertyName))
 		{
 			// the volume calculated by x^4, but FX1Send uses x^2
-			float32_t reverbSend = m_Properties.GetNumber (PropertyName, 50);
-			reverbSend = pow(mapfloat(reverbSend, 0.0f, 99.0f, 0.0f, 1.0f), 2);
+			float reverbSend = m_Properties.GetNumber(PropertyName, 50);
+			reverbSend = std::powf(mapfloat(reverbSend, 0.0f, 99.0f, 0.0f, 1.0f), 2);
 			m_nFX1Send[nTG] = mapfloat(reverbSend, 0.0f, 1.0f, 0, 99);
 		}
-	
-		PropertyName.Format ("PitchBendRange%u", nTG+1);
-		m_nPitchBendRange[nTG] = m_Properties.GetNumber (PropertyName, 2);
 
-		PropertyName.Format ("PitchBendStep%u", nTG+1);
-		m_nPitchBendStep[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("PitchBendRange%u", nTG + 1);
+		m_nPitchBendRange[nTG] = m_Properties.GetNumber(PropertyName, 2);
 
-		PropertyName.Format ("PortamentoMode%u", nTG+1);
-		m_nPortamentoMode[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("PitchBendStep%u", nTG + 1);
+		m_nPitchBendStep[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("PortamentoGlissando%u", nTG+1);
-		m_nPortamentoGlissando[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("PortamentoMode%u", nTG + 1);
+		m_nPortamentoMode[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("PortamentoTime%u", nTG+1);
-		m_nPortamentoTime[nTG] = m_Properties.GetNumber (PropertyName, 0);
-		
-		PropertyName.Format ("VoiceData%u", nTG+1); 
-		m_nVoiceDataTxt[nTG] = m_Properties.GetString (PropertyName, "");
-		
-		PropertyName.Format ("MonoMode%u", nTG+1);
-		m_bMonoMode[nTG] = m_Properties.GetNumber (PropertyName, 0) != 0;
-		
-		PropertyName.Format ("TGLink%u", nTG+1);
-		m_nTGLink[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("PortamentoGlissando%u", nTG + 1);
+		m_nPortamentoGlissando[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("ModulationWheelRange%u", nTG+1);
-		m_nModulationWheelRange[nTG] = m_Properties.GetNumber (PropertyName, 99); 
-		
-		PropertyName.Format ("ModulationWheelTarget%u", nTG+1);
-		m_nModulationWheelTarget[nTG] = m_Properties.GetNumber (PropertyName, 1);
-		
-		PropertyName.Format ("FootControlRange%u", nTG+1);
-		m_nFootControlRange[nTG] = m_Properties.GetNumber (PropertyName, 99); 
-		
-		PropertyName.Format ("FootControlTarget%u", nTG+1);
-		m_nFootControlTarget[nTG] = m_Properties.GetNumber (PropertyName, 0);
-		
-		PropertyName.Format ("BreathControlRange%u", nTG+1);
-		m_nBreathControlRange[nTG] = m_Properties.GetNumber (PropertyName, 99); 
-		
-		PropertyName.Format ("BreathControlTarget%u", nTG+1);
-		m_nBreathControlTarget[nTG] = m_Properties.GetNumber (PropertyName, 0);
-		
-		PropertyName.Format ("AftertouchRange%u", nTG+1);
-		m_nAftertouchRange[nTG] = m_Properties.GetNumber (PropertyName, 99); 
-		
-		PropertyName.Format ("AftertouchTarget%u", nTG+1);
-		m_nAftertouchTarget[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("PortamentoTime%u", nTG + 1);
+		m_nPortamentoTime[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("CompressorEnable%u", nTG+1);
-		m_bCompressorEnable[nTG] = m_Properties.GetNumber (PropertyName, 0);
-		
-		PropertyName.Format ("CompressorPreGain%u", nTG+1);
-		m_nCompressorPreGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("VoiceData%u", nTG + 1);
+		m_nVoiceDataTxt[nTG] = m_Properties.GetString(PropertyName, "");
 
-		PropertyName.Format ("CompressorThresh%u", nTG+1);
-		m_nCompressorThresh[nTG] = m_Properties.GetSignedNumber (PropertyName, -20);
+		PropertyName.Format("MonoMode%u", nTG + 1);
+		m_bMonoMode[nTG] = m_Properties.GetNumber(PropertyName, 0) != 0;
 
-		PropertyName.Format ("CompressorRatio%u", nTG+1);
-		m_nCompressorRatio[nTG] = m_Properties.GetNumber (PropertyName, 5);
+		PropertyName.Format("TGLink%u", nTG + 1);
+		m_nTGLink[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("CompressorAttack%u", nTG+1);
-		m_nCompressorAttack[nTG] = m_Properties.GetNumber (PropertyName, 5);
+		PropertyName.Format("ModulationWheelRange%u", nTG + 1);
+		m_nModulationWheelRange[nTG] = m_Properties.GetNumber(PropertyName, 99);
 
-		PropertyName.Format ("CompressorRelease%u", nTG+1);
-		m_nCompressorRelease[nTG] = m_Properties.GetNumber (PropertyName, 200);
+		PropertyName.Format("ModulationWheelTarget%u", nTG + 1);
+		m_nModulationWheelTarget[nTG] = m_Properties.GetNumber(PropertyName, 1);
 
-		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
-		m_nCompressorMakeupGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("FootControlRange%u", nTG + 1);
+		m_nFootControlRange[nTG] = m_Properties.GetNumber(PropertyName, 99);
 
-		PropertyName.Format ("EQLow%u", nTG+1);
-		m_nEQLow[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("FootControlTarget%u", nTG + 1);
+		m_nFootControlTarget[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("EQMid%u", nTG+1);
-		m_nEQMid[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("BreathControlRange%u", nTG + 1);
+		m_nBreathControlRange[nTG] = m_Properties.GetNumber(PropertyName, 99);
 
-		PropertyName.Format ("EQHigh%u", nTG+1);
-		m_nEQHigh[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("BreathControlTarget%u", nTG + 1);
+		m_nBreathControlTarget[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("EQGain%u", nTG+1);
-		m_nEQGain[nTG] = m_Properties.GetSignedNumber (PropertyName, 0);
+		PropertyName.Format("AftertouchRange%u", nTG + 1);
+		m_nAftertouchRange[nTG] = m_Properties.GetNumber(PropertyName, 99);
 
-		PropertyName.Format ("EQLowMidFreq%u", nTG+1);
-		m_nEQLowMidFreq[nTG] = m_Properties.GetNumber (PropertyName, 24);
+		PropertyName.Format("AftertouchTarget%u", nTG + 1);
+		m_nAftertouchTarget[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
-		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber (PropertyName, 44);
+		PropertyName.Format("CompressorEnable%u", nTG + 1);
+		m_bCompressorEnable[nTG] = m_Properties.GetNumber(PropertyName, 0);
 
-		PropertyName.Format ("EQPreLowcut%u", nTG+1);
-		m_nEQPreLowcut[nTG] = m_Properties.GetNumber (PropertyName, 0);
+		PropertyName.Format("CompressorPreGain%u", nTG + 1);
+		m_nCompressorPreGain[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
 
-		PropertyName.Format ("EQPreHighcut%u", nTG+1);
-		m_nEQPreHighcut[nTG] = m_Properties.GetNumber (PropertyName, 60);
+		PropertyName.Format("CompressorThresh%u", nTG + 1);
+		m_nCompressorThresh[nTG] = m_Properties.GetSignedNumber(PropertyName, -20);
+
+		PropertyName.Format("CompressorRatio%u", nTG + 1);
+		m_nCompressorRatio[nTG] = m_Properties.GetNumber(PropertyName, 5);
+
+		PropertyName.Format("CompressorAttack%u", nTG + 1);
+		m_nCompressorAttack[nTG] = m_Properties.GetNumber(PropertyName, 5);
+
+		PropertyName.Format("CompressorRelease%u", nTG + 1);
+		m_nCompressorRelease[nTG] = m_Properties.GetNumber(PropertyName, 200);
+
+		PropertyName.Format("CompressorMakeupGain%u", nTG + 1);
+		m_nCompressorMakeupGain[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
+
+		PropertyName.Format("EQLow%u", nTG + 1);
+		m_nEQLow[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
+
+		PropertyName.Format("EQMid%u", nTG + 1);
+		m_nEQMid[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
+
+		PropertyName.Format("EQHigh%u", nTG + 1);
+		m_nEQHigh[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
+
+		PropertyName.Format("EQGain%u", nTG + 1);
+		m_nEQGain[nTG] = m_Properties.GetSignedNumber(PropertyName, 0);
+
+		PropertyName.Format("EQLowMidFreq%u", nTG + 1);
+		m_nEQLowMidFreq[nTG] = m_Properties.GetNumber(PropertyName, 24);
+
+		PropertyName.Format("EQMidHighFreq%u", nTG + 1);
+		m_nEQMidHighFreq[nTG] = m_Properties.GetNumber(PropertyName, 44);
+
+		PropertyName.Format("EQPreLowcut%u", nTG + 1);
+		m_nEQPreLowcut[nTG] = m_Properties.GetNumber(PropertyName, 0);
+
+		PropertyName.Format("EQPreHighcut%u", nTG + 1);
+		m_nEQPreHighcut[nTG] = m_Properties.GetNumber(PropertyName, 60);
 	}
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
 		CString PropertyName;
 
-		for (unsigned nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
 		{
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
 
-			if (nFX == CConfig::MasterFX)
-				PropertyName.Format ("MasterFX%s", p.Name);
-			else
-				PropertyName.Format ("SendFX%u%s", nFX+1, p.Name);
+			PropertyName.Format("Bus%u%s", nBus + 1, p.Name);
+			m_nBusParameter[nBus][nParam] = m_Properties.GetSignedNumber(PropertyName, p.Default);
+		}
 
-			if (p.Flags & FX::FXSaveAsString)
-				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::TFXParameter(nParam), m_Properties.GetString (PropertyName, ""));
-			else
-				m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber (PropertyName, p.Default);
+		for (unsigned idFX = 0; idFX < CConfig::BusFXChains; ++idFX)
+		{
+			unsigned nFX = idFX + CConfig::BusFXChains * nBus;
+
+			CString PropertyName;
+
+			for (unsigned nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
+			{
+				const FX::ParameterType &p = FX::s_Parameter[nParam];
+
+				if (idFX == CConfig::BusMasterFX)
+					PropertyName.Format("Bus%uMasterFX%s", nBus + 1, p.Name);
+				else
+					PropertyName.Format("Bus%uSendFX%u%s", nBus + 1, idFX + 1, p.Name);
+
+				if (p.Flags & FX::Flag::SaveAsString)
+					m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::Parameter(nParam), m_Properties.GetString(PropertyName, ""));
+				else
+					m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber(PropertyName, p.Default);
+			}
 		}
 	}
 
-	if (CConfig::FXChains)
-	{
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterReturnLevel] = FX::s_FXParameter[FX::FXParameterReturnLevel].Maximum;
-	}
-
-	m_nMixerDryLevel = m_Properties.GetNumber ("MixerDryLevel", 99);
-	m_nFXBypass = m_Properties.GetNumber ("FXBypass", 0);
-
 	// Compatibility
-	if (m_Properties.IsSet ("CompressorEnable") && CConfig::FXChains)
+	if (m_Properties.IsSet("CompressorEnable") && CConfig::FXChains)
 	{
-		bool bHasCompressor = m_Properties.GetNumber ("CompressorEnable", 0);
+		bool bHasCompressor = m_Properties.GetNumber("CompressorEnable", 0);
 
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterSlot0] = bHasCompressor ? FX::getIDFromName(FX::FXParameterSlot0, "Compressor") : 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorPreGain] = 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorThresh] = -7;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRatio] = 5;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorAttack] = 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRelease] = 200;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorHPFilterEnable] = 1;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorBypass] = 0;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::Slot0] = bHasCompressor ? FX::getIDFromName(FX::Parameter::Slot0, "Compressor") : 0;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorPreGain] = 0;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorThresh] = -7;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorRatio] = 5;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorAttack] = 0;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorRelease] = 200;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorHPFilterEnable] = 1;
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::CompressorBypass] = 0;
+
+		m_nFXParameter[CConfig::BusMasterFX][FX::Parameter::ReturnLevel] = FX::s_Parameter[FX::Parameter::ReturnLevel].Maximum;
 	}
 
-	if (m_Properties.IsSet ("ReverbEnable") && CConfig::FXChains)
+	if (m_Properties.IsSet("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
-		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromName(FX::FXParameterSlot0, "PlateReverb");
-		m_nFXParameter[0][FX::FXParameterPlateReverbMix] = m_Properties.GetNumber ("ReverbEnable", 1) ? 100 : 0;
-		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetNumber ("ReverbSize", 70);
-		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetNumber ("ReverbHighDamp", 50);
-		m_nFXParameter[0][FX::FXParameterPlateReverbLowDamp] = m_Properties.GetNumber ("ReverbLowDamp", 50);
-		m_nFXParameter[0][FX::FXParameterPlateReverbLowPass] = m_Properties.GetNumber ("ReverbLowPass", 30);
-		m_nFXParameter[0][FX::FXParameterPlateReverbDiffusion] = m_Properties.GetNumber ("ReverbDiffusion", 65);
-		m_nFXParameter[0][FX::FXParameterReturnLevel] = m_Properties.GetNumber ("ReverbEnable", 1) ? m_Properties.GetNumber ("ReverbLevel", 99) : 0;
+		m_nFXParameter[0][FX::Parameter::Slot0] = FX::getIDFromName(FX::Parameter::Slot0, "PlateReverb");
+		m_nFXParameter[0][FX::Parameter::PlateReverbMix] = m_Properties.GetNumber("ReverbEnable", 1) ? 100 : 0;
+		m_nFXParameter[0][FX::Parameter::PlateReverbSize] = m_Properties.GetNumber("ReverbSize", 70);
+		m_nFXParameter[0][FX::Parameter::PlateReverbHighDamp] = m_Properties.GetNumber("ReverbHighDamp", 50);
+		m_nFXParameter[0][FX::Parameter::PlateReverbLowDamp] = m_Properties.GetNumber("ReverbLowDamp", 50);
+		m_nFXParameter[0][FX::Parameter::PlateReverbLowPass] = m_Properties.GetNumber("ReverbLowPass", 30);
+		m_nFXParameter[0][FX::Parameter::PlateReverbDiffusion] = m_Properties.GetNumber("ReverbDiffusion", 65);
+		m_nFXParameter[0][FX::Parameter::ReturnLevel] = m_Properties.GetNumber("ReverbEnable", 1) ? m_Properties.GetNumber("ReverbLevel", 99) : 0;
 	}
 
 	return bResult;
 }
 
-bool CPerformanceConfig::Save (void)
+bool CPerformanceConfig::Save(void)
 {
-	m_Properties.RemoveAll ();
+	m_Properties.RemoveAll();
 
 	for (unsigned nTG = 0; nTG < m_nToneGenerators; nTG++)
 	{
 		CString PropertyName;
 
-		PropertyName.Format ("BankNumber%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nBankNumber[nTG]);
+		PropertyName.Format("BankNumber%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nBankNumber[nTG]);
 
-		PropertyName.Format ("VoiceNumber%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nVoiceNumber[nTG]+1);
+		PropertyName.Format("VoiceNumber%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nVoiceNumber[nTG] + 1);
 
-		PropertyName.Format ("MIDIChannel%u", nTG+1);
+		PropertyName.Format("MIDIChannel%u", nTG + 1);
 		unsigned nMIDIChannel = m_nMIDIChannel[nTG];
 		if (nMIDIChannel < CMIDIDevice::Channels)
 		{
@@ -387,891 +407,887 @@ bool CPerformanceConfig::Save (void)
 		{
 			nMIDIChannel = 0;
 		}
-		m_Properties.SetNumber (PropertyName, nMIDIChannel);
+		m_Properties.SetNumber(PropertyName, nMIDIChannel);
 
 		if (m_nSysExChannel[nTG])
 		{
-			PropertyName.Format ("SysExChannel%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_nSysExChannel[nTG]+1);
+			PropertyName.Format("SysExChannel%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_nSysExChannel[nTG] + 1);
 		}
 
 		if (!m_bSysExEnable[nTG])
 		{
-			PropertyName.Format ("SysExEnable%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_bSysExEnable[nTG]);
+			PropertyName.Format("SysExEnable%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_bSysExEnable[nTG]);
 		}
 
 		if (!m_bMIDIRxSustain[nTG])
 		{
-			PropertyName.Format ("MIDIRxSustain%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_bMIDIRxSustain[nTG]);
+			PropertyName.Format("MIDIRxSustain%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_bMIDIRxSustain[nTG]);
 		}
 
 		if (!m_bMIDIRxPortamento[nTG])
 		{
-			PropertyName.Format ("MIDIRxPortamento%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_bMIDIRxPortamento[nTG]);
+			PropertyName.Format("MIDIRxPortamento%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_bMIDIRxPortamento[nTG]);
 		}
 
 		if (!m_bMIDIRxSostenuto[nTG])
 		{
-			PropertyName.Format ("MIDIRxSostenuto%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_bMIDIRxSostenuto[nTG]);
+			PropertyName.Format("MIDIRxSostenuto%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_bMIDIRxSostenuto[nTG]);
 		}
 
 		if (!m_bMIDIRxHold2[nTG])
 		{
-			PropertyName.Format ("MIDIRxHold2%u", nTG+1);
-			m_Properties.SetNumber (PropertyName, m_bMIDIRxHold2[nTG]);
+			PropertyName.Format("MIDIRxHold2%u", nTG + 1);
+			m_Properties.SetNumber(PropertyName, m_bMIDIRxHold2[nTG]);
 		}
 
-		PropertyName.Format ("Volume%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nVolume[nTG]);
+		PropertyName.Format("Volume%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nVolume[nTG]);
 
-		PropertyName.Format ("Pan%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPan[nTG]);
+		PropertyName.Format("Pan%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPan[nTG]);
 
-		PropertyName.Format ("Detune%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nDetune[nTG]);
+		PropertyName.Format("Detune%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nDetune[nTG]);
 
-		PropertyName.Format ("Cutoff%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nCutoff[nTG]);
+		PropertyName.Format("Cutoff%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nCutoff[nTG]);
 
-		PropertyName.Format ("Resonance%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nResonance[nTG]);
+		PropertyName.Format("Resonance%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nResonance[nTG]);
 
-		PropertyName.Format ("NoteLimitLow%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nNoteLimitLow[nTG]);
+		PropertyName.Format("NoteLimitLow%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nNoteLimitLow[nTG]);
 
-		PropertyName.Format ("NoteLimitHigh%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nNoteLimitHigh[nTG]);
+		PropertyName.Format("NoteLimitHigh%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nNoteLimitHigh[nTG]);
 
-		PropertyName.Format ("NoteShift%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nNoteShift[nTG]);
+		PropertyName.Format("NoteShift%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nNoteShift[nTG]);
 
-		PropertyName.Format ("FX1Send%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nFX1Send[nTG]);
+		PropertyName.Format("FX1Send%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nFX1Send[nTG]);
 
-		PropertyName.Format ("FX2Send%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nFX2Send[nTG]);
+		PropertyName.Format("FX2Send%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nFX2Send[nTG]);
 
-		PropertyName.Format ("PitchBendRange%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPitchBendRange[nTG]);
+		PropertyName.Format("PitchBendRange%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPitchBendRange[nTG]);
 
-		PropertyName.Format ("PitchBendStep%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPitchBendStep[nTG]);
+		PropertyName.Format("PitchBendStep%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPitchBendStep[nTG]);
 
-		PropertyName.Format ("PortamentoMode%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPortamentoMode[nTG]);
+		PropertyName.Format("PortamentoMode%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPortamentoMode[nTG]);
 
-		PropertyName.Format ("PortamentoGlissando%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPortamentoGlissando[nTG]);
+		PropertyName.Format("PortamentoGlissando%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPortamentoGlissando[nTG]);
 
-		PropertyName.Format ("PortamentoTime%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nPortamentoTime[nTG]);
-		
-		PropertyName.Format ("VoiceData%u", nTG+1);
+		PropertyName.Format("PortamentoTime%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nPortamentoTime[nTG]);
+
+		PropertyName.Format("VoiceData%u", nTG + 1);
 		char *cstr = &m_nVoiceDataTxt[nTG][0];
-		m_Properties.SetString (PropertyName, cstr);
-		
-		PropertyName.Format ("MonoMode%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_bMonoMode[nTG] ? 1 : 0);
+		m_Properties.SetString(PropertyName, cstr);
 
-		PropertyName.Format ("TGLink%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nTGLink[nTG]);
+		PropertyName.Format("MonoMode%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_bMonoMode[nTG] ? 1 : 0);
 
-		PropertyName.Format ("ModulationWheelRange%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nModulationWheelRange[nTG]);
-	
-		PropertyName.Format ("ModulationWheelTarget%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nModulationWheelTarget[nTG]);	
-			
-		PropertyName.Format ("FootControlRange%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nFootControlRange[nTG]);	
-		
-		PropertyName.Format ("FootControlTarget%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nFootControlTarget[nTG]);	
-		
-		PropertyName.Format ("BreathControlRange%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nBreathControlRange[nTG]);	
-		
-		PropertyName.Format ("BreathControlTarget%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nBreathControlTarget[nTG]);	
-		
-		PropertyName.Format ("AftertouchRange%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nAftertouchRange[nTG]);	
-		
-		PropertyName.Format ("AftertouchTarget%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nAftertouchTarget[nTG]);			
+		PropertyName.Format("TGLink%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nTGLink[nTG]);
 
-		PropertyName.Format ("CompressorEnable%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_bCompressorEnable[nTG]);
+		PropertyName.Format("ModulationWheelRange%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nModulationWheelRange[nTG]);
 
-		PropertyName.Format ("CompressorPreGain%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nCompressorPreGain[nTG]);
+		PropertyName.Format("ModulationWheelTarget%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nModulationWheelTarget[nTG]);
 
-		PropertyName.Format ("CompressorThresh%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nCompressorThresh[nTG]);
+		PropertyName.Format("FootControlRange%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nFootControlRange[nTG]);
 
-		PropertyName.Format ("CompressorRatio%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nCompressorRatio[nTG]);
+		PropertyName.Format("FootControlTarget%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nFootControlTarget[nTG]);
 
-		PropertyName.Format ("CompressorAttack%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nCompressorAttack[nTG]);
+		PropertyName.Format("BreathControlRange%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nBreathControlRange[nTG]);
 
-		PropertyName.Format ("CompressorRelease%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nCompressorRelease[nTG]);
+		PropertyName.Format("BreathControlTarget%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nBreathControlTarget[nTG]);
 
-		PropertyName.Format ("CompressorMakeupGain%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nCompressorMakeupGain[nTG]);
+		PropertyName.Format("AftertouchRange%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nAftertouchRange[nTG]);
 
-		PropertyName.Format ("EQLow%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nEQLow[nTG]);
+		PropertyName.Format("AftertouchTarget%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nAftertouchTarget[nTG]);
 
-		PropertyName.Format ("EQMid%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nEQMid[nTG]);
+		PropertyName.Format("CompressorEnable%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_bCompressorEnable[nTG]);
 
-		PropertyName.Format ("EQHigh%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nEQHigh[nTG]);
+		PropertyName.Format("CompressorPreGain%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nCompressorPreGain[nTG]);
 
-		PropertyName.Format ("EQGain%u", nTG+1);
-		m_Properties.SetSignedNumber (PropertyName, m_nEQGain[nTG]);
+		PropertyName.Format("CompressorThresh%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nCompressorThresh[nTG]);
 
-		PropertyName.Format ("EQLowMidFreq%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nEQLowMidFreq[nTG]);
+		PropertyName.Format("CompressorRatio%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nCompressorRatio[nTG]);
 
-		PropertyName.Format ("EQMidHighFreq%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nEQMidHighFreq[nTG]);
+		PropertyName.Format("CompressorAttack%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nCompressorAttack[nTG]);
 
-		PropertyName.Format ("EQPreLowcut%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nEQPreLowcut[nTG]);
+		PropertyName.Format("CompressorRelease%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nCompressorRelease[nTG]);
 
-		PropertyName.Format ("EQPreHighcut%u", nTG+1);
-		m_Properties.SetNumber (PropertyName, m_nEQPreHighcut[nTG]);
+		PropertyName.Format("CompressorMakeupGain%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nCompressorMakeupGain[nTG]);
+
+		PropertyName.Format("EQLow%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nEQLow[nTG]);
+
+		PropertyName.Format("EQMid%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nEQMid[nTG]);
+
+		PropertyName.Format("EQHigh%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nEQHigh[nTG]);
+
+		PropertyName.Format("EQGain%u", nTG + 1);
+		m_Properties.SetSignedNumber(PropertyName, m_nEQGain[nTG]);
+
+		PropertyName.Format("EQLowMidFreq%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nEQLowMidFreq[nTG]);
+
+		PropertyName.Format("EQMidHighFreq%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nEQMidHighFreq[nTG]);
+
+		PropertyName.Format("EQPreLowcut%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nEQPreLowcut[nTG]);
+
+		PropertyName.Format("EQPreHighcut%u", nTG + 1);
+		m_Properties.SetNumber(PropertyName, m_nEQPreHighcut[nTG]);
 	}
 
-	for (unsigned nFX = 0; nFX < CConfig::FXChains; ++nFX)
+	for (unsigned nBus = 0; nBus < CConfig::Buses; ++nBus)
 	{
 		CString PropertyName;
 
-		CString FXName;
-		if (nFX == CConfig::MasterFX)
-			FXName = "MasterFX";
-		else
-			FXName.Format ("SendFX%u", nFX+1);
-
-		for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
+		for (unsigned nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
 		{
-			unsigned nSlotParam = FX::FXParameterSlot0 + nSlot;
-			unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
-			const FX::EffectType &effect = FX::s_effects[nEffectID];
+			if (Bus::s_Parameter[nParam].Flags & Bus::Flag::UIOnly) continue;
 
-			PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[nSlotParam].Name);
-			m_Properties.SetString (PropertyName, effect.Name);
+			PropertyName.Format("Bus%u%s", nBus + 1, Bus::s_Parameter[nParam].Name);
+			m_Properties.SetSignedNumber(PropertyName, m_nBusParameter[nBus][nParam]);
 		}
 
-		for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
+		for (unsigned idFX = 0; idFX < CConfig::BusFXChains; ++idFX)
 		{
-			unsigned nSlotParam = FX::FXParameterSlot0 + nSlot;
-			unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
-			const FX::EffectType &effect = FX::s_effects[nEffectID];
+			unsigned nFX = idFX + CConfig::BusFXChains * nBus;
 
-			if (nEffectID == 0) continue;
-		
-			for (unsigned nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
+			CString FXName;
+			if (idFX == CConfig::BusMasterFX)
+				FXName.Format("Bus%uMasterFX", nBus + 1);
+			else
+				FXName.Format("Bus%uSendFX%u", nBus + 1, idFX + 1);
+
+			for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
 			{
-				const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-				PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[nParam].Name);
+				unsigned nSlotParam = FX::Parameter::Slot0 + nSlot;
+				unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
+				const FX::EffectType &effect = FX::s_effects[nEffectID];
 
-				if (p.Flags & FX::FXSaveAsString)
-					m_Properties.SetString (PropertyName, FX::getNameFromID(FX::TFXParameter(nParam), m_nFXParameter[nFX][nParam]));
-				else
-					m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][nParam]);
+				PropertyName.Format("%s%s", (const char *)FXName, FX::s_Parameter[nSlotParam].Name);
+				m_Properties.SetString(PropertyName, effect.Name);
 			}
-		}
 
-		if (nFX != CConfig::MasterFX)
-		{
-			PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[FX::FXParameterReturnLevel].Name);
-			m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterReturnLevel]);
-		}
+			for (unsigned nSlot = 0; nSlot < 3; ++nSlot)
+			{
+				unsigned nSlotParam = FX::Parameter::Slot0 + nSlot;
+				unsigned nEffectID = m_nFXParameter[nFX][nSlotParam];
+				const FX::EffectType &effect = FX::s_effects[nEffectID];
 
-		PropertyName.Format ("%s%s", (const char*)FXName, FX::s_FXParameter[FX::FXParameterBypass].Name);
-		m_Properties.SetSignedNumber (PropertyName, m_nFXParameter[nFX][FX::FXParameterBypass]);
+				if (nEffectID == 0) continue;
+
+				for (unsigned nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
+				{
+					const FX::ParameterType &p = FX::s_Parameter[nParam];
+					PropertyName.Format("%s%s", (const char *)FXName, FX::s_Parameter[nParam].Name);
+
+					if (p.Flags & FX::Flag::SaveAsString)
+						m_Properties.SetString(PropertyName, FX::getNameFromID(FX::Parameter(nParam), m_nFXParameter[nFX][nParam]));
+					else
+						m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][nParam]);
+				}
+			}
+
+			PropertyName.Format("%s%s", (const char *)FXName, FX::s_Parameter[FX::Parameter::ReturnLevel].Name);
+			m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::Parameter::ReturnLevel]);
+
+			PropertyName.Format("%s%s", (const char *)FXName, FX::s_Parameter[FX::Parameter::Bypass].Name);
+			m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::Parameter::Bypass]);
+		}
 	}
 
-	m_Properties.SetNumber ("MixerDryLevel", m_nMixerDryLevel);
-	m_Properties.SetNumber ("FXBypass", m_nFXBypass);
-
-	return m_Properties.Save ();
+	return m_Properties.Save();
 }
 
-unsigned CPerformanceConfig::GetBankNumber (unsigned nTG) const
+unsigned CPerformanceConfig::GetBankNumber(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nBankNumber[nTG];
 }
 
-unsigned CPerformanceConfig::GetVoiceNumber (unsigned nTG) const
+unsigned CPerformanceConfig::GetVoiceNumber(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nVoiceNumber[nTG];
 }
 
-unsigned CPerformanceConfig::GetMIDIChannel (unsigned nTG) const
+unsigned CPerformanceConfig::GetMIDIChannel(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nMIDIChannel[nTG];
 }
 
-unsigned CPerformanceConfig::GetSysExChannel (unsigned nTG) const
+unsigned CPerformanceConfig::GetSysExChannel(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nSysExChannel[nTG];
 }
 
-bool CPerformanceConfig::GetSysExEnable (unsigned nTG) const
+bool CPerformanceConfig::GetSysExEnable(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bSysExEnable[nTG];
 }
 
-bool CPerformanceConfig::GetMIDIRxSustain (unsigned nTG) const
+bool CPerformanceConfig::GetMIDIRxSustain(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bMIDIRxSustain[nTG];
 }
 
-bool CPerformanceConfig::GetMIDIRxPortamento (unsigned nTG) const
+bool CPerformanceConfig::GetMIDIRxPortamento(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bMIDIRxPortamento[nTG];
 }
 
-bool CPerformanceConfig::GetMIDIRxSostenuto (unsigned nTG) const
+bool CPerformanceConfig::GetMIDIRxSostenuto(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bMIDIRxSostenuto[nTG];
 }
 
-bool CPerformanceConfig::GetMIDIRxHold2 (unsigned nTG) const
+bool CPerformanceConfig::GetMIDIRxHold2(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bMIDIRxHold2[nTG];
 }
 
-unsigned CPerformanceConfig::GetVolume (unsigned nTG) const
+unsigned CPerformanceConfig::GetVolume(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nVolume[nTG];
 }
 
-unsigned CPerformanceConfig::GetPan (unsigned nTG) const
+unsigned CPerformanceConfig::GetPan(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPan[nTG];
 }
 
-int CPerformanceConfig::GetDetune (unsigned nTG) const
+int CPerformanceConfig::GetDetune(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nDetune[nTG];
 }
 
-unsigned CPerformanceConfig::GetCutoff (unsigned nTG) const
+unsigned CPerformanceConfig::GetCutoff(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCutoff[nTG];
 }
 
-unsigned CPerformanceConfig::GetResonance (unsigned nTG) const
+unsigned CPerformanceConfig::GetResonance(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nResonance[nTG];
 }
 
-unsigned CPerformanceConfig::GetNoteLimitLow (unsigned nTG) const
+unsigned CPerformanceConfig::GetNoteLimitLow(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nNoteLimitLow[nTG];
 }
 
-unsigned CPerformanceConfig::GetNoteLimitHigh (unsigned nTG) const
+unsigned CPerformanceConfig::GetNoteLimitHigh(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nNoteLimitHigh[nTG];
 }
 
-int CPerformanceConfig::GetNoteShift (unsigned nTG) const
+int CPerformanceConfig::GetNoteShift(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nNoteShift[nTG];
 }
 
-unsigned CPerformanceConfig::GetFX1Send (unsigned nTG) const
+unsigned CPerformanceConfig::GetFX1Send(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nFX1Send[nTG];
 }
 
-unsigned CPerformanceConfig::GetFX2Send (unsigned nTG) const
+unsigned CPerformanceConfig::GetFX2Send(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nFX2Send[nTG];
 }
 
-void CPerformanceConfig::SetBankNumber (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetBankNumber(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nBankNumber[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetVoiceNumber (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetVoiceNumber(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nVoiceNumber[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetMIDIChannel (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetMIDIChannel(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nMIDIChannel[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetSysExChannel (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetSysExChannel(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nSysExChannel[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetSysExEnable (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetSysExEnable(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bSysExEnable[nTG] = bValue;
 }
 
-void CPerformanceConfig::SetMIDIRxSustain (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetMIDIRxSustain(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bMIDIRxSustain[nTG] = bValue;
 }
 
-void CPerformanceConfig::SetMIDIRxPortamento (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetMIDIRxPortamento(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bMIDIRxPortamento[nTG] = bValue;
 }
 
-void CPerformanceConfig::SetMIDIRxSostenuto (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetMIDIRxSostenuto(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bMIDIRxSostenuto[nTG] = bValue;
 }
 
-void CPerformanceConfig::SetMIDIRxHold2 (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetMIDIRxHold2(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bMIDIRxHold2[nTG] = bValue;
 }
 
-void CPerformanceConfig::SetVolume (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetVolume(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nVolume[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetPan (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPan(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPan[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetDetune (int nValue, unsigned nTG)
+void CPerformanceConfig::SetDetune(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nDetune[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetCutoff (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetCutoff(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCutoff[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetResonance (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetResonance(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nResonance[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetNoteLimitLow (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetNoteLimitLow(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nNoteLimitLow[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetNoteLimitHigh (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetNoteLimitHigh(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nNoteLimitHigh[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetNoteShift (int nValue, unsigned nTG)
+void CPerformanceConfig::SetNoteShift(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nNoteShift[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetFX1Send (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetFX1Send(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nFX1Send[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetFX2Send (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetFX2Send(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nFX2Send[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetEQLow (unsigned nTG) const
+int CPerformanceConfig::GetEQLow(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQLow[nTG];
 }
 
-int CPerformanceConfig::GetEQMid (unsigned nTG) const
+int CPerformanceConfig::GetEQMid(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQMid[nTG];
 }
 
-int CPerformanceConfig::GetEQHigh (unsigned nTG) const
+int CPerformanceConfig::GetEQHigh(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQHigh[nTG];
 }
 
-int CPerformanceConfig::GetEQGain (unsigned nTG) const
+int CPerformanceConfig::GetEQGain(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQGain[nTG];
 }
 
-unsigned CPerformanceConfig::GetEQLowMidFreq (unsigned nTG) const
+unsigned CPerformanceConfig::GetEQLowMidFreq(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQLowMidFreq[nTG];
 }
 
-unsigned CPerformanceConfig::GetEQMidHighFreq (unsigned nTG) const
+unsigned CPerformanceConfig::GetEQMidHighFreq(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQMidHighFreq[nTG];
 }
 
-unsigned CPerformanceConfig::GetEQPreLowcut (unsigned nTG) const
+unsigned CPerformanceConfig::GetEQPreLowcut(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQPreLowcut[nTG];
 }
 
-unsigned CPerformanceConfig::GetEQPreHighcut (unsigned nTG) const
+unsigned CPerformanceConfig::GetEQPreHighcut(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nEQPreHighcut[nTG];
 }
 
-void CPerformanceConfig::SetEQLow (int nValue, unsigned nTG)
+void CPerformanceConfig::SetEQLow(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQLow[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQMid (int nValue, unsigned nTG)
+void CPerformanceConfig::SetEQMid(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQMid[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQHigh (int nValue, unsigned nTG)
+void CPerformanceConfig::SetEQHigh(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQHigh[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQGain (int nValue, unsigned nTG)
+void CPerformanceConfig::SetEQGain(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQGain[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQLowMidFreq (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetEQLowMidFreq(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQLowMidFreq[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQMidHighFreq (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetEQMidHighFreq(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQMidHighFreq[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQPreLowcut (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetEQPreLowcut(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQPreLowcut[nTG] = nValue;
 }
 
-void CPerformanceConfig::SetEQPreHighcut (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetEQPreHighcut(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nEQPreHighcut[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetFXParameter (FX::TFXParameter nParameter, unsigned nFX) const
+int CPerformanceConfig::GetFXParameter(FX::Parameter nParameter, unsigned nFX) const
 {
-	assert (nFX < CConfig::FXChains);
-	assert (nParameter < FX::FXParameterUnknown);
+	assert(nFX < CConfig::FXChains);
+	assert(nParameter < FX::Parameter::Unknown);
 	return m_nFXParameter[nFX][nParameter];
 }
 
-void CPerformanceConfig::SetFXParameter (FX::TFXParameter nParameter, int nValue, unsigned nFX)
+void CPerformanceConfig::SetFXParameter(FX::Parameter nParameter, int nValue, unsigned nFX)
 {
-	assert (nFX < CConfig::FXChains);
-	assert (nParameter < FX::FXParameterUnknown);
+	assert(nFX < CConfig::FXChains);
+	assert(nParameter < FX::Parameter::Unknown);
 	m_nFXParameter[nFX][nParameter] = nValue;
 }
 
-unsigned CPerformanceConfig::GetMixerDryLevel () const
+int CPerformanceConfig::GetBusParameter(Bus::Parameter nParameter, unsigned nBus) const
 {
-	return m_nMixerDryLevel;
+	assert(nBus < CConfig::Buses);
+	assert(nParameter < Bus::Parameter::Unknown);
+	return m_nBusParameter[nBus][nParameter];
 }
 
-void CPerformanceConfig::SetMixerDryLevel (unsigned nValue)
+void CPerformanceConfig::SetBusParameter(Bus::Parameter nParameter, int nValue, unsigned nBus)
 {
-	m_nMixerDryLevel = nValue;
-}
-
-unsigned CPerformanceConfig::GetFXBypass () const
-{
-	return m_nFXBypass;
-}
-
-void CPerformanceConfig::SetFXBypass (unsigned nValue)
-{
-	m_nFXBypass = nValue;
+	assert(nBus < CConfig::Buses);
+	assert(nParameter < Bus::Parameter::Unknown);
+	m_nBusParameter[nBus][nParameter] = nValue;
 }
 
 // Pitch bender and portamento:
-void CPerformanceConfig::SetPitchBendRange (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPitchBendRange(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPitchBendRange[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetPitchBendRange (unsigned nTG) const
+unsigned CPerformanceConfig::GetPitchBendRange(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPitchBendRange[nTG];
 }
 
-
-void CPerformanceConfig::SetPitchBendStep (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPitchBendStep(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPitchBendStep[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetPitchBendStep (unsigned nTG) const
+unsigned CPerformanceConfig::GetPitchBendStep(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPitchBendStep[nTG];
 }
 
-
-void CPerformanceConfig::SetPortamentoMode (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPortamentoMode(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPortamentoMode[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetPortamentoMode (unsigned nTG) const
+unsigned CPerformanceConfig::GetPortamentoMode(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPortamentoMode[nTG];
 }
 
-
-void CPerformanceConfig::SetPortamentoGlissando (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPortamentoGlissando(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPortamentoGlissando[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetPortamentoGlissando (unsigned nTG) const
+unsigned CPerformanceConfig::GetPortamentoGlissando(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPortamentoGlissando[nTG];
 }
 
-
-void CPerformanceConfig::SetPortamentoTime (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetPortamentoTime(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nPortamentoTime[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetPortamentoTime (unsigned nTG) const
+unsigned CPerformanceConfig::GetPortamentoTime(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nPortamentoTime[nTG];
 }
 
-void CPerformanceConfig::SetMonoMode (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetMonoMode(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bMonoMode[nTG] = bValue;
 }
 
-bool CPerformanceConfig::GetMonoMode (unsigned nTG) const
+bool CPerformanceConfig::GetMonoMode(unsigned nTG) const
 {
 	return m_bMonoMode[nTG];
 }
 
-void CPerformanceConfig::SetTGLink (unsigned nTGLink, unsigned nTG)
+void CPerformanceConfig::SetTGLink(unsigned nTGLink, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nTGLink[nTG] = nTGLink;
 }
 
-unsigned CPerformanceConfig::GetTGLink (unsigned nTG) const
+unsigned CPerformanceConfig::GetTGLink(unsigned nTG) const
 {
 	return m_nTGLink[nTG];
 }
 
-void CPerformanceConfig::SetModulationWheelRange (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetModulationWheelRange(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nModulationWheelRange[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetModulationWheelRange (unsigned nTG) const
+unsigned CPerformanceConfig::GetModulationWheelRange(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nModulationWheelRange[nTG];
 }
 
-void CPerformanceConfig::SetModulationWheelTarget (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetModulationWheelTarget(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nModulationWheelTarget[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetModulationWheelTarget (unsigned nTG) const
+unsigned CPerformanceConfig::GetModulationWheelTarget(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nModulationWheelTarget[nTG];
 }
 
-void CPerformanceConfig::SetFootControlRange (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetFootControlRange(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nFootControlRange[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetFootControlRange (unsigned nTG) const
+unsigned CPerformanceConfig::GetFootControlRange(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nFootControlRange[nTG];
 }
 
-void CPerformanceConfig::SetFootControlTarget (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetFootControlTarget(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nFootControlTarget[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetFootControlTarget (unsigned nTG) const
+unsigned CPerformanceConfig::GetFootControlTarget(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nFootControlTarget[nTG];
 }
 
-void CPerformanceConfig::SetBreathControlRange (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetBreathControlRange(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nBreathControlRange[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetBreathControlRange (unsigned nTG) const
+unsigned CPerformanceConfig::GetBreathControlRange(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nBreathControlRange[nTG];
 }
 
-void CPerformanceConfig::SetBreathControlTarget (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetBreathControlTarget(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nBreathControlTarget[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetBreathControlTarget (unsigned nTG) const
+unsigned CPerformanceConfig::GetBreathControlTarget(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nBreathControlTarget[nTG];
 }
 
-void CPerformanceConfig::SetAftertouchRange (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetAftertouchRange(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nAftertouchRange[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetAftertouchRange (unsigned nTG) const
+unsigned CPerformanceConfig::GetAftertouchRange(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nAftertouchRange[nTG];
 }
 
-void CPerformanceConfig::SetAftertouchTarget (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetAftertouchTarget(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nAftertouchTarget[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetAftertouchTarget (unsigned nTG) const
+unsigned CPerformanceConfig::GetAftertouchTarget(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nAftertouchTarget[nTG];
 }
 
-void CPerformanceConfig::SetCompressorEnable (bool bValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorEnable(bool bValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_bCompressorEnable[nTG] = bValue;
 }
 
-bool CPerformanceConfig::GetCompressorEnable (unsigned nTG) const
+bool CPerformanceConfig::GetCompressorEnable(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_bCompressorEnable[nTG];
 }
 
-void CPerformanceConfig::SetCompressorPreGain (int nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorPreGain(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorPreGain[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetCompressorPreGain (unsigned nTG) const
+int CPerformanceConfig::GetCompressorPreGain(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorPreGain[nTG];
 }
 
-void CPerformanceConfig::SetCompressorThresh (int nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorThresh(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorThresh[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetCompressorThresh (unsigned nTG) const
+int CPerformanceConfig::GetCompressorThresh(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorThresh[nTG];
 }
 
-void CPerformanceConfig::SetCompressorRatio (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorRatio(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorRatio[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetCompressorRatio (unsigned nTG) const
+unsigned CPerformanceConfig::GetCompressorRatio(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorRatio[nTG];
 }
 
-void CPerformanceConfig::SetCompressorAttack (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorAttack(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorAttack[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetCompressorAttack (unsigned nTG) const
+unsigned CPerformanceConfig::GetCompressorAttack(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorAttack[nTG];
 }
 
-void CPerformanceConfig::SetCompressorRelease (unsigned nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorRelease(unsigned nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorRelease[nTG] = nValue;
 }
 
-unsigned CPerformanceConfig::GetCompressorRelease (unsigned nTG) const
+unsigned CPerformanceConfig::GetCompressorRelease(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorRelease[nTG];
 }
 
-void CPerformanceConfig::SetCompressorMakeupGain (int nValue, unsigned nTG)
+void CPerformanceConfig::SetCompressorMakeupGain(int nValue, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nCompressorMakeupGain[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetCompressorMakeupGain (unsigned nTG) const
+int CPerformanceConfig::GetCompressorMakeupGain(unsigned nTG) const
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	return m_nCompressorMakeupGain[nTG];
 }
 
-
-void CPerformanceConfig::SetVoiceDataToTxt (const uint8_t *pData, unsigned nTG)  
+void CPerformanceConfig::SetVoiceDataToTxt(const uint8_t *pData, unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	m_nVoiceDataTxt[nTG] = "";
-	char nDtoH[]="0123456789ABCDEF";
+	char nDtoH[] = "0123456789ABCDEF";
 	for (int i = 0; i < NUM_VOICE_PARAM; i++)
 	{
-	m_nVoiceDataTxt[nTG]  += nDtoH[(pData[i] & 0xF0)/16];
-	m_nVoiceDataTxt[nTG]  += nDtoH[pData[i] & 0x0F]  ;
-	if ( i < (NUM_VOICE_PARAM-1)  ) 
-    	{
-     	 m_nVoiceDataTxt[nTG] += " ";
-    	}
+		m_nVoiceDataTxt[nTG] += nDtoH[(pData[i] & 0xF0) / 16];
+		m_nVoiceDataTxt[nTG] += nDtoH[pData[i] & 0x0F];
+		if (i < (NUM_VOICE_PARAM - 1))
+		{
+			m_nVoiceDataTxt[nTG] += " ";
+		}
 	}
 }
 
-uint8_t *CPerformanceConfig::GetVoiceDataFromTxt (unsigned nTG) 
+uint8_t *CPerformanceConfig::GetVoiceDataFromTxt(unsigned nTG)
 {
-	assert (nTG < CConfig::AllToneGenerators);
+	assert(nTG < CConfig::AllToneGenerators);
 	static uint8_t pData[NUM_VOICE_PARAM];
-	std::string nHtoD="0123456789ABCDEF";
-	 
- 	for (int i=0; i<NUM_VOICE_PARAM * 3; i=i+3)
+	std::string nHtoD = "0123456789ABCDEF";
+
+	for (int i = 0; i < NUM_VOICE_PARAM * 3; i = i + 3)
 	{
-  	pData[i/3] = ((nHtoD.find(toupper(m_nVoiceDataTxt[nTG][i]),0) * 16 + nHtoD.find(toupper(m_nVoiceDataTxt[nTG][i+1]),0))) & 0xFF ;
-	} 
-  
+		pData[i / 3] = ((nHtoD.find(toupper(m_nVoiceDataTxt[nTG][i]), 0) * 16 + nHtoD.find(toupper(m_nVoiceDataTxt[nTG][i + 1]), 0))) & 0xFF;
+	}
+
 	return pData;
 }
 
-bool CPerformanceConfig::VoiceDataFilled(unsigned nTG) 
+bool CPerformanceConfig::VoiceDataFilled(unsigned nTG)
 {
-	return (strcmp(m_nVoiceDataTxt[nTG].c_str(),"") != 0) ;
+	return (strcmp(m_nVoiceDataTxt[nTG].c_str(), "") != 0);
 }
 
 std::string CPerformanceConfig::GetPerformanceFileName(unsigned nID)
 {
-	assert (nID < NUM_PERFORMANCES);
+	assert(nID < NUM_PERFORMANCES);
 	std::string FileN = "";
-	if ((m_nPerformanceBank==0) && (nID == 0)) // in order to assure retrocompatibility
+	if ((m_nPerformanceBank == 0) && (nID == 0)) // in order to assure retrocompatibility
 	{
 		FileN += DEFAULT_PERFORMANCE_FILENAME;
 	}
@@ -1280,8 +1296,8 @@ std::string CPerformanceConfig::GetPerformanceFileName(unsigned nID)
 		// Build up from the index, "_", performance name, and ".ini"
 		// NB: Index on disk = index in memory + 1
 		std::string nIndex = "000000";
-		nIndex += std::to_string(nID+1);
-		nIndex = nIndex.substr(nIndex.length()-6,6);
+		nIndex += std::to_string(nID + 1);
+		nIndex = nIndex.substr(nIndex.length() - 6, 6);
 		FileN += nIndex;
 		FileN += "_";
 		FileN += m_PerformanceFileName[nID];
@@ -1292,7 +1308,7 @@ std::string CPerformanceConfig::GetPerformanceFileName(unsigned nID)
 
 std::string CPerformanceConfig::GetPerformanceFullFilePath(unsigned nID)
 {
-	assert (nID < NUM_PERFORMANCES);
+	assert(nID < NUM_PERFORMANCES);
 	std::string FileN = "SD:/";
 	if ((m_nPerformanceBank == 0) && (nID == 0))
 	{
@@ -1314,8 +1330,8 @@ std::string CPerformanceConfig::GetPerformanceFullFilePath(unsigned nID)
 
 std::string CPerformanceConfig::GetPerformanceName(unsigned nID)
 {
-	assert (nID < NUM_PERFORMANCES);
-	if ((m_nPerformanceBank==0) && (nID == 0)) // in order to assure retrocompatibility
+	assert(nID < NUM_PERFORMANCES);
+	if ((m_nPerformanceBank == 0) && (nID == 0)) // in order to assure retrocompatibility
 	{
 		return DEFAULT_PERFORMANCE_NAME;
 	}
@@ -1335,26 +1351,9 @@ unsigned CPerformanceConfig::GetLastPerformanceBank()
 	return m_nLastPerformanceBank;
 }
 
-unsigned CPerformanceConfig::GetActualPerformanceID()
+unsigned CPerformanceConfig::GetPerformanceID()
 {
-	return m_nActualPerformance;
-}
-
-void CPerformanceConfig::SetActualPerformanceID(unsigned nID)
-{
-	assert (nID < NUM_PERFORMANCES);
-	m_nActualPerformance = nID;
-}
-
-unsigned CPerformanceConfig::GetActualPerformanceBankID()
-{
-	return m_nActualPerformanceBank;
-}
-
-void CPerformanceConfig::SetActualPerformanceBankID(unsigned nBankID)
-{
-	assert (nBankID < NUM_PERFORMANCE_BANKS);
-	m_nActualPerformanceBank = nBankID;
+	return m_nPerformance;
 }
 
 bool CPerformanceConfig::GetInternalFolderOk()
@@ -1371,14 +1370,13 @@ bool CPerformanceConfig::IsValidPerformance(unsigned nID)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
-
 bool CPerformanceConfig::CheckFreePerformanceSlot(void)
 {
-	if (m_nLastPerformance < NUM_PERFORMANCES-1)
+	if (m_nLastPerformance < NUM_PERFORMANCES - 1)
 	{
 		// There is a free slot...
 		return true;
@@ -1397,12 +1395,13 @@ bool CPerformanceConfig::CreateNewPerformanceFile(void)
 		LOGNOTE("Performance directory does not exist");
 		return false;
 	}
-	if (m_nLastPerformance >= NUM_PERFORMANCES) {
+	if (m_nLastPerformance >= NUM_PERFORMANCES)
+	{
 		// No space left for new performances
-		LOGWARN ("No space left for new performance");
+		LOGWARN("No space left for new performance");
 		return false;
 	}
-	
+
 	// Note: New performances are created at the end of the currently selected bank.
 	//       Sould we default to a new bank just for user-performances?
 	//
@@ -1415,70 +1414,69 @@ bool CPerformanceConfig::CreateNewPerformanceFile(void)
 	//       Sorting this out is left for a future update.
 
 	std::string sPerformanceName = NewPerformanceName;
-	NewPerformanceName=""; 
+	NewPerformanceName = "";
 	unsigned nNewPerformance = m_nLastPerformance + 1;
 	std::string nFileName;
 	std::string nPath;
 	std::string nIndex = "000000";
-	nIndex += std::to_string(nNewPerformance+1);  // Index on disk = index in memory+1
-	nIndex = nIndex.substr(nIndex.length()-6,6);
-	
+	nIndex += std::to_string(nNewPerformance + 1); // Index on disk = index in memory+1
+	nIndex = nIndex.substr(nIndex.length() - 6, 6);
 
 	nFileName = nIndex;
 	nFileName += "_";
-	if (strcmp(sPerformanceName.c_str(),"") == 0)
+	if (strcmp(sPerformanceName.c_str(), "") == 0)
 	{
 		nFileName += "Perf";
 		nFileName += nIndex;
-	}		
+	}
 	else
 	{
-		nFileName +=sPerformanceName.substr(0,14);
+		nFileName += sPerformanceName.substr(0, 14);
 	}
 	nFileName += ".ini";
-	m_PerformanceFileName[nNewPerformance]= sPerformanceName;
-	
-	nPath = "SD:/" ;
+	m_PerformanceFileName[nNewPerformance] = sPerformanceName;
+
+	nPath = "SD:/";
 	nPath += PERFORMANCE_DIR;
 	nPath += AddPerformanceBankDirName(m_nPerformanceBank);
 	nPath += "/";
 	nFileName = nPath + nFileName;
-	
+
 	FIL File;
-	FRESULT Result = f_open (&File, nFileName.c_str(), FA_WRITE | FA_CREATE_ALWAYS);
+	FRESULT Result = f_open(&File, nFileName.c_str(), FA_WRITE | FA_CREATE_ALWAYS);
 	if (Result != FR_OK)
 	{
 		m_PerformanceFileName[nNewPerformance].clear();
 		return false;
 	}
 
-	if (f_close (&File) != FR_OK)
+	if (f_close(&File) != FR_OK)
 	{
 		m_PerformanceFileName[nNewPerformance].clear();
 		return false;
 	}
-	
+
 	m_nLastPerformance = nNewPerformance;
-	m_nActualPerformance = nNewPerformance;
+	m_nPerformance = nNewPerformance;
 	new (&m_Properties) CPropertiesFatFsFile(nFileName.c_str(), m_pFileSystem);
-	
+
 	return true;
 }
 
 bool CPerformanceConfig::ListPerformances()
 {
 	// Clear any existing lists of performances
-	for (unsigned i=0; i<NUM_PERFORMANCES; i++)
+	for (unsigned i = 0; i < NUM_PERFORMANCES; i++)
 	{
 		m_PerformanceFileName[i].clear();
 	}
-	m_nLastPerformance=0;
+	m_nLastPerformance = 0;
 	if (m_nPerformanceBank == 0)
 	{
 		// The first bank is the default performance directory
-	   	m_PerformanceFileName[0]=DEFAULT_PERFORMANCE_NAME; // in order to assure retrocompatibility
+		m_PerformanceFileName[0] = DEFAULT_PERFORMANCE_NAME; // in order to assure retrocompatibility
 	}
-	
+
 	if (m_bPerformanceDirectoryExists)
 	{
 		DIR Directory;
@@ -1488,21 +1486,21 @@ bool CPerformanceConfig::ListPerformances()
 #ifdef VERBOSE_DEBUG
 		LOGNOTE("Listing Performances from %s", PerfDir.c_str());
 #endif
-		Result = f_opendir (&Directory, PerfDir.c_str());
+		Result = f_opendir(&Directory, PerfDir.c_str());
 		if (Result != FR_OK)
 		{
 			return false;
 		}
 		unsigned nPIndex;
 
-		Result = f_findfirst (&Directory, &FileInfo, PerfDir.c_str(), "*.ini");
+		Result = f_findfirst(&Directory, &FileInfo, PerfDir.c_str(), "*.ini");
 		for (unsigned i = 0; Result == FR_OK && FileInfo.fname[0]; i++)
 		{
-			if (!(FileInfo.fattrib & (AM_HID | AM_SYS)))  
+			if (!(FileInfo.fattrib & (AM_HID | AM_SYS)))
 			{
 				std::string OriFileName = FileInfo.fname;
 				size_t nLen = OriFileName.length();
-				if (   nLen > 8 && nLen <26	 && strcmp(OriFileName.substr(6,1).c_str(), "_")==0)
+				if (nLen > 8 && nLen < 26 && strcmp(OriFileName.substr(6, 1).c_str(), "_") == 0)
 				{
 					// Note: m_nLastPerformance - refers to the number (index) of the last performance in memory,
 					//       which includes a default performance.
@@ -1516,61 +1514,61 @@ bool CPerformanceConfig::ListPerformances()
 					// Note2: filenames assume 6 digits, underscore, name, finally ".ini"
 					//        i.e.   123456_Performance Name.ini
 					//
-					nPIndex=stoi(OriFileName.substr(0,6));
-					if ((nPIndex < 1) || (nPIndex >= (NUM_PERFORMANCES+1)))
+					nPIndex = stoi(OriFileName.substr(0, 6));
+					if ((nPIndex < 1) || (nPIndex >= (NUM_PERFORMANCES + 1)))
 					{
 						// Index is out of range - skip to next file
-						LOGNOTE ("Performance number out of range: %s (%d to %d)", FileInfo.fname, 1, NUM_PERFORMANCES);
+						LOGNOTE("Performance number out of range: %s (%d to %d)", FileInfo.fname, 1, NUM_PERFORMANCES);
 					}
 					else
 					{
 						// Convert from "user facing" 1..indexed number to internal 0..indexed
-						nPIndex = nPIndex-1;
+						nPIndex = nPIndex - 1;
 						if (m_PerformanceFileName[nPIndex].empty())
 						{
-							if(nPIndex > m_nLastPerformance)
+							if (nPIndex > m_nLastPerformance)
 							{
-								m_nLastPerformance=nPIndex;
+								m_nLastPerformance = nPIndex;
 							}
 
-							std::string FileName = OriFileName.substr(0,OriFileName.length()-4).substr(7,14);
+							std::string FileName = OriFileName.substr(0, OriFileName.length() - 4).substr(7, 14);
 
 							m_PerformanceFileName[nPIndex] = FileName;
 #ifdef VERBOSE_DEBUG
-							LOGNOTE ("Loading performance %s (%d, %s)", OriFileName.c_str(), nPIndex, FileName.c_str());
+							LOGNOTE("Loading performance %s (%d, %s)", OriFileName.c_str(), nPIndex, FileName.c_str());
 #endif
 						}
 						else
 						{
-							LOGNOTE ("Duplicate performance %s", OriFileName.c_str());
+							LOGNOTE("Duplicate performance %s", OriFileName.c_str());
 						}
 					}
 				}
 			}
 
-			Result = f_findnext (&Directory, &FileInfo);
+			Result = f_findnext(&Directory, &FileInfo);
 		}
-		f_closedir (&Directory);
+		f_closedir(&Directory);
 	}
-	
+
 	return true;
 }
 
-void CPerformanceConfig::SetNewPerformance (unsigned nID)
+void CPerformanceConfig::SetNewPerformance(unsigned nID)
 {
-	assert (nID < NUM_PERFORMANCES);
-	m_nActualPerformance=nID;
+	assert(nID < NUM_PERFORMANCES);
+	m_nPerformance = nID;
 	std::string FileN = GetPerformanceFullFilePath(nID);
 
 	new (&m_Properties) CPropertiesFatFsFile(FileN.c_str(), m_pFileSystem);
 #ifdef VERBOSE_DEBUG
-	LOGNOTE("Selecting Performance: %d (%s)", nID+1, FileN.c_str());
+	LOGNOTE("Selecting Performance: %d (%s)", nID + 1, FileN.c_str());
 #endif
 }
 
-unsigned CPerformanceConfig::FindFirstPerformance (void)
+unsigned CPerformanceConfig::FindFirstPerformance(void)
 {
-	for (int nID=0; nID < NUM_PERFORMANCES; nID++)
+	for (int nID = 0; nID < NUM_PERFORMANCES; nID++)
 	{
 		if (IsValidPerformance(nID))
 		{
@@ -1584,8 +1582,8 @@ unsigned CPerformanceConfig::FindFirstPerformance (void)
 std::string CPerformanceConfig::GetNewPerformanceDefaultName(void)
 {
 	std::string nIndex = "000000";
-	nIndex += std::to_string(m_nLastPerformance+1+1); // Convert from internal 0.. index to a file-based 1.. index to show the user
-	nIndex = nIndex.substr(nIndex.length()-6,6);
+	nIndex += std::to_string(m_nLastPerformance + 1 + 1); // Convert from internal 0.. index to a file-based 1.. index to show the user
+	nIndex = nIndex.substr(nIndex.length() - 6, 6);
 	return "Perf" + nIndex;
 }
 
@@ -1603,24 +1601,24 @@ bool CPerformanceConfig::DeletePerformance(unsigned nID)
 		return false;
 	}
 	bool bOK = false;
-	if((m_nPerformanceBank == 0) && (nID == 0)){return bOK;} // default (performance.ini at root directory) can't be deleted
+	if ((m_nPerformanceBank == 0) && (nID == 0)) { return bOK; } // default (performance.ini at root directory) can't be deleted
 	DIR Directory;
 	FILINFO FileInfo;
 	std::string FileN = "SD:/";
 	FileN += PERFORMANCE_DIR;
 	FileN += AddPerformanceBankDirName(m_nPerformanceBank);
-	
-	FRESULT Result = f_findfirst (&Directory, &FileInfo, FileN.c_str(), GetPerformanceFileName(nID).c_str());
+
+	FRESULT Result = f_findfirst(&Directory, &FileInfo, FileN.c_str(), GetPerformanceFileName(nID).c_str());
 	if (Result == FR_OK && FileInfo.fname[0])
 	{
 		FileN += "/";
 		FileN += GetPerformanceFileName(nID);
-		Result=f_unlink (FileN.c_str());
+		Result = f_unlink(FileN.c_str());
 		if (Result == FR_OK)
 		{
 			SetNewPerformance(0);
-			m_nActualPerformance =0;
-			//nMenuSelectedPerformance=0;
+			m_nPerformance = 0;
+			// nMenuSelectedPerformance=0;
 			m_PerformanceFileName[nID].clear();
 			// If this was the last performance in the bank...
 			if (nID == m_nLastPerformance)
@@ -1631,11 +1629,11 @@ bool CPerformanceConfig::DeletePerformance(unsigned nID)
 					m_nLastPerformance--;
 				} while (!IsValidPerformance(m_nLastPerformance) && (m_nLastPerformance > 0));
 			}
-			bOK=true;
+			bOK = true;
 		}
 		else
 		{
-			LOGNOTE ("Failed to delete %s", FileN.c_str());
+			LOGNOTE("Failed to delete %s", FileN.c_str());
 		}
 	}
 	return bOK;
@@ -1651,12 +1649,12 @@ bool CPerformanceConfig::ListPerformanceBanks()
 	DIR Directory;
 	FILINFO FileInfo;
 	FRESULT Result;
-	Result = f_opendir (&Directory, "SD:/" PERFORMANCE_DIR);
+	Result = f_opendir(&Directory, "SD:/" PERFORMANCE_DIR);
 	if (Result != FR_OK)
 	{
 		// No performance directory, so no performance banks.
 		// So nothing else to do here
-		LOGNOTE ("No performance banks detected");
+		LOGNOTE("No performance banks detected");
 		m_bPerformanceDirectoryExists = false;
 		return false;
 	}
@@ -1665,7 +1663,7 @@ bool CPerformanceConfig::ListPerformanceBanks()
 	m_nLastPerformanceBank = 0;
 
 	// List directories with names in format 01_Perf Bank Name
-	Result = f_findfirst (&Directory, &FileInfo, "SD:/" PERFORMANCE_DIR, "*");
+	Result = f_findfirst(&Directory, &FileInfo, "SD:/" PERFORMANCE_DIR, "*");
 	for (unsigned i = 0; Result == FR_OK && FileInfo.fname[0]; i++)
 	{
 		// Check to see if it is a directory
@@ -1678,22 +1676,22 @@ bool CPerformanceConfig::ListPerformanceBanks()
 			//
 			std::string OriFileName = FileInfo.fname;
 			size_t nLen = OriFileName.length();
-			if (   nLen > 4 && nLen <26	 && strcmp(OriFileName.substr(3,1).c_str(), "_")==0)
+			if (nLen > 4 && nLen < 26 && strcmp(OriFileName.substr(3, 1).c_str(), "_") == 0)
 			{
-				unsigned nBankIndex = stoi(OriFileName.substr(0,3));
+				unsigned nBankIndex = stoi(OriFileName.substr(0, 3));
 				// Recall user index numbered 002..NUM_PERFORMANCE_BANKS
 				// NB: Bank 001 is reserved for the default performance directory
 				if ((nBankIndex > 0) && (nBankIndex <= NUM_PERFORMANCE_BANKS))
 				{
 					// Convert from "user facing" 1..indexed number to internal 0..indexed
-					nBankIndex = nBankIndex-1;
+					nBankIndex = nBankIndex - 1;
 					if (m_PerformanceBankName[nBankIndex].empty())
 					{
-						std::string BankName = OriFileName.substr(4,nLen);
+						std::string BankName = OriFileName.substr(4, nLen);
 
 						m_PerformanceBankName[nBankIndex] = BankName;
 #ifdef VERBOSE_DEBUG
-						LOGNOTE ("Found performance bank %s (%d, %s)", OriFileName.c_str(), nBankIndex, BankName.c_str());
+						LOGNOTE("Found performance bank %s (%d, %s)", OriFileName.c_str(), nBankIndex, BankName.c_str());
 #endif
 						nNumBanks++;
 						if (nBankIndex > m_nLastPerformanceBank)
@@ -1703,66 +1701,66 @@ bool CPerformanceConfig::ListPerformanceBanks()
 					}
 					else
 					{
-						LOGNOTE ("Duplicate Performance Bank: %s", FileInfo.fname);
-						if (nBankIndex==0)
+						LOGNOTE("Duplicate Performance Bank: %s", FileInfo.fname);
+						if (nBankIndex == 0)
 						{
-							LOGNOTE ("(Bank 001 is the default performance directory)");
+							LOGNOTE("(Bank 001 is the default performance directory)");
 						}
 					}
 				}
 				else
 				{
-					LOGNOTE ("Performance Bank number out of range: %s (%d to %d)", FileInfo.fname, 1, NUM_PERFORMANCE_BANKS);
+					LOGNOTE("Performance Bank number out of range: %s (%d to %d)", FileInfo.fname, 1, NUM_PERFORMANCE_BANKS);
 				}
 			}
 			else
 			{
 #ifdef VERBOSE_DEBUG
-				LOGNOTE ("Skipping: %s", FileInfo.fname);
+				LOGNOTE("Skipping: %s", FileInfo.fname);
 #endif
 			}
 		}
-		
-		Result = f_findnext (&Directory, &FileInfo);
+
+		Result = f_findnext(&Directory, &FileInfo);
 	}
-	
+
 	if (nNumBanks > 0)
 	{
-		LOGNOTE ("Number of Performance Banks: %d (last = %d)", nNumBanks, m_nLastPerformanceBank+1);
+		LOGNOTE("Number of Performance Banks: %d (last = %d)", nNumBanks, m_nLastPerformanceBank + 1);
 	}
-	
-	f_closedir (&Directory);
+
+	f_closedir(&Directory);
 	return true;
 }
 
 void CPerformanceConfig::SetNewPerformanceBank(unsigned nBankID)
 {
-	assert (nBankID < NUM_PERFORMANCE_BANKS);
+	assert(nBankID < NUM_PERFORMANCE_BANKS);
 	if (IsValidPerformanceBank(nBankID))
 	{
 #ifdef VERBOSE_DEBUG
-		LOGNOTE("Selecting Performance Bank: %d", nBankID+1);
+		LOGNOTE("Selecting Performance Bank: %d", nBankID + 1);
 #endif
 		m_nPerformanceBank = nBankID;
-		m_nActualPerformanceBank = nBankID;
 		ListPerformances();
+		m_nPerformance = NUM_PERFORMANCES;
 	}
 	else
 	{
 #ifdef VERBOSE_DEBUG
-		LOGNOTE("Not selecting invalid Performance Bank: %d", nBankID+1);
+		LOGNOTE("Not selecting invalid Performance Bank: %d", nBankID + 1);
 #endif
 	}
 }
 
-unsigned CPerformanceConfig::GetPerformanceBank(void)
+unsigned CPerformanceConfig::GetPerformanceBankID(void)
 {
 	return m_nPerformanceBank;
 }
 
 std::string CPerformanceConfig::GetPerformanceBankName(unsigned nBankID)
 {
-	assert (nBankID < NUM_PERFORMANCE_BANKS);
+	assert(nBankID < NUM_PERFORMANCE_BANKS);
 	if (IsValidPerformanceBank(nBankID))
 	{
 		return m_PerformanceBankName[nBankID];
@@ -1772,22 +1770,22 @@ std::string CPerformanceConfig::GetPerformanceBankName(unsigned nBankID)
 
 std::string CPerformanceConfig::AddPerformanceBankDirName(unsigned nBankID)
 {
-	assert (nBankID < NUM_PERFORMANCE_BANKS);
+	assert(nBankID < NUM_PERFORMANCE_BANKS);
 	if (IsValidPerformanceBank(nBankID))
 	{
 		// Performance Banks directories in format "001_Bank Name"
 		std::string Index;
 		if (nBankID < 9)
 		{
-			Index = "00" + std::to_string(nBankID+1);
+			Index = "00" + std::to_string(nBankID + 1);
 		}
 		else if (nBankID < 99)
 		{
-			Index = "0" + std::to_string(nBankID+1);
+			Index = "0" + std::to_string(nBankID + 1);
 		}
 		else
 		{
-			Index = std::to_string(nBankID+1);
+			Index = std::to_string(nBankID + 1);
 		}
 
 		return "/" + Index + "_" + m_PerformanceBankName[nBankID];
@@ -1800,7 +1798,8 @@ std::string CPerformanceConfig::AddPerformanceBankDirName(unsigned nBankID)
 
 bool CPerformanceConfig::IsValidPerformanceBank(unsigned nBankID)
 {
-	if (nBankID >= NUM_PERFORMANCE_BANKS) {
+	if (nBankID >= NUM_PERFORMANCE_BANKS)
+	{
 		return false;
 	}
 	if (m_PerformanceBankName[nBankID].empty())

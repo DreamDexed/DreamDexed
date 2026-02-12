@@ -20,29 +20,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _serialmididevice_h
-#define _serialmididevice_h
+#pragma once
 
-#include "mididevice.h"
-#include "config.h"
+#include <cstddef>
+
 #include <circle/interrupt.h>
 #include <circle/serial.h>
 #include <circle/writebuffer.h>
-#include <circle/types.h>
+#include <cstdint>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
 
 class CMiniDexed;
 
 class CSerialMIDIDevice : public CMIDIDevice
 {
 public:
-	CSerialMIDIDevice (CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt, CConfig *pConfig, CUserInterface *pUI);
-	~CSerialMIDIDevice (void);
+	CSerialMIDIDevice(CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt, CConfig *pConfig, CUserInterface *pUI);
+	~CSerialMIDIDevice(void);
 
-	boolean Initialize (void);
+	bool Initialize(void);
 
-	void Process (void);
+	void Process(void);
 
-	void Send (const u8 *pMessage, size_t nLength, unsigned nCable = 0) override;
+	void Send(const uint8_t *pMessage, size_t nLength, unsigned nCable = 0) override;
 
 private:
 	CConfig *m_pConfig;
@@ -50,9 +53,7 @@ private:
 	CSerialDevice m_Serial;
 	unsigned m_nSerialState;
 	unsigned m_nSysEx;
-	u8 m_SerialMessage[MAX_MIDI_MESSAGE];
+	uint8_t m_SerialMessage[MAX_MIDI_MESSAGE];
 
 	CWriteBufferDevice m_SendBuffer;
 };
-
-#endif

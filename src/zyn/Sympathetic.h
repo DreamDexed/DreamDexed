@@ -14,18 +14,20 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 
 #include "AnalogFilter.h"
 #include "CombFilterBank.h"
 
-namespace zyn {
+namespace zyn
+{
 
 class Sympathetic
 {
 public:
 	Sympathetic(float samplerate);
-	void process(float* inputL, float *inputR, uint16_t period);
+	void process(float *inputL, float *inputR, uint16_t period);
 	void loadpreset(unsigned char npreset);
 	void changepar(int npar, unsigned char value, bool updateFreqs);
 	unsigned char getpar(int npar) const;
@@ -37,7 +39,8 @@ public:
 
 	static constexpr unsigned presets_num = 8;
 
-	enum Parameter {
+	enum Parameter
+	{
 		ParameterMix,
 		ParameterPanning,
 		ParameterQ,
@@ -56,7 +59,8 @@ public:
 		ParameterCount,
 	};
 
-	enum Type {
+	enum Type
+	{
 		TypeGeneric,
 		TypePiano,
 		TypeGuitar,
@@ -65,28 +69,28 @@ public:
 
 	static std::string ToTypeName(int nValue, int nWidth);
 	static std::string ToPresetName(int nValue, int nWidth);
-	static const char * ToPresetNameChar(int nValue);
+	static const char *ToPresetNameChar(int nValue);
 	static unsigned ToIDFromPreset(const char *preset);
 
 private:
 	float samplerate;
 
-	//Parameters
+	// Parameters
 	unsigned char Pmix;
 	unsigned char Ppanning;
-	unsigned char Pq; //0=0.95 ... 127=1.05
-	unsigned char Pq_sustain; //0=0.95 ... 127=1.05
-	unsigned char Pdrive; //the input amplification
-	unsigned char Plevel; //the output amplification
-	unsigned char Ptype; //type (generic/piano/guitar)
-	unsigned char Punison_size; //number of unison strings
+	unsigned char Pq; // 0=0.95 ... 127=1.05
+	unsigned char Pq_sustain; // 0=0.95 ... 127=1.05
+	unsigned char Pdrive; // the input amplification
+	unsigned char Plevel; // the output amplification
+	unsigned char Ptype; // type (generic/piano/guitar)
+	unsigned char Punison_size; // number of unison strings
 	unsigned char Punison_spread;
-	unsigned char Pstrings; //number of strings
-	unsigned char Pinterval; //number of semitones between strings
-	unsigned char Pbasenote; //midi note of lowest string
+	unsigned char Pstrings; // number of strings
+	unsigned char Pinterval; // number of semitones between strings
+	unsigned char Pbasenote; // midi note of lowest string
 	unsigned char Plowcut;
 	unsigned char Phighcut;
-	unsigned char Pnegate; //if the input is negated
+	unsigned char Pnegate; // if the input is negated
 
 	float baseFreq;
 
@@ -101,7 +105,7 @@ private:
 	void calcFreqsPiano();
 	void calcFreqsGuitar();
 
-	//Real Parameters
+	// Real Parameters
 	AnalogFilter lpf, hpf;
 
 	CombFilterBank filterBank;
@@ -109,4 +113,4 @@ private:
 	float dry, wet, panl, panr, drive, level;
 };
 
-}
+} // namespace zyn

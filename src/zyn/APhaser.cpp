@@ -33,34 +33,37 @@
 
 */
 
-#include <cassert>
-#include <cstring>
-#include <math.h>
-
 #include "APhaser.h"
 
-namespace zyn {
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <string>
+
+namespace zyn
+{
 
 #define PHASER_LFO_SHAPE 2
-#define ONE_  0.99999f        // To prevent LFO ever reaching 1.0 for filter stability purposes
-#define ZERO_ 0.00001f        // Same idea as above.
+#define ONE_ 0.99999f  // To prevent LFO ever reaching 1.0 for filter stability purposes
+#define ZERO_ 0.00001f // Same idea as above.
 
 #ifndef PI
 #define PI 3.141592653589793f
 #endif
 
-APhaser::APhaser(float samplerate):
+APhaser::APhaser(float samplerate) :
 bypass{},
 lfo{samplerate},
 Ppreset{},
 dry{1.0f},
 wet{},
-offset{-0.2509303f, 0.9408924f, 0.998f, -0.3486182f, -0.2762545f, -0.5215785f, 0.2509303f, -0.9408924f, -0.998f, 0.3486182f,  0.2762545f, 0.5215785f},
+offset{-0.2509303f, 0.9408924f, 0.998f, -0.3486182f, -0.2762545f, -0.5215785f, 0.2509303f, -0.9408924f, -0.998f, 0.3486182f, 0.2762545f, 0.5215785f},
 Rmin{625.0f}, // 2N5457 typical on resistance at Vgs = 0
 Rmx{Rmin / 22000.0f /* Rmax Resistor parallel to FET */},
 CFs{2.0f * samplerate * 0.00000005f /* C 50 nF*/}
 {
-	loadpreset(Ppreset);//this will get done before out is run
+	loadpreset(Ppreset); // this will get done before out is run
 	cleanup();
 };
 
@@ -72,27 +75,32 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 
 	if (lfo.nPeriod != period) lfo.updateparams(period);
 
-	//initialize hpf
+	// initialize hpf
 	float hpfl = 0.0;
 	float hpfr = 0.0;
 
 	float lfol, lfor;
-	lfo.effectlfoout (&lfol, &lfor);
-	float lmod = lfol*width + depth;
-	float rmod = lfor*width + depth;
+	lfo.effectlfoout(&lfol, &lfor);
+	float lmod = lfol * width + depth;
+	float rmod = lfor * width + depth;
 
-	if (lmod > ONE_) lmod = ONE_;
-	else if (lmod < ZERO_) lmod = ZERO_;
+	if (lmod > ONE_)
+		lmod = ONE_;
+	else if (lmod < ZERO_)
+		lmod = ZERO_;
 
-	if (rmod > ONE_) rmod = ONE_;
-	else if (rmod < ZERO_) rmod = ZERO_;
+	if (rmod > ONE_)
+		rmod = ONE_;
+	else if (rmod < ZERO_)
+		rmod = ZERO_;
 
-	if (Phyper != 0) {
-		lmod *= lmod;  //Triangle wave squared is approximately sin on bottom, tri on top
-		rmod *= rmod;  //Result is exponential sweep more akin to filter in synth with exponential generator circuitry.
+	if (Phyper != 0)
+	{
+		lmod *= lmod; // Triangle wave squared is approximately sin on bottom, tri on top
+		rmod *= rmod; // Result is exponential sweep more akin to filter in synth with exponential generator circuitry.
 	};
 
-	lmod = sqrtf(1.0f - lmod);  //gl,gr is Vp - Vgs. Typical FET drain-source resistance follows constant/[1-sqrt(Vp - Vgs)]
+	lmod = sqrtf(1.0f - lmod); // gl,gr is Vp - Vgs. Typical FET drain-source resistance follows constant/[1-sqrt(Vp - Vgs)]
 	rmod = sqrtf(1.0f - rmod);
 
 	float invperiod = 1.0f / period;
@@ -105,46 +113,49 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 	oldlgain = lmod;
 	oldrgain = rmod;
 
-	for (unsigned int i = 0; i < period; i++) {
+	for (unsigned int i = 0; i < period; i++)
+	{
 
-		gl += ldiff;	// Linear interpolation between LFO samples
+		gl += ldiff; // Linear interpolation between LFO samples
 		gr += rdiff;
 
 		float lxn = smpsl[i] * panl;
 		float rxn = smpsr[i] * panr;
 
-		//Left channel
-		for (int j = 0; j < Pstages; j++) {
-			//Phasing routine
-			float mis = 1.0f + mismatchpct*offset[j];
-			float d = (1.0f + 2.0f*(0.25f + gl)*hpfl*hpfl*distortion) * mis;  //This is symmetrical. FET is not, so this deviates slightly, however sym dist. is better sounding than a real FET.
-			float Rconst =  1.0f + mis*Rmx;
-			float bl = (Rconst - gl) / (d*Rmin);  // This is 1/R. R is being modulated to control filter fc.
-			float lgain = (CFs - bl)/(CFs + bl);
+		// Left channel
+		for (int j = 0; j < Pstages; j++)
+		{
+			// Phasing routine
+			float mis = 1.0f + mismatchpct * offset[j];
+			float d = (1.0f + 2.0f * (0.25f + gl) * hpfl * hpfl * distortion) * mis; // This is symmetrical. FET is not, so this deviates slightly, however sym dist. is better sounding than a real FET.
+			float Rconst = 1.0f + mis * Rmx;
+			float bl = (Rconst - gl) / (d * Rmin); // This is 1/R. R is being modulated to control filter fc.
+			float lgain = (CFs - bl) / (CFs + bl);
 
 			lyn1[j] = lgain * (lxn + lyn1[j]) - lxn1[j];
-			hpfl = lyn1[j] + (1.0f-lgain)*lxn1[j];  //high pass filter -- Distortion depends on the high-pass part of the AP stage.
+			hpfl = lyn1[j] + (1.0f - lgain) * lxn1[j]; // high pass filter -- Distortion depends on the high-pass part of the AP stage.
 
 			lxn1[j] = lxn;
 			lxn = lyn1[j];
-			if (j==1) lxn += fbl;  //Insert feedback after first phase stage
+			if (j == 1) lxn += fbl; // Insert feedback after first phase stage
 		};
 
-		//Right channel
-		for (int j = 0; j < Pstages; j++) {
-			//Phasing routine
-			float mis = 1.0f + mismatchpct*offset[j];
-			float d = (1.0f + 2.0f*(0.25f + gr)*hpfr*hpfr*distortion) * mis;   // distortion
-			float Rconst =  1.0f + mis*Rmx;
-			float br = (Rconst - gr )/ (d*Rmin);
-			float rgain = (CFs - br)/(CFs + br);
+		// Right channel
+		for (int j = 0; j < Pstages; j++)
+		{
+			// Phasing routine
+			float mis = 1.0f + mismatchpct * offset[j];
+			float d = (1.0f + 2.0f * (0.25f + gr) * hpfr * hpfr * distortion) * mis; // distortion
+			float Rconst = 1.0f + mis * Rmx;
+			float br = (Rconst - gr) / (d * Rmin);
+			float rgain = (CFs - br) / (CFs + br);
 
 			ryn1[j] = rgain * (rxn + ryn1[j]) - rxn1[j];
-			hpfr = ryn1[j] + (1.0f-rgain)*rxn1[j];  //high pass filter
+			hpfr = ryn1[j] + (1.0f - rgain) * rxn1[j]; // high pass filter
 
 			rxn1[j] = rxn;
 			rxn = ryn1[j];
-			if (j==1) rxn += fbr;  //Insert feedback after first phase stage
+			if (j == 1) rxn += fbr; // Insert feedback after first phase stage
 		};
 
 		// LR cross
@@ -156,7 +167,8 @@ void APhaser::process(float *smpsl, float *smpsr, uint16_t period)
 		fbl = lxn * fb;
 		fbr = rxn * fb;
 
-		if (Psubtractive != 0) {
+		if (Psubtractive != 0)
+		{
 			lxn *= -1.0f;
 			rxn *= -1.0f;
 		}
@@ -196,7 +208,7 @@ void APhaser::setmix(int Pmix)
 void APhaser::setpanning(int Ppanning)
 {
 	this->Ppanning = Ppanning;
-	float panning = ((float)Ppanning - .5f)/ 127.0f;
+	float panning = ((float)Ppanning - .5f) / 127.0f;
 	panl = cosf(panning * PI / 2.0f);
 	panr = cosf((1.0f - panning) * PI / 2.0f);
 };
@@ -204,7 +216,7 @@ void APhaser::setpanning(int Ppanning)
 void APhaser::setdepth(int Pdepth)
 {
 	this->Pdepth = Pdepth;
-	depth = (float)(Pdepth - 64) / 127.0f;  //Pdepth input should be 0-127.  depth shall range 0-0.5 since we don't need to shift the full spectrum.
+	depth = (float)(Pdepth - 64) / 127.0f; // Pdepth input should be 0-127.  depth shall range 0-0.5 since we don't need to shift the full spectrum.
 };
 
 void APhaser::setfb(int Pfb)
@@ -219,7 +231,7 @@ void APhaser::setstages(int Pstages)
 		Pstages = max_stages;
 	this->Pstages = Pstages;
 
-	cleanup ();
+	cleanup();
 };
 
 void APhaser::setlrcross(int Plrcross)
@@ -256,9 +268,9 @@ static const char *PresetNames[APhaser::presets_num] = {
 	"APhaser6",
 };
 
-const char * APhaser::ToPresetNameChar(int nValue)
+const char *APhaser::ToPresetNameChar(int nValue)
 {
-	assert (nValue >= 0 && (unsigned)nValue < presets_num);
+	assert(nValue >= 0 && (unsigned)nValue < presets_num);
 	return PresetNames[nValue];
 }
 
@@ -411,9 +423,14 @@ void APhaser::loadpreset(unsigned npreset)
 
 void APhaser::changepar(unsigned npar, int value)
 {
-	switch (npar) {
-	case ParameterMix: setmix(value); break;
-	case ParameterPanning: setpanning(value); break;
+	switch (npar)
+	{
+	case ParameterMix:
+		setmix(value);
+		break;
+	case ParameterPanning:
+		setpanning(value);
+		break;
 	case ParameterLFOFreq:
 		lfo.Pfreq = value;
 		lfo.updateparams(lfo.nPeriod);
@@ -430,38 +447,73 @@ void APhaser::changepar(unsigned npar, int value)
 		lfo.Pstereo = value;
 		lfo.updateparams(lfo.nPeriod);
 		break;
-	case ParameterDepth: setdepth(value); break;
-	case ParameterFeedback: setfb(value); break;
-	case ParameterStages: setstages(value); break;
-	case ParameterLRCross: setlrcross(value); break;
-	case ParameterSubtractive: Psubtractive = value > 1 ? 1 : value; break;
-	case ParameterWidth: setwidth(value); break;
-	case ParameterDistortion: setdistortion(value); break;
-	case ParameterMismatch: setmismatch(value); break;
-	case ParameterHyper: Phyper = value > 1 ? 1 : value; break;
+	case ParameterDepth:
+		setdepth(value);
+		break;
+	case ParameterFeedback:
+		setfb(value);
+		break;
+	case ParameterStages:
+		setstages(value);
+		break;
+	case ParameterLRCross:
+		setlrcross(value);
+		break;
+	case ParameterSubtractive:
+		Psubtractive = value > 1 ? 1 : value;
+		break;
+	case ParameterWidth:
+		setwidth(value);
+		break;
+	case ParameterDistortion:
+		setdistortion(value);
+		break;
+	case ParameterMismatch:
+		setmismatch(value);
+		break;
+	case ParameterHyper:
+		Phyper = value > 1 ? 1 : value;
+		break;
 	};
 };
 
 int APhaser::getpar(unsigned npar)
 {
-	switch (npar) {
-	case ParameterMix: return Pmix;
-	case ParameterPanning: return Ppanning;
-	case ParameterLFOFreq: return lfo.Pfreq;
-	case ParameterLFORandomness: return lfo.Prandomness;
-	case ParameterLFOType: return lfo.PLFOtype;
-	case ParameterLFOLRDelay: return lfo.Pstereo;
-	case ParameterDepth: return Pdepth;
-	case ParameterFeedback: return Pfb;
-	case ParameterStages: return Pstages;
-	case ParameterLRCross: return Plrcross;
-	case ParameterSubtractive: return Psubtractive;
-	case ParameterWidth: return Pwidth;
-	case ParameterDistortion: return Pdistortion;
-	case ParameterMismatch: return Pmismatch;
-	case ParameterHyper: return Phyper;
-	default: return 0;
+	switch (npar)
+	{
+	case ParameterMix:
+		return Pmix;
+	case ParameterPanning:
+		return Ppanning;
+	case ParameterLFOFreq:
+		return lfo.Pfreq;
+	case ParameterLFORandomness:
+		return lfo.Prandomness;
+	case ParameterLFOType:
+		return lfo.PLFOtype;
+	case ParameterLFOLRDelay:
+		return lfo.Pstereo;
+	case ParameterDepth:
+		return Pdepth;
+	case ParameterFeedback:
+		return Pfb;
+	case ParameterStages:
+		return Pstages;
+	case ParameterLRCross:
+		return Plrcross;
+	case ParameterSubtractive:
+		return Psubtractive;
+	case ParameterWidth:
+		return Pwidth;
+	case ParameterDistortion:
+		return Pdistortion;
+	case ParameterMismatch:
+		return Pmismatch;
+	case ParameterHyper:
+		return Phyper;
+	default:
+		return 0;
 	};
 };
 
-}
+} // namespace zyn

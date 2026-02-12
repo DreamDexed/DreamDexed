@@ -20,14 +20,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _mididevice_h
-#define _mididevice_h
+#pragma once
 
-#include "config.h"
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
-#include <circle/types.h>
+
 #include <circle/spinlock.h>
+
+#include "config.h"
 #include "userinterface.h"
 
 #define MAX_DX7_SYSEX_LENGTH 4104
@@ -47,37 +49,37 @@ public:
 	};
 
 public:
-	CMIDIDevice (CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
-	virtual ~CMIDIDevice (void);
+	CMIDIDevice(CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI);
+	virtual ~CMIDIDevice(void);
 
-	void SetChannel (u8 ucChannel, unsigned nTG);
-	u8 GetChannel (unsigned nTG) const;
+	void SetChannel(uint8_t ucChannel, unsigned nTG);
+	uint8_t GetChannel(unsigned nTG) const;
 
-	virtual void Send (const u8 *pMessage, size_t nLength, unsigned nCable = 0) {}
+	virtual void Send(const uint8_t *pMessage, size_t nLength, unsigned nCable = 0) {}
 	// Change signature to specify device name
-	void SendSystemExclusiveVoice(uint8_t nVoice, const std::string& deviceName, unsigned nCable, uint8_t nTG);
-	const std::string& GetDeviceName() const { return m_DeviceName; }
+	void SendSystemExclusiveVoice(uint8_t nVoice, const std::string &deviceName, unsigned nCable, uint8_t nTG);
+	const std::string &GetDeviceName() const { return m_DeviceName; }
 
 protected:
-	void MIDIMessageHandler (const u8 *pMessage, size_t nLength, unsigned nCable = 0);
-	void AddDevice (const char *pDeviceName);
-	void HandleSystemExclusive(const uint8_t* pMessage, const size_t nLength, const unsigned nCable, const uint8_t nTG);
+	void MIDIMessageHandler(const uint8_t *pMessage, size_t nLength, unsigned nCable = 0);
+	void AddDevice(const char *pDeviceName);
+	void HandleSystemExclusive(const uint8_t *pMessage, const size_t nLength, const unsigned nCable, const uint8_t nTG);
 
 private:
-	bool HandleMIDISystemCC(const u8 ucCC, const u8 ucCCval);
+	bool HandleMIDISystemCC(const uint8_t ucCC, const uint8_t ucCCval);
 
 private:
 	CMiniDexed *m_pSynthesizer;
 	CConfig *m_pConfig;
 	CUserInterface *m_pUI;
 
-	u8 m_ChannelMap[CConfig::AllToneGenerators];
-	u8 m_PreviousChannelMap[CConfig::AllToneGenerators]; // Store previous channels for OMNI OFF restore
-	
+	uint8_t m_ChannelMap[CConfig::AllToneGenerators];
+	uint8_t m_PreviousChannelMap[CConfig::AllToneGenerators]; // Store previous channels for OMNI OFF restore
+
 	unsigned m_nMIDISystemCCVol;
 	unsigned m_nMIDISystemCCPan;
 	unsigned m_nMIDISystemCCDetune;
-	u32	 m_MIDISystemCCBitmap[4]; // to allow for 128 bit entries
+	uint32_t m_MIDISystemCCBitmap[4]; // to allow for 128 bit entries
 	unsigned m_nMIDIGlobalExpression;
 
 	std::string m_DeviceName;
@@ -87,5 +89,3 @@ private:
 
 	CSpinLock m_MIDISpinLock;
 };
-
-#endif

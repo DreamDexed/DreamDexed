@@ -1,5 +1,7 @@
 #include "effect_cloudseed2.h"
 
+#include "../CloudSeedCore/Parameters.h"
+
 namespace Parameter = Cloudseed::Parameter;
 
 static const float UInit[Parameter::COUNT] = {

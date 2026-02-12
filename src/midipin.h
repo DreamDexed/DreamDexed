@@ -17,37 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _midipin_h
-#define _midipin_h
-
-#include <circle/gpiopin.h>
-#include <circle/types.h>
+#pragma once
 
 // MIDI CC numbers go 0 to 127.
 // NB: 0 is treated as "unused" so CC=0 won't work
 // Normal GPIO pins are below 100.
 // So use a "pin number" of 128 + MIDI CC message for a "MIDI Pin"
 #define MIDI_PINS 128
-#define ccToMidiPin(c) (((c)==0)?0:((c)+MIDI_PINS))
-#define MidiPinToCC(p) (((p)>=MIDI_PINS)?((p)-MIDI_PINS):0)
-#define isMidiPin(p)   (((p)>=MIDI_PINS)?1:0)
+#define ccToMidiPin(c) (((c) == 0) ? 0 : ((c) + MIDI_PINS))
+#define MidiPinToCC(p) (((p) >= MIDI_PINS) ? ((p) - MIDI_PINS) : 0)
+#define isMidiPin(p) (((p) >= MIDI_PINS) ? 1 : 0)
 
 #define MIDIPIN_CENTER 64
 
 class CMIDIPin
 {
 public:
-	CMIDIPin (unsigned nPinNumber);  // pinNumber = ccToMidiPin (MIDI CC number)
-	~CMIDIPin (void);
+	CMIDIPin(unsigned nPinNumber); // pinNumber = ccToMidiPin (MIDI CC number)
+	~CMIDIPin(void);
 
 	// Will return the value written to
-	unsigned Read (void);
+	unsigned Read(void);
 
-	void Write (unsigned nValue);
+	void Write(unsigned nValue);
 
 private:
 	unsigned m_nPinNumber;
 	unsigned m_nValue;
 };
-
-#endif

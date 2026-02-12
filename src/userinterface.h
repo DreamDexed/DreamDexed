@@ -17,57 +17,59 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _userinterface_h
-#define _userinterface_h
+#pragma once
 
-#include "config.h"
-#include "uimenu.h"
-#include "uibuttons.h"
-#include <sensor/ky040.h>
+#include <circle/gpiomanager.h>
+#include <circle/i2cmaster.h>
+#include <circle/spimaster.h>
+#include <circle/writebuffer.h>
+#include <display/chardevice.h>
 #include <display/hd44780device.h>
 #include <display/ssd1306device.h>
 #include <display/st7789device.h>
-#include <circle/gpiomanager.h>
-#include <circle/writebuffer.h>
-#include <circle/i2cmaster.h>
-#include <circle/spimaster.h>
+#include <display/st7789display.h>
+#include <sensor/ky040.h>
+
+#include "config.h"
+#include "uibuttons.h"
+#include "uimenu.h"
 
 class CMiniDexed;
 
 class CUserInterface
 {
 public:
-	CUserInterface (CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig);
-	~CUserInterface (void);
+	CUserInterface(CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig);
+	~CUserInterface(void);
 
-	bool Initialize (void);
+	bool Initialize(void);
 
-	void LoadDefaultScreen ();
+	void LoadDefaultScreen();
 
-	void Process (void);
+	void Process(void);
 
-	void ParameterChanged (void);
-	void DisplayChanged (void);
+	void ParameterChanged(void);
+	void DisplayChanged(void);
 
 	// Write to display in this format:
 	// +----------------+
 	// |PARAM       MENU|
 	// |[<]VALUE     [>]|
 	// +----------------+
-	void DisplayWrite (const char *pMenu, const char *pParam, const char *pValue,
-			   bool bArrowDown, bool bArrowUp);
+	void DisplayWrite(const char *pMenu, const char *pParam, const char *pValue,
+			  bool bArrowDown, bool bArrowUp);
 
 	// To be called from the MIDI device on reception of a MIDI CC message
-	void UIMIDICmdHandler (unsigned nMidiCh, unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2);
+	void UIMIDICmdHandler(unsigned nMidiCh, unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2);
 
 private:
-	void LCDWrite (const char *pString);		// Print to optional HD44780 display
+	void LCDWrite(const char *pString); // Print to optional HD44780 display
 
-	void EncoderEventHandler (CKY040::TEvent Event);
-	static void EncoderEventStub (CKY040::TEvent Event, void *pParam);
-	void UIButtonsEventHandler (CUIButton::BtnEvent Event);
-	static void UIButtonsEventStub (CUIButton::BtnEvent Event, void *pParam);
-	void UISetMIDIButtonChannel (unsigned uCh);
+	void EncoderEventHandler(CKY040::TEvent Event);
+	static void EncoderEventStub(CKY040::TEvent Event, void *pParam);
+	void UIButtonsEventHandler(CUIButton::BtnEvent Event);
+	static void UIButtonsEventStub(CUIButton::BtnEvent Event, void *pParam);
+	void UISetMIDIButtonChannel(unsigned uCh);
 
 private:
 	CMiniDexed *m_pMiniDexed;
@@ -76,13 +78,13 @@ private:
 	CSPIMaster *m_pSPIMaster;
 	CConfig *m_pConfig;
 
-	CCharDevice    *m_pLCD;
+	CCharDevice *m_pLCD;
 	CHD44780Device *m_pHD44780;
 	CSSD1306Device *m_pSSD1306;
 	CST7789Display *m_pST7789Display;
-	CST7789Device  *m_pST7789;
+	CST7789Device *m_pST7789;
 	CWriteBufferDevice *m_pLCDBuffered;
-	
+
 	CUIButtons *m_pUIButtons;
 
 	unsigned m_nMIDIButtonCh;
@@ -92,5 +94,3 @@ private:
 
 	CUIMenu m_Menu;
 };
-
-#endif

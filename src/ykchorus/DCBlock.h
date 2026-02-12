@@ -21,25 +21,25 @@
     ==============================================================================
  */
 
-#if !defined(__DCBlock_h)
-#define __DCBlock_h
+#pragma once
 
-class DCBlock {
+class DCBlock
+{
 public:
-    float inputs, outputs, lastOutput;
+	float inputs, outputs, lastOutput;
 
-    DCBlock() {
-        lastOutput = inputs = outputs = 0.0f;
-    }
+	DCBlock() :
+	inputs{},
+	outputs{},
+	lastOutput{}
+	{
+	}
 
-    ~DCBlock() {}
-
-    inline void tick(float *sample, float cutoff) {
-        outputs     = *sample - inputs + (0.999f - cutoff * 0.4f) * outputs;
-        inputs      = *sample;
-        lastOutput  = outputs;
-        *sample     = lastOutput;
-    }
+	inline void tick(float *sample, float cutoff)
+	{
+		outputs = *sample - inputs + (0.999f - cutoff * 0.4f) * outputs;
+		inputs = *sample;
+		lastOutput = outputs;
+		*sample = lastOutput;
+	}
 };
-
-#endif

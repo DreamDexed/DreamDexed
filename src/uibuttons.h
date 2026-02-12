@@ -17,19 +17,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _uibuttons_h
-#define _uibuttons_h
+#pragma once
 
 #include <circle/gpiopin.h>
-#include <circle/types.h>
-#include "midipin.h"
+#include <cstdint>
+
 #include "config.h"
+#include "midipin.h"
 
 #define BUTTONS_UPDATE_NUM_TICKS 100
 #define DEBOUNCE_TIME 20
-#define MAX_GPIO_BUTTONS 11  // 5 UI buttons, 6 Program/Bank/TG Select buttons
+#define MAX_GPIO_BUTTONS 11 // 5 UI buttons, 6 Program/Bank/TG Select buttons
 #define MAX_MIDI_BUTTONS 11
-#define MAX_BUTTONS (MAX_GPIO_BUTTONS+MAX_MIDI_BUTTONS)
+#define MAX_BUTTONS (MAX_GPIO_BUTTONS + MAX_MIDI_BUTTONS)
 
 class CUIButtons;
 
@@ -62,12 +62,12 @@ public:
 		BtnEventTGDown = 11,
 		BtnEventUnknown = 12
 	};
-	
-	CUIButton (void);
-	~CUIButton (void);
-	
-	void reset (void);
-	boolean Initialize (unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout, unsigned MIDIRelativeDebounceTime);
+
+	CUIButton(void);
+	~CUIButton(void);
+
+	void reset(void);
+	bool Initialize(unsigned pinNumber, unsigned doubleClickTimeout, unsigned longPressTimeout, unsigned MIDIRelativeDebounceTime);
 
 	void setClickEvent(BtnEvent clickEvent);
 	void setDoubleClickEvent(BtnEvent doubleClickEvent);
@@ -76,13 +76,13 @@ public:
 	void setIncEvent(BtnEvent incEvent);
 
 	unsigned getPinNumber(void);
-	
-	BtnTrigger ReadTrigger (void);
-	BtnEvent Read (void);
-	void Write (unsigned nValue); // MIDI buttons only!
 
-	static BtnTrigger triggerTypeFromString(const char* triggerString);
-	
+	BtnTrigger ReadTrigger(void);
+	BtnEvent Read(void);
+	void Write(unsigned nValue); // MIDI buttons only!
+
+	static BtnTrigger triggerTypeFromString(const char *triggerString);
+
 private:
 	// Pin number
 	unsigned m_pinNumber;
@@ -120,28 +120,28 @@ private:
 class CUIButtons
 {
 public:
-	typedef void BtnEventHandler (CUIButton::BtnEvent Event, void *param);
+	typedef void BtnEventHandler(CUIButton::BtnEvent Event, void *param);
 
 public:
-	CUIButtons (CConfig *pConfig);
-	~CUIButtons (void);
-	
-	boolean Initialize (void);
-	
-	void RegisterEventHandler (BtnEventHandler *handler, void *param = 0);
-	
-	void Update (void);
+	CUIButtons(CConfig *pConfig);
+	~CUIButtons(void);
 
-	void ResetButton (unsigned pinNumber);
+	bool Initialize(void);
 
-	void BtnMIDICmdHandler (unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2);
-	
+	void RegisterEventHandler(BtnEventHandler *handler, void *param = 0);
+
+	void Update(void);
+
+	void ResetButton(unsigned pinNumber);
+
+	void BtnMIDICmdHandler(unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2);
+
 private:
 	CConfig *m_pConfig;
 
 	// Array of normal GPIO buttons and "MIDI buttons"
 	CUIButton m_buttons[MAX_BUTTONS];
-	
+
 	// Configuration for buttons
 	unsigned m_prevPin;
 	CUIButton::BtnTrigger m_prevAction;
@@ -153,7 +153,7 @@ private:
 	CUIButton::BtnTrigger m_selectAction;
 	unsigned m_homePin;
 	CUIButton::BtnTrigger m_homeAction;
-	
+
 	// Program and TG Selection buttons
 	unsigned m_pgmUpPin;
 	CUIButton::BtnTrigger m_pgmUpAction;
@@ -167,7 +167,7 @@ private:
 	CUIButton::BtnTrigger m_TGUpAction;
 	unsigned m_TGDownPin;
 	CUIButton::BtnTrigger m_TGDownAction;
-	
+
 	// MIDI button configuration
 	unsigned m_notesMidi;
 
@@ -181,7 +181,7 @@ private:
 	CUIButton::BtnTrigger m_selectMidiAction;
 	unsigned m_homeMidi;
 	CUIButton::BtnTrigger m_homeMidiAction;
-	
+
 	unsigned m_pgmUpMidi;
 	CUIButton::BtnTrigger m_pgmUpMidiAction;
 	unsigned m_pgmDownMidi;
@@ -202,5 +202,3 @@ private:
 
 	void bindButton(unsigned pinNumber, CUIButton::BtnTrigger trigger, CUIButton::BtnEvent event);
 };
-
-#endif

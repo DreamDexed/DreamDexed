@@ -17,21 +17,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _perftimer_h
-#define _perftimer_h
+#pragma once
 
-#include <string>
 #include <circle/timer.h>
+#include <string>
 
 class CPerformanceTimer
 {
 public:
-	CPerformanceTimer (const char *pName, unsigned nDeadlineMicros = 0);
+	CPerformanceTimer(const char *pName, unsigned nDeadlineMicros = 0);
 
-	void Start (void);
-	void Stop (void);
+	void Start(void);
+	void Stop(void);
 
-	void Dump (unsigned nIntervalTicks = CLOCKHZ);
+	void Dump(unsigned nIntervalTicks = CLOCKHZ);
 
 private:
 	std::string m_Name;
@@ -43,5 +42,3 @@ private:
 
 	unsigned m_nLastDumpTicks;
 };
-
-#endif

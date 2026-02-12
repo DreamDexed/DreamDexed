@@ -8,10 +8,15 @@
 #define BUFFER_SIZE 128
 #define SLOW_CLEAR_SIZE 192000 // may need to be adjusted for other Pis
 
+#include <algorithm>
 #include <atomic>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
 #include <string>
 
 #include "../CloudSeedCore/DSP/ReverbController.h"
+#include "../CloudSeedCore/Parameters.h"
 
 class AudioEffectCloudSeed2
 {
@@ -38,20 +43,20 @@ public:
 	static constexpr unsigned presets_num = sizeof PresetNames / sizeof *PresetNames;
 	static const float *Presets[];
 
-	static std::string GetLateMode (int nValue, int nWidth)
+	static std::string GetLateMode(int nValue, int nWidth)
 	{
 		return nValue ? "Post" : "Pre";
 	}
 
-	static std::string getPresetName (int nValue, int nWidth)
+	static std::string getPresetName(int nValue, int nWidth)
 	{
-		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		assert(nValue >= 0 && (unsigned)nValue < presets_num);
 		return PresetNames[nValue];
 	}
 
-	static const char *getPresetNameChar (int nValue)
+	static const char *getPresetNameChar(int nValue)
 	{
-		assert (nValue >= 0 && (unsigned)nValue < presets_num);
+		assert(nValue >= 0 && (unsigned)nValue < presets_num);
 		return PresetNames[nValue];
 	}
 
@@ -64,7 +69,7 @@ public:
 		return 0;
 	}
 
-	AudioEffectCloudSeed2(float samplerate):
+	AudioEffectCloudSeed2(float samplerate) :
 	bypass{},
 	samplerate{samplerate},
 	ramp_dt{10.0f / samplerate},
@@ -88,7 +93,7 @@ public:
 		return engine.GetAllParameters()[paramID];
 	}
 
-	void process(float32_t* inblockL, float32_t* inblockR, uint16_t len)
+	void process(float *inblockL, float *inblockR, uint16_t len)
 	{
 		if (targetVol == 0.0f && vol > 0.0f)
 		{
@@ -127,7 +132,7 @@ public:
 			unsigned paramID = Cloudseed::Parameter::COUNT - needParam;
 			engine.SetParameter(paramID, Presets[preset][paramID]);
 			needParameterLoad = needParam - 1;
-			
+
 			memset(inblockL, 0, len * sizeof *inblockL);
 			memset(inblockR, 0, len * sizeof *inblockR);
 
@@ -148,7 +153,7 @@ public:
 			}
 
 			return;
-		} 
+		}
 
 		if (bypass) return;
 
@@ -181,8 +186,8 @@ public:
 	{
 		double *params = engine.GetAllParameters();
 		return params[Cloudseed::Parameter::DryOut] == 1.0f &&
-			params[Cloudseed::Parameter::EarlyOut] == 0.0f &&
-			params[Cloudseed::Parameter::LateOut] == 0.0f;
+		       params[Cloudseed::Parameter::EarlyOut] == 0.0f &&
+		       params[Cloudseed::Parameter::LateOut] == 0.0f;
 	}
 
 	std::atomic<bool> bypass;

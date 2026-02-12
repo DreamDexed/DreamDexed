@@ -20,11 +20,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _uimenu_h
-#define _uimenu_h
+#pragma once
 
+#include <cstdint>
 #include <string>
+
 #include <circle/timer.h>
+
 #include "config.h"
 
 class CMiniDexed;
@@ -57,12 +59,12 @@ public:
 	};
 
 public:
-	CUIMenu (CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig);
+	CUIMenu(CUserInterface *pUI, CMiniDexed *pMiniDexed, CConfig *pConfig);
 
-	void EventHandler (TMenuEvent Event);
-	
+	void EventHandler(TMenuEvent Event);
+
 private:
-	typedef void TMenuHandler (CUIMenu *pUIMenu, TMenuEvent Event);
+	typedef void TMenuHandler(CUIMenu *pUIMenu, TMenuEvent Event);
 
 	struct TMenuItem
 	{
@@ -70,14 +72,16 @@ private:
 		TMenuHandler *Handler;
 		const TMenuItem *MenuItem;
 		unsigned Parameter;
-		TMenuHandler* OnSelect;
-		TMenuHandler* StepDown;
-		TMenuHandler* StepUp;
-		unsigned Parameter2;
+		TMenuHandler *OnSelect;
+		TMenuHandler *StepDown;
+		TMenuHandler *StepUp;
+		uint8_t nBus;
+		uint8_t idFX;
 		bool ShowDirect;
+		bool Skip;
 	};
 
-	typedef std::string TToString (int nValue, int nWidth);
+	typedef std::string TToString(int nValue, int nWidth);
 
 	struct TParameter
 	{
@@ -88,85 +92,66 @@ private:
 	};
 
 private:
-	static void MenuHandler (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditGlobalParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditVoiceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditProgramNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditFXParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditFXParameterG (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditVoiceParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditOPParameter (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void SavePerformance (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameter2 (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditTGParameterModulation (CUIMenu *pUIMenu, TMenuEvent Event); 	
-	static void PerformanceMenu (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void SavePerformanceNewFile (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void EditPerformanceBankNumber (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowCPUTemp (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowCPUSpeed (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowIPAddr (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void ShowVersion (CUIMenu *pUIMenu, TMenuEvent Event);
+	static void MenuHandler(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditGlobalParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditVoiceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditProgramNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusParameterG(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditVoiceParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditOPParameter(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void SavePerformance(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameter2(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditTGParameterModulation(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void PerformanceMenu(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void SavePerformanceNewFile(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditPerformanceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusPerformanceBank(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusPerformance(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUTemp(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowCPUSpeed(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowIPAddr(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void ShowVersion(CUIMenu *pUIMenu, TMenuEvent Event);
 
+	static std::string GetGlobalValueString(unsigned nParameter, int nValue, int nWidth);
+	static std::string GetTGValueString(unsigned nTGParameter, int nValue, int nWidth);
+	static std::string GetFXValueString(unsigned nFXParameter, int nValue, int nWidth);
+	static std::string GetBusValueString(unsigned nFXParameter, int nValue, int nWidth);
+	static std::string GetVoiceValueString(unsigned nVoiceParameter, int nValue, int nWidth);
+	static std::string GetOPValueString(unsigned nOPParameter, int nValue, int nWidth);
 
-	static std::string GetGlobalValueString (unsigned nParameter, int nValue, int nWidth);
-	static std::string GetTGValueString (unsigned nTGParameter, int nValue, int nWidth);
-	static std::string GetFXValueString (unsigned nFXParameter, int nValue, int nWidth);
-	static std::string GetVoiceValueString (unsigned nVoiceParameter, int nValue, int nWidth);
-	static std::string GetOPValueString (unsigned nOPParameter, int nValue, int nWidth);
+	static std::string ToSDFilter(int nValue, int nWidth);
 
-	static std::string ToVolume (int nValue, int nWidth);
-	static std::string ToPan (int nValue, int nWidth);
-	static std::string ToMIDIChannel (int nValue, int nWidth);
+	void GlobalShortcutHandler(TMenuEvent Event);
+	void TGShortcutHandler(TMenuEvent Event);
+	void OPShortcutHandler(TMenuEvent Event);
 
-	static std::string ToAlgorithm (int nValue, int nWidth);
-	static std::string ToOnOff (int nValue, int nWidth);
-	static std::string ToLFOWaveform (int nValue, int nWidth);
-	static std::string ToTransposeNote (int nValue, int nWidth);
-	static std::string ToBreakpointNote (int nValue, int nWidth);
-	static std::string ToMIDINote (int nValue, int nWidth);
-	static std::string ToMIDINoteShift (int nValue, int nWidth);
-	static std::string ToKeyboardCurve (int nValue, int nWidth);
-	static std::string ToOscillatorMode (int nValue, int nWidth);
-	static std::string ToOscillatorDetune (int nValue, int nWidth);
-	static std::string ToPortaMode (int nValue, int nWidth);
-	static std::string ToPortaGlissando (int nValue, int nWidth);
-	static std::string ToPolyMono (int nValue, int nWidth);
-	static std::string ToTGLinkName (int nValue, int nWidth);
-	static std::string ToSDFilter (int nValue, int nWidth);
-	static std::string TodB (int nValue, int nWidth);
-	static std::string TodBFS (int nValue, int nWidth);
-	static std::string ToMillisec (int nValue, int nWidth);
-	static std::string ToRatio (int nValue, int nWidth);
-	static std::string ToHz (int nValue, int nWidth);
+	void PgmUpDownHandler(TMenuEvent Event);
+	void BankUpDownHandler(TMenuEvent Event);
+	void TGUpDownHandler(TMenuEvent Event);
 
-	void GlobalShortcutHandler (TMenuEvent Event);
-	void TGShortcutHandler (TMenuEvent Event);
-	void OPShortcutHandler (TMenuEvent Event);
+	static void TimerHandler(TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void TimerHandlerUpdate(TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
-	void PgmUpDownHandler (TMenuEvent Event);
-	void BankUpDownHandler (TMenuEvent Event);
-	void TGUpDownHandler (TMenuEvent Event);
+	static void InputTxt(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void TimerHandlerNoBack(TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
-	static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
-	static void TimerHandlerUpdate (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	static void InputKeyDown(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void InputShiftKeyDown(CUIMenu *pUIMenu, TMenuEvent Event);
 
-	static void InputTxt (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void TimerHandlerNoBack (TKernelTimerHandle hTimer, void *pParam, void *pContext);
-
-	static void InputKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void InputShiftKeyDown (CUIMenu *pUIMenu, TMenuEvent Event);
-
-	static void SelectCurrentEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void StepDownEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static void StepUpEffect (CUIMenu *pUIMenu, TMenuEvent Event);
-	static bool FXSlotFilter (CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
+	static void SelectCurrentEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepDownEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void StepUpEffect(CUIMenu *pUIMenu, TMenuEvent Event);
+	static bool FXSlotFilter(CUIMenu *pUIMenu, TMenuEvent Event, int nValue);
 
 private:
 	CUserInterface *m_pUI;
 	CMiniDexed *m_pMiniDexed;
 	CConfig *m_pConfig;
-	
+
 	unsigned m_nToneGenerators;
 
 	const TMenuItem *m_pParentMenu;
@@ -183,13 +168,13 @@ private:
 	unsigned m_nCurrentMenuDepth;
 
 	static const TMenuItem s_MenuRoot[];
-	static const TMenuItem s_MainMenu[];
+	static TMenuItem s_MainMenu[];
 	static const TMenuItem s_TGMenu[];
-	static const TMenuItem s_SendFXMenu[];
-	static const TMenuItem s_MasterFXMenu[];
+	static const TMenuItem s_BusMenu[];
+	static const TMenuItem s_BusPerformanceMenu[];
+	static const TMenuItem s_FXMenu[];
 	static const TMenuItem s_FXListMenu[];
-	static const TMenuItem s_MixerMenu[];
-	static const TMenuItem s_EffectsMenu[];
+	static TMenuItem s_MixerMenu[];
 	static const TMenuItem s_EQMenu[];
 	static const TMenuItem s_ZynDistortionMenu[];
 	static const TMenuItem s_YKChorusMenu[];
@@ -219,10 +204,10 @@ private:
 	static const TMenuItem s_EditNoteLimitMenu[];
 	static const TMenuItem s_PerformanceMenu[];
 	static const TMenuItem s_StatusMenu[];
-	
+
 	static const TMenuItem s_ModulationMenu[];
 	static const TMenuItem s_ModulationMenuParameters[];
-			
+
 	static const TMenuItem s_MIDIMenu[];
 
 	static TParameter s_GlobalParameter[];
@@ -234,15 +219,12 @@ private:
 	static const char s_MIDINoteName[128][9];
 	static const char s_MIDINoteShift[49][8];
 
-	std::string m_InputText="1234567890ABCD";
-	unsigned m_InputTextPosition=0;
-	unsigned m_InputTextChar=32;
-	bool m_bPerformanceDeleteMode=false;
-	bool m_bConfirmDeletePerformance=false;
-	unsigned m_nSelectedPerformanceID =0;
-	unsigned m_nSelectedPerformanceBankID =0;
-	bool m_bSplashShow=false;
-
+	std::string m_InputText = "1234567890ABCD";
+	unsigned m_InputTextPosition = 0;
+	unsigned m_InputTextChar = 32;
+	bool m_bPerformanceDeleteMode = false;
+	bool m_bConfirmDeletePerformance = false;
+	unsigned m_nSelectedPerformanceID = 0;
+	unsigned m_nSelectedPerformanceBankID = 0;
+	bool m_bSplashShow = false;
 };
-
-#endif

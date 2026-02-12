@@ -17,16 +17,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _kernel_h
-#define _kernel_h
+#pragma once
 
-#include "circle_stdlib_app.h"
 #include <circle/cputhrottle.h>
 #include <circle/gpiomanager.h>
 #include <circle/i2cmaster.h>
+#include <circle/sched/scheduler.h>
 #include <circle/spimaster.h>
 #include <circle/usb/usbcontroller.h>
-#include <circle/sched/scheduler.h>
+
+#include "circle_stdlib_app.h"
 #include "config.h"
 #include "minidexed.h"
 
@@ -40,28 +40,26 @@ enum TShutdownMode
 class CKernel : public CStdlibAppStdio
 {
 public:
-	CKernel (void);
-	~CKernel (void);
+	CKernel(void);
+	~CKernel(void);
 
-	bool Initialize (void);
+	bool Initialize(void);
 
-	TShutdownMode Run (void);
+	TShutdownMode Run(void);
 
 private:
-	static void PanicHandler (void);
+	static void PanicHandler(void);
 
 private:
 	// do not change this order
-	CConfig		m_Config;
-	CCPUThrottle	m_CPUThrottle;
-	CGPIOManager	m_GPIOManager;
-	CI2CMaster	m_I2CMaster;
-	CSPIMaster	*m_pSPIMaster;
-	CMiniDexed	*m_pDexed;
+	CConfig m_Config;
+	CCPUThrottle m_CPUThrottle;
+	CGPIOManager m_GPIOManager;
+	CI2CMaster m_I2CMaster;
+	CSPIMaster *m_pSPIMaster;
+	CMiniDexed *m_pDexed;
 	CUSBController *m_pUSB;
-	CScheduler	m_Scheduler;
+	CScheduler m_Scheduler;
 
 	static CKernel *s_pThis;
 };
-
-#endif
