@@ -4,13 +4,14 @@
 #include <cassert>
 
 #include <circle/cputhrottle.h>
+#include <circle/koptions.h>
 #include <circle/timer.h>
 
 class CStatus
 {
 public:
 	CStatus(unsigned nUpdateSecs = 3) :
-	nCPUMaxTemp{CCPUThrottle::Get()->GetMaxTemperature()},
+	nCPUMaxTemp{CKernelOptions::Get()->GetSoCMaxTemp()},
 	nCPUMaxClockRate{CCPUThrottle::Get()->GetMaxClockRate()},
 	m_nUpdateTicks{nUpdateSecs * CLOCKHZ},
 	m_nLastTicks{}
