@@ -513,7 +513,8 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 
 	if (m_bSetNewPerformanceBank)
 	{
-		DoSetNewPerformanceBank();
+		m_PerformanceConfig.SetNewPerformanceBank(m_nSetNewPerformanceBankID);
+
 		if (m_nSetNewPerformanceBankID == m_PerformanceConfig.GetPerformanceBankID())
 		{
 			m_bSetNewPerformanceBank = false;
@@ -3162,13 +3163,6 @@ bool CMiniDexed::DoSetNewPerformance()
 		SetMIDIChannel(CMIDIDevice::OmniMode, 0);
 		return false;
 	}
-}
-
-bool CMiniDexed::DoSetNewPerformanceBank()
-{
-	int nBankID = m_nSetNewPerformanceBankID;
-	m_PerformanceConfig.SetNewPerformanceBank(nBankID);
-	return true;
 }
 
 void CMiniDexed::DoSetFirstPerformance()

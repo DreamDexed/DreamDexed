@@ -183,7 +183,6 @@ public:
 
 	bool DoSavePerformanceNewFile();
 	bool DoSetNewPerformance();
-	bool DoSetNewPerformanceBank();
 	bool GetPerformanceSelectToLoad();
 	bool SavePerformance(bool bSaveAsDeault);
 	int GetPerformanceSelectChannel();
