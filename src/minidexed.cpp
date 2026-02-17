@@ -123,7 +123,6 @@ m_bSetNewPerformance{},
 m_bSetNewPerformanceBank{},
 m_bSetFirstPerformance{},
 m_bDeletePerformance{},
-m_bLoadPerformanceBusy{},
 m_bVolRampDownWait{},
 m_bVolRampedDown{},
 m_fRamp{10.0f / pConfig->GetSampleRate()}
@@ -512,7 +511,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		pScheduler->Yield();
 	}
 
-	if (m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy)
+	if (m_bSetNewPerformanceBank)
 	{
 		DoSetNewPerformanceBank();
 		if (m_nSetNewPerformanceBankID == m_PerformanceConfig.GetPerformanceBankID())
@@ -530,7 +529,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		pScheduler->Yield();
 	}
 
-	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy)
+	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank)
 	{
 		for (int i = 0; i < m_nToneGenerators; ++i)
 		{
@@ -3150,21 +3149,17 @@ void CMiniDexed::SetFirstPerformance()
 
 bool CMiniDexed::DoSetNewPerformance()
 {
-	m_bLoadPerformanceBusy = true;
-
 	int nID = m_nSetNewPerformanceID;
 	m_PerformanceConfig.SetNewPerformance(nID);
 
 	if (m_PerformanceConfig.Load())
 	{
 		LoadPerformanceParameters();
-		m_bLoadPerformanceBusy = false;
 		return true;
 	}
 	else
 	{
 		SetMIDIChannel(CMIDIDevice::OmniMode, 0);
-		m_bLoadPerformanceBusy = false;
 		return false;
 	}
 }
