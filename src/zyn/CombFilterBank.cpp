@@ -19,9 +19,9 @@ pos_writer{},
 mem_size{},
 samplerate{samplerate}
 {
+	gain_smoothing.cutoff(1.0f);
 	gain_smoothing.sample_rate(samplerate / 16);
 	gain_smoothing.thresh(0.02f);
-	gain_smoothing.cutoff(1.0f);
 	gain_smoothing.reset(gainbwd);
 }
 
