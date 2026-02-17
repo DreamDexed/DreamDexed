@@ -37,7 +37,19 @@ gcc-*
 arm-gnu-*
 
 # Build artifacts
-kernel*
+
+# Pi1
+kernel.elf
+kernel.lst
+kernel.img
+kernel.map
+# Pi2
+kernel7*
+# Pi3 Pi4
+kernel8*
+# Pi5
+kernel_*
+
 MiniDexed*
 sdcard
 *.zip
