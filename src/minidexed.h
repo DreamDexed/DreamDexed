@@ -460,7 +460,6 @@ private:
 	bool m_bSetFirstPerformance;
 	bool m_bDeletePerformance;
 	int m_nDeletePerformanceID;
-	bool m_bLoadPerformanceBusy;
 	bool m_bSaveAsDeault;
 
 	std::atomic<bool> m_bVolRampDownWait;
