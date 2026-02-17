@@ -124,7 +124,6 @@ m_bSetNewPerformanceBank{},
 m_bSetFirstPerformance{},
 m_bDeletePerformance{},
 m_bLoadPerformanceBusy{},
-m_bLoadPerformanceBankBusy{},
 m_bVolRampDownWait{},
 m_bVolRampedDown{},
 m_fRamp{10.0f / pConfig->GetSampleRate()}
@@ -513,7 +512,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		pScheduler->Yield();
 	}
 
-	if (m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
+	if (m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy)
 	{
 		DoSetNewPerformanceBank();
 		if (m_nSetNewPerformanceBankID == m_PerformanceConfig.GetPerformanceBankID())
@@ -531,7 +530,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		pScheduler->Yield();
 	}
 
-	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
+	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy)
 	{
 		for (int i = 0; i < m_nToneGenerators; ++i)
 		{
@@ -3172,12 +3171,8 @@ bool CMiniDexed::DoSetNewPerformance()
 
 bool CMiniDexed::DoSetNewPerformanceBank()
 {
-	m_bLoadPerformanceBankBusy = true;
-
 	int nBankID = m_nSetNewPerformanceBankID;
 	m_PerformanceConfig.SetNewPerformanceBank(nBankID);
-
-	m_bLoadPerformanceBankBusy = false;
 	return true;
 }
 
