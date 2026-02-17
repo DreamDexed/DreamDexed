@@ -18,31 +18,50 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "userinterface.h"
-#include "minidexed.h"
-#include <circle/logger.h>
-#include <circle/string.h>
-#include <circle/startup.h>
-#include <cstring>
+
+#include <algorithm>
 #include <cassert>
+#include <cstdint>
+#include <cstring>
 
-LOGMODULE ("ui");
+#include <circle/font.h>
+#include <circle/gpiomanager.h>
+#include <circle/i2cmaster.h>
+#include <circle/logger.h>
+#include <circle/spimaster.h>
+#include <circle/startup.h>
+#include <circle/string.h>
+#include <circle/writebuffer.h>
+#include <display/hd44780device.h>
+#include <display/ssd1306device.h>
+#include <display/st7789device.h>
+#include <display/st7789display.h>
+#include <sensor/ky040.h>
 
-CUserInterface::CUserInterface (CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig)
-:	m_pMiniDexed (pMiniDexed),
-	m_pGPIOManager (pGPIOManager),
-	m_pI2CMaster (pI2CMaster),
-	m_pSPIMaster (pSPIMaster),
-	m_pConfig (pConfig),
-	m_pLCD (0),
-	m_pLCDBuffered (0),
-	m_pUIButtons (0),
-	m_pRotaryEncoder (0),
-	m_bSwitchPressed (false),
-	m_Menu (this, pMiniDexed, pConfig)
+#include "config.h"
+#include "mididevice.h"
+#include "minidexed.h"
+#include "uibuttons.h"
+#include "uimenu.h"
+
+LOGMODULE("ui");
+
+CUserInterface::CUserInterface(CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig) :
+m_pMiniDexed{pMiniDexed},
+m_pGPIOManager{pGPIOManager},
+m_pI2CMaster{pI2CMaster},
+m_pSPIMaster{pSPIMaster},
+m_pConfig{pConfig},
+m_pLCD{},
+m_pLCDBuffered{},
+m_pUIButtons{},
+m_pRotaryEncoder{},
+m_bSwitchPressed{},
+m_Menu{this, pMiniDexed, pConfig}
 {
 }
 
-CUserInterface::~CUserInterface (void)
+CUserInterface::~CUserInterface()
 {
 	delete m_pRotaryEncoder;
 	delete m_pUIButtons;
@@ -50,25 +69,26 @@ CUserInterface::~CUserInterface (void)
 	delete m_pLCD;
 }
 
-bool CUserInterface::Initialize (void)
+bool CUserInterface::Initialize()
 {
-	assert (m_pConfig);
+	assert(m_pConfig);
 
-	if (m_pConfig->GetLCDEnabled ())
+	if (m_pConfig->GetLCDEnabled())
 	{
-		unsigned i2caddr = m_pConfig->GetLCDI2CAddress ();
-		unsigned ssd1306addr = m_pConfig->GetSSD1306LCDI2CAddress ();
-		bool st7789 = m_pConfig->GetST7789Enabled ();
-		if (ssd1306addr != 0) {
-			m_pSSD1306 = new CSSD1306Device (m_pConfig->GetSSD1306LCDWidth (), m_pConfig->GetSSD1306LCDHeight (),
-											 m_pI2CMaster, ssd1306addr,
-											 m_pConfig->GetSSD1306LCDRotate (), m_pConfig->GetSSD1306LCDMirror ());
-			if (!m_pSSD1306->Initialize ())
+		uint8_t i2caddr = m_pConfig->GetLCDI2CAddress();
+		uint8_t ssd1306addr = m_pConfig->GetSSD1306LCDI2CAddress();
+		bool st7789 = m_pConfig->GetST7789Enabled();
+		if (ssd1306addr != 0)
+		{
+			m_pSSD1306 = new CSSD1306Device(m_pConfig->GetSSD1306LCDWidth(), m_pConfig->GetSSD1306LCDHeight(),
+							m_pI2CMaster, ssd1306addr,
+							m_pConfig->GetSSD1306LCDRotate(), m_pConfig->GetSSD1306LCDMirror());
+			if (!m_pSSD1306->Initialize())
 			{
 				LOGDBG("LCD: SSD1306 initialization failed");
 				return false;
 			}
-			LOGDBG ("LCD: SSD1306");
+			LOGDBG("LCD: SSD1306");
 			m_pLCD = m_pSSD1306;
 		}
 		else if (st7789)
@@ -79,38 +99,42 @@ bool CUserInterface::Initialize (void)
 				return false;
 			}
 
-			unsigned long nSPIClock = 1000 * m_pConfig->GetSPIClockKHz();
+			unsigned nSPIClock = 1000 * m_pConfig->GetSPIClockKHz();
 			unsigned nSPIMode = m_pConfig->GetSPIMode();
 			unsigned nCPHA = (nSPIMode & 1) ? 1 : 0;
 			unsigned nCPOL = (nSPIMode & 2) ? 1 : 0;
-			LOGDBG("SPI: CPOL=%u; CPHA=%u; CLK=%u",nCPOL,nCPHA,nSPIClock);
-			m_pST7789Display = new CST7789Display (m_pSPIMaster,
-							m_pConfig->GetST7789Data(),
-							m_pConfig->GetST7789Reset(),
-							m_pConfig->GetST7789Backlight(),
-							m_pConfig->GetST7789Width(),
-							m_pConfig->GetST7789Height(),
-							nCPOL, nCPHA, nSPIClock,
-							m_pConfig->GetST7789Select());
+			LOGDBG("SPI: CPOL=%d; CPHA=%d; CLK=%d", nCPOL, nCPHA, nSPIClock);
+			m_pST7789Display = new CST7789Display(m_pSPIMaster,
+							      m_pConfig->GetST7789Data(),
+							      m_pConfig->GetST7789Reset(),
+							      m_pConfig->GetST7789Backlight(),
+							      m_pConfig->GetST7789Width(),
+							      m_pConfig->GetST7789Height(),
+							      nCPOL, nCPHA, nSPIClock,
+							      m_pConfig->GetST7789Select());
 			if (m_pST7789Display->Initialize())
 			{
 				extern const TFont DDFont8x16;
 				extern const TFont DDFont12x22;
 
-				m_pST7789Display->SetRotation (m_pConfig->GetST7789Rotation());
+				m_pST7789Display->SetRotation(m_pConfig->GetST7789Rotation());
 
 				bool bDoubleFont = m_pConfig->GetST7789FontSize() == 16 ? true : false;
-				const TFont& font = m_pConfig->GetST7789FontSize() == 12 ? DDFont12x22 : DDFont8x16;
+				const TFont &font = m_pConfig->GetST7789FontSize() == 12 ? DDFont12x22 : DDFont8x16;
 
-				m_pST7789 = new CST7789Device (m_pSPIMaster, m_pST7789Display, m_pConfig->GetLCDColumns (), m_pConfig->GetLCDRows (), font, bDoubleFont, bDoubleFont);
+				m_pST7789 = new CST7789Device(m_pSPIMaster,
+							      m_pST7789Display,
+							      static_cast<unsigned>(m_pConfig->GetLCDColumns()),
+							      static_cast<unsigned>(m_pConfig->GetLCDRows()),
+							      font, bDoubleFont, bDoubleFont);
 				if (m_pST7789->Initialize())
 				{
-					LOGDBG ("LCD: ST7789");
+					LOGDBG("LCD: ST7789");
 					m_pLCD = m_pST7789;
 				}
 				else
 				{
-					LOGDBG ("LCD: Failed to initalize ST7789 character device");
+					LOGDBG("LCD: Failed to initalize ST7789 character device");
 					delete (m_pST7789);
 					delete (m_pST7789Display);
 					m_pST7789 = nullptr;
@@ -120,7 +144,7 @@ bool CUserInterface::Initialize (void)
 			}
 			else
 			{
-				LOGDBG ("LCD: Failed to initialize ST7789 display");
+				LOGDBG("LCD: Failed to initialize ST7789 display");
 				delete (m_pST7789Display);
 				m_pST7789Display = nullptr;
 				return false;
@@ -128,100 +152,103 @@ bool CUserInterface::Initialize (void)
 		}
 		else if (i2caddr == 0)
 		{
-			m_pHD44780 = new CHD44780Device (m_pConfig->GetLCDColumns (), m_pConfig->GetLCDRows (),
-							 m_pConfig->GetLCDPinData4 (),
-							 m_pConfig->GetLCDPinData5 (),
-							 m_pConfig->GetLCDPinData6 (),
-							 m_pConfig->GetLCDPinData7 (),
-							 m_pConfig->GetLCDPinEnable (),
-							 m_pConfig->GetLCDPinRegisterSelect (),
-							 m_pConfig->GetLCDPinReadWrite ());
-			if (!m_pHD44780->Initialize ())
+			m_pHD44780 = new CHD44780Device(static_cast<unsigned>(m_pConfig->GetLCDColumns()),
+							static_cast<unsigned>(m_pConfig->GetLCDRows()),
+							m_pConfig->GetLCDPinData4(),
+							m_pConfig->GetLCDPinData5(),
+							m_pConfig->GetLCDPinData6(),
+							m_pConfig->GetLCDPinData7(),
+							m_pConfig->GetLCDPinEnable(),
+							m_pConfig->GetLCDPinRegisterSelect(),
+							m_pConfig->GetLCDPinReadWrite());
+			if (!m_pHD44780->Initialize())
 			{
 				LOGDBG("LCD: HD44780 initialization failed");
 				return false;
 			}
-			LOGDBG ("LCD: HD44780");
+			LOGDBG("LCD: HD44780");
 			m_pLCD = m_pHD44780;
 		}
 		else
 		{
-			m_pHD44780 = new CHD44780Device (m_pI2CMaster, i2caddr,
-							m_pConfig->GetLCDColumns (), m_pConfig->GetLCDRows ());
-			if (!m_pHD44780->Initialize ())
+			m_pHD44780 = new CHD44780Device(m_pI2CMaster, i2caddr,
+							static_cast<unsigned>(m_pConfig->GetLCDColumns()),
+							static_cast<unsigned>(m_pConfig->GetLCDRows()));
+			if (!m_pHD44780->Initialize())
 			{
 				LOGDBG("LCD: HD44780 (I2C) initialization failed");
 				return false;
 			}
-			LOGDBG ("LCD: HD44780 I2C");
+			LOGDBG("LCD: HD44780 I2C");
 			m_pLCD = m_pHD44780;
 		}
-		assert (m_pLCD);
+		assert(m_pLCD);
 
-		m_pLCDBuffered = new CWriteBufferDevice (m_pLCD);
-		assert (m_pLCDBuffered);
+		m_pLCDBuffered = new CWriteBufferDevice(m_pLCD);
+		assert(m_pLCDBuffered);
 		// clear sceen and go to top left corner
-		LCDWrite ("\x1B[H\x1B[J");		// cursor home and clear screen
-		LCDWrite ("\x1B[?25l\x1B""d+");		// cursor off, autopage mode
-		LCDWrite ("MiniDexed\nLoading...");
-		m_pLCDBuffered->Update ();
+		LCDWrite("\x1B[H\x1B[J"); // cursor home and clear screen
+		LCDWrite("\x1B[?25l\x1B"
+			 "d+"); // cursor off, autopage mode
+		LCDWrite("MiniDexed\nLoading...");
+		m_pLCDBuffered->Update();
 
-		LOGDBG ("LCD initialized");
+		LOGDBG("LCD initialized");
 	}
 
-	m_pUIButtons = new CUIButtons (	m_pConfig );
-	assert (m_pUIButtons);
+	m_pUIButtons = new CUIButtons(m_pConfig);
+	assert(m_pUIButtons);
 
-	if (!m_pUIButtons->Initialize ())
+	if (!m_pUIButtons->Initialize())
 	{
 		return false;
 	}
 
-	m_pUIButtons->RegisterEventHandler (UIButtonsEventStub, this);
-	UISetMIDIButtonChannel (m_pConfig->GetMIDIButtonCh ());
+	m_pUIButtons->RegisterEventHandler(UIButtonsEventStub, this);
+	UISetMIDIButtonChannel(m_pConfig->GetMIDIButtonCh());
 
-	LOGDBG ("Button User Interface initialized");
+	LOGDBG("Button User Interface initialized");
 
-	if (m_pConfig->GetEncoderEnabled ())
+	if (m_pConfig->GetEncoderEnabled())
 	{
-		m_pRotaryEncoder = new CKY040 (m_pConfig->GetEncoderPinClock (),
-					       m_pConfig->GetEncoderPinData (),
-					       m_pConfig->GetButtonPinShortcut (),
-					       m_pGPIOManager,
-					       m_pConfig->GetEncoderDetents ());
-		assert (m_pRotaryEncoder);
+		m_pRotaryEncoder = new CKY040(m_pConfig->GetEncoderPinClock(),
+					      m_pConfig->GetEncoderPinData(),
+					      m_pConfig->GetButtonPinShortcut(),
+					      m_pGPIOManager,
+					      m_pConfig->GetEncoderDetents());
+		assert(m_pRotaryEncoder);
 
-		if (!m_pRotaryEncoder->Initialize ())
+		if (!m_pRotaryEncoder->Initialize())
 		{
 			return false;
 		}
 
-		m_pRotaryEncoder->RegisterEventHandler (EncoderEventStub, this);
+		m_pRotaryEncoder->RegisterEventHandler(EncoderEventStub, this);
 
-		LOGDBG ("Rotary encoder initialized");
+		LOGDBG("Rotary encoder initialized");
 	}
 
-	m_Menu.EventHandler (CUIMenu::MenuEventUpdate);
+	m_Menu.EventHandler(CUIMenu::MenuEventUpdate);
 
 	return true;
 }
 
-void CUserInterface::LoadDefaultScreen ()
+void CUserInterface::LoadDefaultScreen()
 {
 	// performance load
 	if (m_pConfig->GetDefaultScreen() == 1)
 	{
-		m_Menu.EventHandler (CUIMenu::MenuEventStepDown);
-		m_Menu.EventHandler (CUIMenu::MenuEventSelect);
-		m_Menu.EventHandler (CUIMenu::MenuEventSelect);
+		m_Menu.EventHandler(CUIMenu::MenuEventStepDown);
+		m_Menu.EventHandler(CUIMenu::MenuEventSelect);
+		m_Menu.EventHandler(CUIMenu::MenuEventSelect);
 	}
 }
 
-void CUserInterface::Process (void)
+void CUserInterface::Process()
 {
 	if (m_pLCDBuffered)
 	{
-		m_pLCDBuffered->Update ();
+		m_pLCDBuffered->Update();
 	}
 	if (m_pUIButtons)
 	{
@@ -229,43 +256,42 @@ void CUserInterface::Process (void)
 	}
 }
 
-void CUserInterface::ParameterChanged (void)
+void CUserInterface::ParameterChanged()
 {
-	m_Menu.EventHandler (CUIMenu::MenuEventUpdateParameter);
+	m_Menu.EventHandler(CUIMenu::MenuEventUpdateParameter);
 }
 
-void CUserInterface::DisplayChanged (void)
+void CUserInterface::DisplayChanged()
 {
-	m_Menu.EventHandler (CUIMenu::MenuEventUpdate);
+	m_Menu.EventHandler(CUIMenu::MenuEventUpdate);
 }
 
-void CUserInterface::DisplayWrite (const char *pMenu, const char *pParam, const char *pValue,
-				   bool bArrowDown, bool bArrowUp)
+void CUserInterface::DisplayWrite(const char *pMenu, const char *pParam, const char *pValue,
+				  bool bArrowDown, bool bArrowUp)
 {
-	assert (pMenu);
-	assert (pParam);
-	assert (pValue);
+	assert(pMenu);
+	assert(pParam);
+	assert(pValue);
 
-	size_t nLineMaxLen = m_pConfig->GetLCDColumns ();
+	size_t nLineMaxLen = static_cast<size_t>(m_pConfig->GetLCDColumns());
 
-	const char* pHdr = "\x1B[H\E[?25l"; // cursor home and off
+	const char *pHdr = "\x1B[H\E[?25l"; // cursor home and off
 	size_t nHdrLen = strlen(pHdr);
 
-	const char* pClear = "\x1B[K"; // clear end of line
+	const char *pClear = "\x1B[K"; // clear end of line
 	size_t nClearLen = strlen(pClear);
 
-	size_t nParamLen = std::min (nLineMaxLen, strlen (pParam));
-	size_t nMenuLen = strlen (pMenu);
-	size_t nFill1Len = nLineMaxLen > nParamLen + nMenuLen ?
-		nLineMaxLen - nParamLen - nMenuLen : 1;
+	size_t nParamLen = std::min(nLineMaxLen, strlen(pParam));
+	size_t nMenuLen = strlen(pMenu);
+	size_t nFill1Len = nLineMaxLen > nParamLen + nMenuLen ? nLineMaxLen - nParamLen - nMenuLen : 1;
 
-	nFill1Len = std:: min (nLineMaxLen - nParamLen, nFill1Len);
-	nMenuLen = std::min (nLineMaxLen - nParamLen - nFill1Len, nMenuLen);
+	nFill1Len = std::min(nLineMaxLen - nParamLen, nFill1Len);
+	nMenuLen = std::min(nLineMaxLen - nParamLen - nFill1Len, nMenuLen);
 
 	size_t nLine1Len = nParamLen + nFill1Len + nMenuLen;
 
 	size_t nArrowsLen = 2;
-	size_t nValueLen = std::min (nLineMaxLen - nArrowsLen, strlen (pValue));
+	size_t nValueLen = std::min(nLineMaxLen - nArrowsLen, strlen(pValue));
 	size_t nFill2Len = bArrowUp ? nLineMaxLen - nArrowsLen - nValueLen : 0;
 	size_t nLine2Len = nValueLen + nFill2Len + nArrowsLen;
 
@@ -274,47 +300,47 @@ void CUserInterface::DisplayWrite (const char *pMenu, const char *pParam, const 
 
 	size_t nOffset = 0;
 
-	char pLines[nHdrLen + nLine1Len  + nLine2Len + nClearLen + 1];
+	char pLines[nHdrLen + nLine1Len + nLine2Len + nClearLen + 1];
 
-	memcpy (pLines, pHdr, nHdrLen);
+	memcpy(pLines, pHdr, nHdrLen);
 	nOffset += nHdrLen;
 
-	memcpy (pLines + nOffset, pParam, nParamLen);
+	memcpy(pLines + nOffset, pParam, nParamLen);
 	nOffset += nParamLen;
 
-	memset (pLines + nOffset, ' ', nFill1Len);
+	memset(pLines + nOffset, ' ', nFill1Len);
 	nOffset += nFill1Len;
 
-	memcpy (pLines + nOffset, pMenu, nMenuLen);
+	memcpy(pLines + nOffset, pMenu, nMenuLen);
 	nOffset += nMenuLen;
 
 	pLines[nOffset++] = bArrowDown ? '<' : ' ';
 
-	memcpy (pLines + nOffset, pValue, nValueLen);
+	memcpy(pLines + nOffset, pValue, nValueLen);
 	nOffset += nValueLen;
 
-	memset (pLines + nOffset, ' ', nFill2Len);
+	memset(pLines + nOffset, ' ', nFill2Len);
 	nOffset += nFill2Len;
 
 	pLines[nOffset++] = bArrowUp ? '>' : ' ';
 
-	memcpy (pLines + nOffset, pClear, nClearLen);
+	memcpy(pLines + nOffset, pClear, nClearLen);
 	nOffset += nClearLen;
 
 	pLines[nOffset++] = 0;
 
-	LCDWrite ((const char *)pLines);
+	LCDWrite(pLines);
 }
 
-void CUserInterface::LCDWrite (const char *pString)
+void CUserInterface::LCDWrite(const char *pString)
 {
 	if (m_pLCDBuffered)
 	{
-		m_pLCDBuffered->Write (pString, strlen (pString));
+		m_pLCDBuffered->Write(pString, strlen(pString));
 	}
 }
 
-void CUserInterface::EncoderEventHandler (CKY040::TEvent Event)
+void CUserInterface::EncoderEventHandler(CKY040::TEvent Event)
 {
 	switch (Event)
 	{
@@ -327,34 +353,37 @@ void CUserInterface::EncoderEventHandler (CKY040::TEvent Event)
 		break;
 
 	case CKY040::EventClockwise:
-		if (m_bSwitchPressed) {
+		if (m_bSwitchPressed)
+		{
 			// We must reset the encoder switch button to prevent events from being
 			// triggered after the encoder is rotated
 			m_pUIButtons->ResetButton(m_pConfig->GetButtonPinShortcut());
 			m_Menu.EventHandler(CUIMenu::MenuEventPressAndStepUp);
-
 		}
-		else {
+		else
+		{
 			m_Menu.EventHandler(CUIMenu::MenuEventStepUp);
 		}
 		break;
 
 	case CKY040::EventCounterclockwise:
-		if (m_bSwitchPressed) {
+		if (m_bSwitchPressed)
+		{
 			m_pUIButtons->ResetButton(m_pConfig->GetButtonPinShortcut());
 			m_Menu.EventHandler(CUIMenu::MenuEventPressAndStepDown);
 		}
-		else {
+		else
+		{
 			m_Menu.EventHandler(CUIMenu::MenuEventStepDown);
 		}
 		break;
 
 	case CKY040::EventSwitchHold:
-		if (m_pRotaryEncoder->GetHoldSeconds () >= 120)
+		if (m_pRotaryEncoder->GetHoldSeconds() >= 120)
 		{
-			delete m_pLCD;		// reset LCD
+			delete m_pLCD; // reset LCD
 
-			reboot ();
+			reboot();
 		}
 		break;
 
@@ -363,60 +392,60 @@ void CUserInterface::EncoderEventHandler (CKY040::TEvent Event)
 	}
 }
 
-void CUserInterface::EncoderEventStub (CKY040::TEvent Event, void *pParam)
+void CUserInterface::EncoderEventStub(CKY040::TEvent Event, void *pParam)
 {
-	CUserInterface *pThis = static_cast<CUserInterface *> (pParam);
-	assert (pThis != 0);
+	CUserInterface *pThis = static_cast<CUserInterface *>(pParam);
+	assert(pThis != 0);
 
-	pThis->EncoderEventHandler (Event);
+	pThis->EncoderEventHandler(Event);
 }
 
-void CUserInterface::UIButtonsEventHandler (CUIButton::BtnEvent Event)
+void CUserInterface::UIButtonsEventHandler(CUIButton::BtnEvent Event)
 {
 	switch (Event)
 	{
 	case CUIButton::BtnEventPrev:
-		m_Menu.EventHandler (CUIMenu::MenuEventStepDown);
+		m_Menu.EventHandler(CUIMenu::MenuEventStepDown);
 		break;
 
 	case CUIButton::BtnEventNext:
-		m_Menu.EventHandler (CUIMenu::MenuEventStepUp);
+		m_Menu.EventHandler(CUIMenu::MenuEventStepUp);
 		break;
 
 	case CUIButton::BtnEventBack:
-		m_Menu.EventHandler (CUIMenu::MenuEventBack);
+		m_Menu.EventHandler(CUIMenu::MenuEventBack);
 		break;
 
 	case CUIButton::BtnEventSelect:
-		m_Menu.EventHandler (CUIMenu::MenuEventSelect);
+		m_Menu.EventHandler(CUIMenu::MenuEventSelect);
 		break;
 
 	case CUIButton::BtnEventHome:
-		m_Menu.EventHandler (CUIMenu::MenuEventHome);
+		m_Menu.EventHandler(CUIMenu::MenuEventHome);
 		break;
 
 	case CUIButton::BtnEventPgmUp:
-		m_Menu.EventHandler (CUIMenu::MenuEventPgmUp);
+		m_Menu.EventHandler(CUIMenu::MenuEventPgmUp);
 		break;
 
 	case CUIButton::BtnEventPgmDown:
-		m_Menu.EventHandler (CUIMenu::MenuEventPgmDown);
+		m_Menu.EventHandler(CUIMenu::MenuEventPgmDown);
 		break;
 
 	case CUIButton::BtnEventBankUp:
-		m_Menu.EventHandler (CUIMenu::MenuEventBankUp);
+		m_Menu.EventHandler(CUIMenu::MenuEventBankUp);
 		break;
 
 	case CUIButton::BtnEventBankDown:
-		m_Menu.EventHandler (CUIMenu::MenuEventBankDown);
+		m_Menu.EventHandler(CUIMenu::MenuEventBankDown);
 		break;
 
 	case CUIButton::BtnEventTGUp:
-		m_Menu.EventHandler (CUIMenu::MenuEventTGUp);
+		m_Menu.EventHandler(CUIMenu::MenuEventTGUp);
 		break;
 
 	case CUIButton::BtnEventTGDown:
-		m_Menu.EventHandler (CUIMenu::MenuEventTGDown);
+		m_Menu.EventHandler(CUIMenu::MenuEventTGDown);
 		break;
 
 	default:
@@ -424,15 +453,15 @@ void CUserInterface::UIButtonsEventHandler (CUIButton::BtnEvent Event)
 	}
 }
 
-void CUserInterface::UIButtonsEventStub (CUIButton::BtnEvent Event, void *pParam)
+void CUserInterface::UIButtonsEventStub(CUIButton::BtnEvent Event, void *pParam)
 {
-	CUserInterface *pThis = static_cast<CUserInterface *> (pParam);
-	assert (pThis != 0);
+	CUserInterface *pThis = static_cast<CUserInterface *>(pParam);
+	assert(pThis != 0);
 
-	pThis->UIButtonsEventHandler (Event);
+	pThis->UIButtonsEventHandler(Event);
 }
 
-void CUserInterface::UIMIDICmdHandler (unsigned nMidiCh, unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2)
+void CUserInterface::UIMIDICmdHandler(int nMidiCh, uint8_t nMidiType, uint8_t nMidiData1, uint8_t nMidiData2)
 {
 	if (m_nMIDIButtonCh == CMIDIDevice::Disabled)
 	{
@@ -444,25 +473,25 @@ void CUserInterface::UIMIDICmdHandler (unsigned nMidiCh, unsigned nMidiType, uns
 		// Message not on the MIDI Button channel and MIDI buttons not in OMNI mode
 		return;
 	}
-	
+
 	if (m_pUIButtons)
 	{
-		m_pUIButtons->BtnMIDICmdHandler (nMidiType, nMidiData1, nMidiData2);
+		m_pUIButtons->BtnMIDICmdHandler(nMidiType, nMidiData1, nMidiData2);
 	}
 }
 
-void CUserInterface::UISetMIDIButtonChannel (unsigned uCh)
+void CUserInterface::UISetMIDIButtonChannel(int nCh)
 {
 	// Mirrors the logic in Performance Config for handling MIDI channel configuration
-	if (uCh == 0)
+	if (nCh == 0)
 	{
 		m_nMIDIButtonCh = CMIDIDevice::Disabled;
 		LOGNOTE("MIDI Button channel not set");
 	}
-	else if (uCh <= CMIDIDevice::Channels)
+	else if (nCh <= CMIDIDevice::Channels)
 	{
-		m_nMIDIButtonCh = uCh - 1;
-		LOGNOTE("MIDI Button channel set to: %d", m_nMIDIButtonCh+1);
+		m_nMIDIButtonCh = nCh - 1;
+		LOGNOTE("MIDI Button channel set to: %d", m_nMIDIButtonCh + 1);
 	}
 	else
 	{

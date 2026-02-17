@@ -19,55 +19,59 @@
 //
 #pragma once
 
+#include <cstdint>
 
-#include "config.h"
-#include "uimenu.h"
-#include "uibuttons.h"
-#include <sensor/ky040.h>
+#include <circle/gpiomanager.h>
+#include <circle/i2cmaster.h>
+#include <circle/spimaster.h>
+#include <circle/writebuffer.h>
+#include <display/chardevice.h>
 #include <display/hd44780device.h>
 #include <display/ssd1306device.h>
 #include <display/st7789device.h>
-#include <circle/gpiomanager.h>
-#include <circle/writebuffer.h>
-#include <circle/i2cmaster.h>
-#include <circle/spimaster.h>
+#include <display/st7789display.h>
+#include <sensor/ky040.h>
+
+#include "config.h"
+#include "uibuttons.h"
+#include "uimenu.h"
 
 class CMiniDexed;
 
 class CUserInterface
 {
 public:
-	CUserInterface (CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig);
-	~CUserInterface (void);
+	CUserInterface(CMiniDexed *pMiniDexed, CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, CConfig *pConfig);
+	~CUserInterface();
 
-	bool Initialize (void);
+	bool Initialize();
 
-	void LoadDefaultScreen ();
+	void LoadDefaultScreen();
 
-	void Process (void);
+	void Process();
 
-	void ParameterChanged (void);
-	void DisplayChanged (void);
+	void ParameterChanged();
+	void DisplayChanged();
 
 	// Write to display in this format:
 	// +----------------+
 	// |PARAM       MENU|
 	// |[<]VALUE     [>]|
 	// +----------------+
-	void DisplayWrite (const char *pMenu, const char *pParam, const char *pValue,
-			   bool bArrowDown, bool bArrowUp);
+	void DisplayWrite(const char *pMenu, const char *pParam, const char *pValue,
+			  bool bArrowDown, bool bArrowUp);
 
 	// To be called from the MIDI device on reception of a MIDI CC message
-	void UIMIDICmdHandler (unsigned nMidiCh, unsigned nMidiType, unsigned nMidiData1, unsigned nMidiData2);
+	void UIMIDICmdHandler(int nMidiCh, uint8_t nMidiType, uint8_t nMidiData1, uint8_t nMidiData2);
 
 private:
-	void LCDWrite (const char *pString);		// Print to optional HD44780 display
+	void LCDWrite(const char *pString); // Print to optional HD44780 display
 
-	void EncoderEventHandler (CKY040::TEvent Event);
-	static void EncoderEventStub (CKY040::TEvent Event, void *pParam);
-	void UIButtonsEventHandler (CUIButton::BtnEvent Event);
-	static void UIButtonsEventStub (CUIButton::BtnEvent Event, void *pParam);
-	void UISetMIDIButtonChannel (unsigned uCh);
+	void EncoderEventHandler(CKY040::TEvent Event);
+	static void EncoderEventStub(CKY040::TEvent Event, void *pParam);
+	void UIButtonsEventHandler(CUIButton::BtnEvent Event);
+	static void UIButtonsEventStub(CUIButton::BtnEvent Event, void *pParam);
+	void UISetMIDIButtonChannel(int nCh);
 
 private:
 	CMiniDexed *m_pMiniDexed;
@@ -76,16 +80,16 @@ private:
 	CSPIMaster *m_pSPIMaster;
 	CConfig *m_pConfig;
 
-	CCharDevice    *m_pLCD;
+	CCharDevice *m_pLCD;
 	CHD44780Device *m_pHD44780;
 	CSSD1306Device *m_pSSD1306;
 	CST7789Display *m_pST7789Display;
-	CST7789Device  *m_pST7789;
+	CST7789Device *m_pST7789;
 	CWriteBufferDevice *m_pLCDBuffered;
-	
+
 	CUIButtons *m_pUIButtons;
 
-	unsigned m_nMIDIButtonCh;
+	int m_nMIDIButtonCh;
 
 	CKY040 *m_pRotaryEncoder;
 	bool m_bSwitchPressed;
