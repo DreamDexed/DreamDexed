@@ -176,10 +176,8 @@ public:
 	std::string GetPerformanceName(int nID);
 	int GetLastPerformance();
 	int GetLastPerformanceBank();
-	void SetActualPerformanceID(int nID);
-	int GetActualPerformanceID();
-	void SetActualPerformanceBankID(int nBankID);
-	int GetActualPerformanceBankID();
+	void SetPerformanceID(int nID);
+	int GetPerformanceID();
 	bool CreateNewPerformanceFile();
 	bool GetInternalFolderOk();
 	std::string GetNewPerformanceDefaultName();
@@ -191,7 +189,7 @@ public:
 
 	bool ListPerformanceBanks();
 	void SetNewPerformanceBank(int nBankID);
-	int GetPerformanceBank();
+	int GetPerformanceBankID();
 	std::string GetPerformanceBankName(int nBankID);
 	bool IsValidPerformanceBank(int nBankID);
 
@@ -254,13 +252,11 @@ private:
 	int m_nEQPreLowcut[CConfig::AllToneGenerators];
 	int m_nEQPreHighcut[CConfig::AllToneGenerators];
 
-	int m_nLastPerformance;
-	int m_nActualPerformance = 0;
-	int m_nActualPerformanceBank = 0;
+	int m_nPerformance;
 	int m_nPerformanceBank;
+	int m_nLastPerformance;
 	int m_nLastPerformanceBank;
 	bool m_bPerformanceDirectoryExists;
-	// int nMenuSelectedPerformance = 0;
 	std::string m_PerformanceFileName[NUM_PERFORMANCES];
 	std::string m_PerformanceBankName[NUM_PERFORMANCE_BANKS];
 	FATFS *m_pFileSystem;

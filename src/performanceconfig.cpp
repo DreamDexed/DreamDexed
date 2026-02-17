@@ -1342,26 +1342,9 @@ int CPerformanceConfig::GetLastPerformanceBank()
 	return m_nLastPerformanceBank;
 }
 
-int CPerformanceConfig::GetActualPerformanceID()
+int CPerformanceConfig::GetPerformanceID()
 {
-	return m_nActualPerformance;
-}
-
-void CPerformanceConfig::SetActualPerformanceID(int nID)
-{
-	assert(nID < NUM_PERFORMANCES);
-	m_nActualPerformance = nID;
-}
-
-int CPerformanceConfig::GetActualPerformanceBankID()
-{
-	return m_nActualPerformanceBank;
-}
-
-void CPerformanceConfig::SetActualPerformanceBankID(int nBankID)
-{
-	assert(nBankID < NUM_PERFORMANCE_BANKS);
-	m_nActualPerformanceBank = nBankID;
+	return m_nPerformance;
 }
 
 bool CPerformanceConfig::GetInternalFolderOk()
@@ -1464,7 +1447,7 @@ bool CPerformanceConfig::CreateNewPerformanceFile()
 	}
 
 	m_nLastPerformance = nNewPerformance;
-	m_nActualPerformance = nNewPerformance;
+	m_nPerformance = nNewPerformance;
 	new (&m_Properties) CPropertiesFatFsFile(nFileName.c_str(), m_pFileSystem);
 
 	return true;
@@ -1564,7 +1547,7 @@ bool CPerformanceConfig::ListPerformances()
 void CPerformanceConfig::SetNewPerformance(int nID)
 {
 	assert(nID < NUM_PERFORMANCES);
-	m_nActualPerformance = nID;
+	m_nPerformance = nID;
 	std::string FileN = GetPerformanceFullFilePath(nID);
 
 	new (&m_Properties) CPropertiesFatFsFile(FileN.c_str(), m_pFileSystem);
@@ -1623,7 +1606,7 @@ bool CPerformanceConfig::DeletePerformance(int nID)
 		if (Result == FR_OK)
 		{
 			SetNewPerformance(0);
-			m_nActualPerformance = 0;
+			m_nPerformance = 0;
 			// nMenuSelectedPerformance=0;
 			m_PerformanceFileName[nID].clear();
 			// If this was the last performance in the bank...
@@ -1748,7 +1731,6 @@ void CPerformanceConfig::SetNewPerformanceBank(int nBankID)
 		LOGNOTE("Selecting Performance Bank: %d", nBankID + 1);
 #endif
 		m_nPerformanceBank = nBankID;
-		m_nActualPerformanceBank = nBankID;
 		ListPerformances();
 	}
 	else
@@ -1759,7 +1741,7 @@ void CPerformanceConfig::SetNewPerformanceBank(int nBankID)
 	}
 }
 
-int CPerformanceConfig::GetPerformanceBank()
+int CPerformanceConfig::GetPerformanceBankID()
 {
 	return m_nPerformanceBank;
 }
