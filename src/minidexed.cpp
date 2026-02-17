@@ -516,7 +516,7 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 	if (m_bSetNewPerformanceBank && !m_bLoadPerformanceBusy && !m_bLoadPerformanceBankBusy)
 	{
 		DoSetNewPerformanceBank();
-		if (m_nSetNewPerformanceBankID == GetActualPerformanceBankID())
+		if (m_nSetNewPerformanceBankID == m_PerformanceConfig.GetPerformanceBankID())
 		{
 			m_bSetNewPerformanceBank = false;
 		}
@@ -3112,7 +3112,7 @@ int CMiniDexed::GetLastPerformance()
 
 int CMiniDexed::GetPerformanceBank()
 {
-	return m_PerformanceConfig.GetPerformanceBank();
+	return m_PerformanceConfig.GetPerformanceBankID();
 }
 
 int CMiniDexed::GetLastPerformanceBank()
@@ -3122,22 +3122,7 @@ int CMiniDexed::GetLastPerformanceBank()
 
 int CMiniDexed::GetActualPerformanceID()
 {
-	return m_PerformanceConfig.GetActualPerformanceID();
-}
-
-void CMiniDexed::SetActualPerformanceID(int nID)
-{
-	m_PerformanceConfig.SetActualPerformanceID(nID);
-}
-
-int CMiniDexed::GetActualPerformanceBankID()
-{
-	return m_PerformanceConfig.GetActualPerformanceBankID();
-}
-
-void CMiniDexed::SetActualPerformanceBankID(int nBankID)
-{
-	m_PerformanceConfig.SetActualPerformanceBankID(nBankID);
+	return m_PerformanceConfig.GetPerformanceID();
 }
 
 bool CMiniDexed::SetNewPerformance(int nID)

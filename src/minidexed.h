@@ -175,9 +175,6 @@ public:
 	int GetPerformanceBank();
 	int GetLastPerformanceBank();
 	int GetActualPerformanceID();
-	void SetActualPerformanceID(int nID);
-	int GetActualPerformanceBankID();
-	void SetActualPerformanceBankID(int nBankID);
 	bool SetNewPerformance(int nID);
 	bool SetNewPerformanceBank(int nBankID);
 	void SetFirstPerformance();
