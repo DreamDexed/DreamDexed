@@ -225,13 +225,9 @@ bool ParseSyncPacket(const uint8_t *pBuffer, int nSize, TAppleMIDISync *pOutPack
 uint8_t ParseMIDIDeltaTime(const uint8_t *pBuffer)
 {
 	uint8_t nLength = 0;
-	uint32_t nDeltaTime = 0;
 
 	while (nLength < 4)
 	{
-		nDeltaTime <<= 7;
-		nDeltaTime |= pBuffer[nLength] & 0x7F;
-
 		// Upper bit not set; end of timestamp
 		if ((pBuffer[nLength++] & (1 << 7)) == 0)
 			break;
