@@ -22,20 +22,23 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <circle/net/ipaddress.h>
 #include <circle/net/socket.h>
+#include <circle/netdevice.h>
 #include <circle/sched/task.h>
 
 class CUDPMIDIHandler
 {
 public:
-	virtual void OnUDPMIDIDataReceived(const u8* pData, size_t nSize) = 0;
+	virtual void OnUDPMIDIDataReceived(const uint8_t *pData, int nSize) = 0;
 };
 
 class CUDPMIDIReceiver : protected CTask
 {
 public:
-	CUDPMIDIReceiver(CUDPMIDIHandler* pHandler);
+	CUDPMIDIReceiver(CUDPMIDIHandler *pHandler);
 	virtual ~CUDPMIDIReceiver() override;
 
 	bool Initialize();
@@ -44,11 +47,11 @@ public:
 
 private:
 	// UDP sockets
-	CSocket* m_pMIDISocket;
+	CSocket *m_pMIDISocket;
 
 	// Socket receive buffer
-	u8 m_MIDIBuffer[FRAME_BUFFER_SIZE];
+	uint8_t m_MIDIBuffer[FRAME_BUFFER_SIZE];
 
 	// Callback handler
-	CUDPMIDIHandler* m_pHandler;
+	CUDPMIDIHandler *m_pHandler;
 };

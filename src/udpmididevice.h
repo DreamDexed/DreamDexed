@@ -45,10 +45,10 @@ public:
 	~CUDPMIDIDevice();
 
 	bool Initialize();
-	virtual void OnAppleMIDIDataReceived(const uint8_t *pData, size_t nSize) override;
+	virtual void OnAppleMIDIDataReceived(const uint8_t *pData, int nSize) override;
 	virtual void OnAppleMIDIConnect(const CIPAddress *pIPAddress, const char *pName) override;
 	virtual void OnAppleMIDIDisconnect(const CIPAddress *pIPAddress, const char *pName) override;
-	virtual void OnUDPMIDIDataReceived(const uint8_t *pData, size_t nSize) override;
+	virtual void OnUDPMIDIDataReceived(const uint8_t *pData, int nSize) override;
 	virtual void Send(const uint8_t *pMessage, int nLength, int nCable = 0) override;
 
 private:

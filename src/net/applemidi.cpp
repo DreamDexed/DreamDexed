@@ -20,16 +20,29 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include "applemidi.h"
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+
+#include <circle/bcmrandom.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/net/in.h>
+#include <circle/net/ipaddress.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
 #include <circle/sched/scheduler.h>
+#include <circle/sched/task.h>
+#include <circle/string.h>
+#include <circle/sysconfig.h>
 #include <circle/timer.h>
 #include <circle/util.h>
 
-#include "applemidi.h"
 #include "byteorder.h"
+#include "utility.h"
 
 #define MAX_DX7_SYSEX_LENGTH 4104
 #define MAX_MIDI_MESSAGE MAX_DX7_SYSEX_LENGTH
@@ -38,14 +51,14 @@
 
 LOGMODULE("applemidi");
 
-constexpr u16 ControlPort = 5004;
-constexpr u16 MIDIPort    = ControlPort + 1;
+constexpr uint16_t ControlPort = 5004;
+constexpr uint16_t MIDIPort = ControlPort + 1;
 
-constexpr u16 AppleMIDISignature = 0xFFFF;
-constexpr u8 AppleMIDIVersion    = 2;
+constexpr uint16_t AppleMIDISignature = 0xFFFF;
+constexpr uint8_t AppleMIDIVersion = 2;
 
-constexpr u8 RTPMIDIPayloadType = 0x61;
-constexpr u8 RTPMIDIVersion     = 2;
+constexpr uint8_t RTPMIDIPayloadType = 0x61;
+constexpr uint8_t RTPMIDIVersion = 2;
 
 // Arbitrary value
 constexpr size_t MaxNameLength = 256;
@@ -59,86 +72,85 @@ constexpr unsigned int SyncTimeout = 60 * 10000;
 // Receiver feedback packet frequency (1 second in 100 microsecond units)
 constexpr unsigned int ReceiverFeedbackPeriod = 1 * 10000;
 
-constexpr u16 CommandWord(const char Command[2]) { return Command[0] << 8 | Command[1]; }
-
-enum TAppleMIDICommand : u16
+constexpr uint16_t CommandWord(const char Command[2])
 {
-	Invitation         = CommandWord("IN"),
+	return static_cast<uint16_t>(Command[0] << 8 | Command[1]);
+}
+
+enum TAppleMIDICommand : uint16_t
+{
+	Invitation = CommandWord("IN"),
 	InvitationAccepted = CommandWord("OK"),
 	InvitationRejected = CommandWord("NO"),
-	Sync               = CommandWord("CK"),
-	ReceiverFeedback   = CommandWord("RS"),
-	EndSession         = CommandWord("BY"),
+	Sync = CommandWord("CK"),
+	ReceiverFeedback = CommandWord("RS"),
+	EndSession = CommandWord("BY"),
 };
 
 struct TAppleMIDISession
 {
-	u16 nSignature;
-	u16 nCommand;
-	u32 nVersion;
-	u32 nInitiatorToken;
-	u32 nSSRC;
+	uint16_t nSignature;
+	uint16_t nCommand;
+	uint32_t nVersion;
+	uint32_t nInitiatorToken;
+	uint32_t nSSRC;
 	char Name[MaxNameLength];
-}
-PACKED;
+} PACKED;
 
 // The Name field is optional
-constexpr size_t NamelessSessionPacketSize = sizeof(TAppleMIDISession) - sizeof(TAppleMIDISession::Name);
+constexpr int NamelessSessionPacketSize = sizeof(TAppleMIDISession) - sizeof(TAppleMIDISession::Name);
 
 struct TAppleMIDISync
 {
-	u16 nSignature;
-	u16 nCommand;
-	u32 nSSRC;
-	u8 nCount;
-	u8 Padding[3];
-	u64 Timestamps[3];
-}
-PACKED;
+	uint16_t nSignature;
+	uint16_t nCommand;
+	uint32_t nSSRC;
+	uint8_t nCount;
+	uint8_t Padding[3];
+	uint64_t Timestamps[3];
+} PACKED;
 
 struct TAppleMIDIReceiverFeedback
 {
-	u16 nSignature;
-	u16 nCommand;
-	u32 nSSRC;
-	u32 nSequence;
-}
-PACKED;
+	uint16_t nSignature;
+	uint16_t nCommand;
+	uint32_t nSSRC;
+	uint32_t nSequence;
+} PACKED;
 
 struct TRTPMIDI
 {
-	u16 nFlags;
-	u16 nSequence;
-	u32 nTimestamp;
-	u32 nSSRC;
-}
-PACKED;
+	uint16_t nFlags;
+	uint16_t nSequence;
+	uint32_t nTimestamp;
+	uint32_t nSSRC;
+} PACKED;
 
-u64 GetSyncClock()
+uint64_t GetSyncClock()
 {
-	static const u64 nStartTime = CTimer::GetClockTicks();
-	const u64 nMicrosSinceEpoch = CTimer::GetClockTicks();
+	static const uint64_t nStartTime = CTimer::GetClockTicks();
+	const uint64_t nMicrosSinceEpoch = CTimer::GetClockTicks();
 
 	// Units of 100 microseconds
-	return (nMicrosSinceEpoch - nStartTime ) / 100;
+	return (nMicrosSinceEpoch - nStartTime) / 100;
 }
 
-bool ParseInvitationPacket(const u8* pBuffer, size_t nSize, TAppleMIDISession* pOutPacket)
+bool ParseInvitationPacket(const uint8_t *pBuffer, int nSize, TAppleMIDISession *pOutPacket)
 {
-	const TAppleMIDISession* const pInPacket = reinterpret_cast<const TAppleMIDISession*>(pBuffer);
+	const TAppleMIDISession *const pInPacket = reinterpret_cast<const TAppleMIDISession *>(pBuffer);
 
 	if (nSize < NamelessSessionPacketSize)
 		return false;
 
-	const u16 nSignature = ntohs(pInPacket->nSignature);
+	const uint16_t nSignature = ntohs(pInPacket->nSignature);
 	if (nSignature != AppleMIDISignature)
 		return false;
 
-	const u16 nCommand = ntohs(pInPacket->nCommand);
+	const uint16_t nCommand = ntohs(pInPacket->nCommand);
 	if (nCommand != Invitation)
 		return false;
 
-	const u32 nVersion = ntohl(pInPacket->nVersion);
+	const uint32_t nVersion = ntohl(pInPacket->nVersion);
 	if (nVersion != AppleMIDIVersion)
 		return false;
 
@@ -156,22 +168,22 @@ bool ParseInvitationPacket(const u8* pBuffer, size_t nSize, TAppleMIDISession* p
 	return true;
 }
 
-bool ParseEndSessionPacket(const u8* pBuffer, size_t nSize, TAppleMIDISession* pOutPacket)
+bool ParseEndSessionPacket(const uint8_t *pBuffer, int nSize, TAppleMIDISession *pOutPacket)
 {
-	const TAppleMIDISession* const pInPacket = reinterpret_cast<const TAppleMIDISession*>(pBuffer);
+	const TAppleMIDISession *const pInPacket = reinterpret_cast<const TAppleMIDISession *>(pBuffer);
 
 	if (nSize < NamelessSessionPacketSize)
 		return false;
 
-	const u16 nSignature = ntohs(pInPacket->nSignature);
+	const uint16_t nSignature = ntohs(pInPacket->nSignature);
 	if (nSignature != AppleMIDISignature)
 		return false;
 
-	const u16 nCommand = ntohs(pInPacket->nCommand);
+	const uint16_t nCommand = ntohs(pInPacket->nCommand);
 	if (nCommand != EndSession)
 		return false;
 
-	const u32 nVersion = ntohl(pInPacket->nVersion);
+	const uint32_t nVersion = ntohl(pInPacket->nVersion);
 	if (nVersion != AppleMIDIVersion)
 		return false;
 
@@ -184,18 +196,18 @@ bool ParseEndSessionPacket(const u8* pBuffer, size_t nSize, TAppleMIDISession* p
 	return true;
 }
 
-bool ParseSyncPacket(const u8* pBuffer, size_t nSize, TAppleMIDISync* pOutPacket)
+bool ParseSyncPacket(const uint8_t *pBuffer, int nSize, TAppleMIDISync *pOutPacket)
 {
-	const TAppleMIDISync* const pInPacket = reinterpret_cast<const TAppleMIDISync*>(pBuffer);
+	const TAppleMIDISync *const pInPacket = reinterpret_cast<const TAppleMIDISync *>(pBuffer);
 
-	if (nSize < sizeof(TAppleMIDISync))
+	if (nSize < ssizeof(TAppleMIDISync))
 		return false;
 
-	const u32 nSignature = ntohs(pInPacket->nSignature);
+	const uint16_t nSignature = ntohs(pInPacket->nSignature);
 	if (nSignature != AppleMIDISignature)
 		return false;
 
-	const u32 nCommand = ntohs(pInPacket->nCommand);
+	const uint16_t nCommand = ntohs(pInPacket->nCommand);
 	if (nCommand != Sync)
 		return false;
 
@@ -210,10 +222,10 @@ bool ParseSyncPacket(const u8* pBuffer, size_t nSize, TAppleMIDISync* pOutPacket
 	return true;
 }
 
-u8 ParseMIDIDeltaTime(const u8* pBuffer)
+uint8_t ParseMIDIDeltaTime(const uint8_t *pBuffer)
 {
-	u8 nLength = 0;
-	u32 nDeltaTime = 0;
+	uint8_t nLength = 0;
+	uint32_t nDeltaTime = 0;
 
 	while (nLength < 4)
 	{
@@ -228,16 +240,16 @@ u8 ParseMIDIDeltaTime(const u8* pBuffer)
 	return nLength;
 }
 
-size_t ParseSysExCommand(const u8* pBuffer, size_t nSize, CAppleMIDIHandler* pHandler)
+int ParseSysExCommand(const uint8_t *pBuffer, int nSize, CAppleMIDIHandler *pHandler)
 {
-	size_t nBytesParsed = 1;
-	const u8 nHead = pBuffer[0];
-	u8 nTail = 0;
+	int nBytesParsed = 1;
+	const uint8_t nHead = pBuffer[0];
+	uint8_t nTail = 0;
 
 	while (nBytesParsed < nSize && !(nTail == 0xF0 || nTail == 0xF7 || nTail == 0xF4))
 		nTail = pBuffer[nBytesParsed++];
 
-	size_t nReceiveLength = nBytesParsed;
+	int nReceiveLength = nBytesParsed;
 
 	// First segmented SysEx packet
 	if (nHead == 0xF0 && nTail == 0xF0)
@@ -289,10 +301,10 @@ size_t ParseSysExCommand(const u8* pBuffer, size_t nSize, CAppleMIDIHandler* pHa
 	return nBytesParsed;
 }
 
-size_t ParseMIDICommand(const u8* pBuffer, size_t nSize, u8& nRunningStatus, CAppleMIDIHandler* pHandler)
+int ParseMIDICommand(const uint8_t *pBuffer, int nSize, uint8_t &nRunningStatus, CAppleMIDIHandler *pHandler)
 {
-	size_t nBytesParsed = 0;
-	u8 nByte = pBuffer[0];
+	int nBytesParsed = 0;
+	uint8_t nByte = pBuffer[0];
 
 	// System Real-Time message - single byte, handle immediately
 	// Can appear anywhere in the stream, even in between status/data bytes
@@ -332,18 +344,18 @@ size_t ParseMIDICommand(const u8* pBuffer, size_t nSize, u8& nRunningStatus, CAp
 		// How many data bytes?
 		switch (nByte & 0xF0)
 		{
-			case 0x80:				// Note off
-			case 0x90:				// Note on
-			case 0xA0:				// Polyphonic key pressure/aftertouch
-			case 0xB0:				// Control change
-			case 0xE0:				// Pitch bend
-				nBytesParsed += 2;
-				break;
+		case 0x80: // Note off
+		case 0x90: // Note on
+		case 0xA0: // Polyphonic key pressure/aftertouch
+		case 0xB0: // Control change
+		case 0xE0: // Pitch bend
+			nBytesParsed += 2;
+			break;
 
-			case 0xC0:				// Program change
-			case 0xD0:				// Channel pressure/aftertouch
-				nBytesParsed += 1;
-				break;
+		case 0xC0: // Program change
+		case 0xD0: // Channel pressure/aftertouch
+			nBytesParsed += 1;
+			break;
 		}
 
 		// Handle command
@@ -354,39 +366,39 @@ size_t ParseMIDICommand(const u8* pBuffer, size_t nSize, u8& nRunningStatus, CAp
 	// System common commands
 	switch (nByte)
 	{
-		case 0xF0:					// Start of System Exclusive
-		case 0xF7:					// End of Exclusive
-			return ParseSysExCommand(pBuffer, nSize, pHandler);
+	case 0xF0: // Start of System Exclusive
+	case 0xF7: // End of Exclusive
+		return ParseSysExCommand(pBuffer, nSize, pHandler);
 
-		case 0xF1:					// MIDI Time Code Quarter Frame
-		case 0xF3:					// Song Select
-			++nBytesParsed;
-			break;
+	case 0xF1: // MIDI Time Code Quarter Frame
+	case 0xF3: // Song Select
+		++nBytesParsed;
+		break;
 
-		case 0xF2:					// Song Position Pointer
-			nBytesParsed += 2;
-			break;
+	case 0xF2: // Song Position Pointer
+		nBytesParsed += 2;
+		break;
 	}
 
 	pHandler->OnAppleMIDIDataReceived(pBuffer, nBytesParsed);
 	return nBytesParsed;
 }
 
-bool ParseMIDICommandSection(const u8* pBuffer, size_t nSize, CAppleMIDIHandler* pHandler)
+bool ParseMIDICommandSection(const uint8_t *pBuffer, int nSize, CAppleMIDIHandler *pHandler)
 {
 	// Must have at least a header byte and a single status byte
 	if (nSize < 2)
 		return false;
 
-	size_t nMIDICommandsProcessed = 0;
-	size_t nBytesRemaining = nSize - 1;
-	u8 nRunningStatus = 0;
+	int nMIDICommandsProcessed = 0;
+	int nBytesRemaining = nSize - 1;
+	uint8_t nRunningStatus = 0;
 
-	const u8 nMIDIHeader = pBuffer[0];
-	const u8* pMIDICommands = pBuffer + 1;
+	const uint8_t nMIDIHeader = pBuffer[0];
+	const uint8_t *pMIDICommands = pBuffer + 1;
 
 	// Lower 4 bits of the header is length
-	u16 nMIDICommandLength = nMIDIHeader & 0x0F;
+	int nMIDICommandLength = nMIDIHeader & 0x0F;
 
 	// If B flag is set, length value is 12 bits
 	if (nMIDIHeader & (1 << 7))
@@ -409,14 +421,14 @@ bool ParseMIDICommandSection(const u8* pBuffer, size_t nSize, CAppleMIDIHandler*
 		// If Z flag is set, first list entry is a delta time
 		if (nMIDICommandsProcessed || nMIDIHeader & (1 << 5))
 		{
-			const u8 nBytesParsed = ParseMIDIDeltaTime(pMIDICommands);
+			const uint8_t nBytesParsed = ParseMIDIDeltaTime(pMIDICommands);
 			nMIDICommandLength -= nBytesParsed;
 			pMIDICommands += nBytesParsed;
 		}
 
 		if (nMIDICommandLength)
 		{
-			const size_t nBytesParsed = ParseMIDICommand(pMIDICommands, nMIDICommandLength, nRunningStatus, pHandler);
+			const int nBytesParsed = ParseMIDICommand(pMIDICommands, nMIDICommandLength, nRunningStatus, pHandler);
 			nMIDICommandLength -= nBytesParsed;
 			pMIDICommands += nBytesParsed;
 			++nMIDICommandsProcessed;
@@ -426,15 +438,15 @@ bool ParseMIDICommandSection(const u8* pBuffer, size_t nSize, CAppleMIDIHandler*
 	return true;
 }
 
-bool ParseMIDIPacket(const u8* pBuffer, size_t nSize, TRTPMIDI* pOutPacket, CAppleMIDIHandler* pHandler)
+bool ParseMIDIPacket(const uint8_t *pBuffer, int nSize, TRTPMIDI *pOutPacket, CAppleMIDIHandler *pHandler)
 {
 	assert(pHandler != nullptr);
 
-	const TRTPMIDI* const pInPacket = reinterpret_cast<const TRTPMIDI*>(pBuffer);
-	const u16 nRTPFlags = ntohs(pInPacket->nFlags);
+	const TRTPMIDI *const pInPacket = reinterpret_cast<const TRTPMIDI *>(pBuffer);
+	const uint16_t nRTPFlags = ntohs(pInPacket->nFlags);
 
 	// Check size (RTP-MIDI header plus MIDI command section header)
-	if (nSize < sizeof(TRTPMIDI) + 1)
+	if (nSize < ssizeof(TRTPMIDI) + 1)
 		return false;
 
 	// Check version
@@ -455,46 +467,46 @@ bool ParseMIDIPacket(const u8* pBuffer, size_t nSize, TRTPMIDI* pOutPacket, CApp
 	pOutPacket->nSSRC = ntohl(pInPacket->nSSRC);
 
 	// RTP-MIDI variable-length header
-	const u8* const pMIDICommandSection = pBuffer + sizeof(TRTPMIDI);
-	size_t nRemaining = nSize - sizeof(TRTPMIDI);
+	const uint8_t *const pMIDICommandSection = pBuffer + sizeof(TRTPMIDI);
+	int nRemaining = nSize - ssizeof(TRTPMIDI);
 	return ParseMIDICommandSection(pMIDICommandSection, nRemaining, pHandler);
 }
 
-CAppleMIDIParticipant::CAppleMIDIParticipant(CBcmRandomNumberGenerator* pRandom, CAppleMIDIHandler* pHandler, const char* pSessionName)
-	: CTask(TASK_STACK_SIZE, true),
+CAppleMIDIParticipant::CAppleMIDIParticipant(CBcmRandomNumberGenerator *pRandom, CAppleMIDIHandler *pHandler, const char *pSessionName) :
+CTask{TASK_STACK_SIZE, true},
 
-	  m_pRandom(pRandom),
+m_pRandom{pRandom},
 
-	  m_pControlSocket(nullptr),
-	  m_pMIDISocket(nullptr),
+m_pControlSocket{},
+m_pMIDISocket{},
 
-	  m_nForeignControlPort(0),
-	  m_nForeignMIDIPort(0),
-	  m_nInitiatorControlPort(0),
-	  m_nInitiatorMIDIPort(0),
-	  m_ControlBuffer{0},
-	  m_MIDIBuffer{0},
+m_nForeignControlPort{},
+m_nForeignMIDIPort{},
+m_nInitiatorControlPort{},
+m_nInitiatorMIDIPort{},
+m_ControlBuffer{},
+m_MIDIBuffer{},
 
-	  m_nControlResult(0),
-	  m_nMIDIResult(0),
+m_nControlResult{},
+m_nMIDIResult{},
 
-	  m_pHandler(pHandler),
+m_pHandler{pHandler},
 
-	  m_State(TState::ControlInvitation),
+m_State{TState::ControlInvitation},
 
-	  m_nInitiatorToken(0),
-	  m_nInitiatorSSRC(0),
-	  m_nSSRC(0),
-	  m_nLastMIDISequenceNumber(0),
+m_nInitiatorToken{},
+m_nInitiatorSSRC{},
+m_nSSRC{},
+m_nLastMIDISequenceNumber{},
 
-	  m_nOffsetEstimate(0),
-	  m_nLastSyncTime(0),
+m_nOffsetEstimate{},
+m_nLastSyncTime{},
 
-	  m_nSequence(0),
-	  m_nLastFeedbackSequence(0),
-	  m_nLastFeedbackTime(0),
+m_nSequence{},
+m_nLastFeedbackSequence{},
+m_nLastFeedbackTime{},
 
-      m_pSessionName(pSessionName)
+m_pSessionName{pSessionName}
 {
 }
 
@@ -512,7 +524,7 @@ bool CAppleMIDIParticipant::Initialize()
 	assert(m_pControlSocket == nullptr);
 	assert(m_pMIDISocket == nullptr);
 
-	CNetSubSystem* const pNet = CNetSubSystem::Get();
+	CNetSubSystem *const pNet = CNetSubSystem::Get();
 
 	if ((m_pControlSocket = new CSocket(pNet, IPPROTO_UDP)) == nullptr)
 		return false;
@@ -543,7 +555,7 @@ void CAppleMIDIParticipant::Run()
 	assert(m_pControlSocket != nullptr);
 	assert(m_pMIDISocket != nullptr);
 
-	CScheduler* const pScheduler = CScheduler::Get();
+	CScheduler *const pScheduler = CScheduler::Get();
 
 	while (true)
 	{
@@ -649,7 +661,7 @@ void CAppleMIDIParticipant::MIDIInvitationState()
 		{
 			CString IPAddressString;
 			m_InitiatorIPAddress.Format(&IPAddressString);
-			LOGNOTE("Connection to %s (%s) established", SessionPacket.Name, static_cast<const char*>(IPAddressString));
+			LOGNOTE("Connection to %s (%s) established", SessionPacket.Name, static_cast<const char *>(IPAddressString));
 			m_nLastSyncTime = GetSyncClock();
 			m_State = TState::Connected;
 			m_pHandler->OnAppleMIDIConnect(&m_InitiatorIPAddress, SessionPacket.Name);
@@ -684,8 +696,8 @@ void CAppleMIDIParticipant::ConnectedState()
 #endif
 
 			if (m_ForeignControlIPAddress == m_InitiatorIPAddress &&
-				m_nForeignControlPort == m_nInitiatorControlPort &&
-				SessionPacket.nSSRC == m_nInitiatorSSRC)
+			    m_nForeignControlPort == m_nInitiatorControlPort &&
+			    SessionPacket.nSSRC == m_nInitiatorSSRC)
 			{
 				LOGNOTE("Initiator ended session");
 				m_pHandler->OnAppleMIDIDisconnect(&m_InitiatorIPAddress, SessionPacket.Name);
@@ -736,7 +748,7 @@ void CAppleMIDIParticipant::ConnectedState()
 		}
 	}
 
-	const u64 nTicks = GetSyncClock();
+	const uint64_t nTicks = GetSyncClock();
 
 	if ((nTicks - m_nLastFeedbackTime) > ReceiverFeedbackPeriod)
 	{
@@ -772,9 +784,9 @@ void CAppleMIDIParticipant::Reset()
 	m_nLastFeedbackTime = 0;
 }
 
-bool CAppleMIDIParticipant::SendPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort, const void* pData, size_t nSize)
+bool CAppleMIDIParticipant::SendPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort, const void *pData, int nSize)
 {
-	const int nResult = pSocket->SendTo(pData, nSize, MSG_DONTWAIT, *pIPAddress, nPort);
+	const int nResult = pSocket->SendTo(pData, static_cast<unsigned>(nSize), MSG_DONTWAIT, *pIPAddress, nPort);
 
 	if (nResult < 0)
 	{
@@ -782,7 +794,7 @@ bool CAppleMIDIParticipant::SendPacket(CSocket* pSocket, CIPAddress* pIPAddress,
 		return false;
 	}
 
-	if (static_cast<size_t>(nResult) != nSize)
+	if (nResult != nSize)
 	{
 		LOGERR("Send failure, only %d/%d bytes sent", nResult, nSize);
 		return false;
@@ -795,7 +807,7 @@ bool CAppleMIDIParticipant::SendPacket(CSocket* pSocket, CIPAddress* pIPAddress,
 	return true;
 }
 
-bool CAppleMIDIParticipant::SendAcceptInvitationPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort)
+bool CAppleMIDIParticipant::SendAcceptInvitationPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort)
 {
 	TAppleMIDISession AcceptPacket =
 	{
@@ -804,7 +816,7 @@ bool CAppleMIDIParticipant::SendAcceptInvitationPacket(CSocket* pSocket, CIPAddr
 		htonl(AppleMIDIVersion),
 		htonl(m_nInitiatorToken),
 		htonl(m_nSSRC),
-		{'\0'}
+		{'\0'},
 	};
 
 	// Use hostname as the session name
@@ -819,11 +831,11 @@ bool CAppleMIDIParticipant::SendAcceptInvitationPacket(CSocket* pSocket, CIPAddr
 	LOGNOTE("--> Accept invitation");
 #endif
 
-	const size_t nSendSize = NamelessSessionPacketSize + strlen(AcceptPacket.Name) + 1;
+	const int nSendSize = NamelessSessionPacketSize + sstrlen(AcceptPacket.Name) + 1;
 	return SendPacket(pSocket, pIPAddress, nPort, &AcceptPacket, nSendSize);
 }
 
-bool CAppleMIDIParticipant::SendRejectInvitationPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort, u32 nInitiatorToken)
+bool CAppleMIDIParticipant::SendRejectInvitationPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort, uint32_t nInitiatorToken)
 {
 	TAppleMIDISession RejectPacket =
 	{
@@ -832,7 +844,7 @@ bool CAppleMIDIParticipant::SendRejectInvitationPacket(CSocket* pSocket, CIPAddr
 		htonl(AppleMIDIVersion),
 		htonl(nInitiatorToken),
 		htonl(m_nSSRC),
-		{'\0'}
+		{'\0'},
 	};
 
 #ifdef APPLEMIDI_DEBUG
@@ -843,7 +855,7 @@ bool CAppleMIDIParticipant::SendRejectInvitationPacket(CSocket* pSocket, CIPAddr
 	return SendPacket(pSocket, pIPAddress, nPort, &RejectPacket, NamelessSessionPacketSize);
 }
 
-bool CAppleMIDIParticipant::SendSyncPacket(u64 nTimestamp1, u64 nTimestamp2)
+bool CAppleMIDIParticipant::SendSyncPacket(uint64_t nTimestamp1, uint64_t nTimestamp2)
 {
 	const TAppleMIDISync SyncPacket =
 	{
@@ -855,8 +867,8 @@ bool CAppleMIDIParticipant::SendSyncPacket(u64 nTimestamp1, u64 nTimestamp2)
 		{
 			htonll(nTimestamp1),
 			htonll(nTimestamp2),
-			0
-		}
+			0,
+		},
 	};
 
 #ifdef APPLEMIDI_DEBUG
@@ -873,7 +885,7 @@ bool CAppleMIDIParticipant::SendFeedbackPacket()
 		htons(AppleMIDISignature),
 		htons(ReceiverFeedback),
 		htonl(m_nSSRC),
-		htonl(m_nSequence << 16)
+		htonl(static_cast<uint32_t>(m_nSequence) << 16),
 	};
 
 #ifdef APPLEMIDI_DEBUG
@@ -883,7 +895,7 @@ bool CAppleMIDIParticipant::SendFeedbackPacket()
 	return SendPacket(m_pControlSocket, &m_InitiatorIPAddress, m_nInitiatorControlPort, &FeedbackPacket, sizeof(FeedbackPacket));
 }
 
-bool CAppleMIDIParticipant::SendMIDIToHost(const u8* pData, size_t nSize)
+bool CAppleMIDIParticipant::SendMIDIToHost(const uint8_t *pData, int nSize)
 {
 	if (m_State != TState::Connected)
 		return false;
@@ -897,30 +909,35 @@ bool CAppleMIDIParticipant::SendMIDIToHost(const u8* pData, size_t nSize)
 
 	// RTP-MIDI command section: header + MIDI data
 	// Header: 0x80 | length (if length < 0x0F)
-	u8 midiHeader = 0x00;
-	size_t midiLen = nSize;
-	if (midiLen < 0x0F) {
+	uint8_t midiHeader = 0x00;
+	int midiLen = nSize;
+	if (midiLen < 0x0F)
+	{
 		midiHeader = midiLen & 0x0F;
-	} else {
+	}
+	else
+	{
 		midiHeader = 0x80 | ((midiLen >> 8) & 0x0F);
 	}
 
-	u8 buffer[sizeof(TRTPMIDI) + 2 + MAX_MIDI_MESSAGE];
-	size_t offset = 0;
+	uint8_t buffer[sizeof(TRTPMIDI) + 2 + MAX_MIDI_MESSAGE];
+	int offset = 0;
 	memcpy(buffer + offset, &packet, sizeof(TRTPMIDI));
 	offset += sizeof(TRTPMIDI);
 	buffer[offset++] = midiHeader;
-	if (midiLen >= 0x0F) {
+	if (midiLen >= 0x0F)
+	{
 		buffer[offset++] = midiLen & 0xFF;
 	}
-	memcpy(buffer + offset, pData, midiLen);
+	memcpy(buffer + offset, pData, static_cast<size_t>(midiLen));
 	offset += midiLen;
 
-	if (SendPacket(m_pMIDISocket, &m_InitiatorIPAddress, m_nInitiatorMIDIPort, buffer, offset) <= 0) {
+	if (SendPacket(m_pMIDISocket, &m_InitiatorIPAddress, m_nInitiatorMIDIPort, buffer, offset) <= 0)
+	{
 		LOGNOTE("Failed to send MIDI data to host");
 		return false;
 	}
-	
+
 #ifdef APPLEMIDI_DEBUG
 	LOGDBG("Successfully sent %u bytes of MIDI data", nSize);
 #endif

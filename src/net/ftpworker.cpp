@@ -20,35 +20,49 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
-//#define FTPDAEMON_DEBUG
+// #define FTPDAEMON_DEBUG
+
+#include "ftpworker.h"
+
+#include <cassert>
+#include <cinttypes>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <circle/logger.h>
 #include <circle/net/in.h>
+#include <circle/net/ipaddress.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
 #include <circle/sched/scheduler.h>
-#include <circle/timer.h>
+#include <circle/sched/task.h>
 #include <circle/startup.h>
+#include <circle/string.h>
+#include <circle/sysconfig.h>
+#include <circle/timer.h>
+#include <circle/util.h>
 #include <fatfs/ff.h>
 
-#include <cstdio>
-
-#include "ftpworker.h"
+#include "../config.h"
+#include "mdnspublisher.h"
 #include "utility.h"
 
 // Use a per-instance name for the log macros
 #define From m_LogName
 
-constexpr u16 PassivePortBase = 9000;
-constexpr size_t TextBufferSize = 512;
+constexpr int PassivePortBase = 9000;
+constexpr int TextBufferSize = 512;
 constexpr unsigned int SocketTimeout = 60;
-constexpr unsigned int NumRetries = 3;
+constexpr int NumRetries = 3;
 
 #ifndef MT32_PI_VERSION
 #define MT32_PI_VERSION "(version unknown)"
 #endif
 
 const char MOTDBanner[] = "Welcome to the MiniDexed " MT32_PI_VERSION " embedded FTP server!";
-const char* exclude_filename = "wpa_supplicant.conf";
+const char *exclude_filename = "wpa_supplicant.conf";
 
 enum class TDirectoryListEntryType
 {
@@ -60,51 +74,51 @@ struct TDirectoryListEntry
 {
 	char Name[FF_LFN_BUF + 1];
 	TDirectoryListEntryType Type;
-	u32 nSize;
-	u16 nLastModifedDate;
-	u16 nLastModifedTime;
+	uint32_t nSize;
+	uint16_t nLastModifedDate;
+	uint16_t nLastModifedTime;
 };
 
-using TCommandHandler = bool (CFTPWorker::*)(const char* pArgs);
+using TCommandHandler = bool (CFTPWorker::*)(const char *pArgs);
 
 struct TFTPCommand
 {
-	const char* pCmdStr;
+	const char *pCmdStr;
 	TCommandHandler pHandler;
 };
 
 const TFTPCommand CFTPWorker::Commands[] =
 {
-	{ "SYST",	&CFTPWorker::System			},
-	{ "USER",	&CFTPWorker::Username			},
-	{ "PASS",	&CFTPWorker::Password			},
-	{ "TYPE",	&CFTPWorker::Type			},
-	{ "PASV",	&CFTPWorker::Passive			},
-	{ "PORT",	&CFTPWorker::Port			},
-	{ "RETR",	&CFTPWorker::Retrieve			},
-	{ "STOR",	&CFTPWorker::Store			},
-	{ "DELE",	&CFTPWorker::Delete			},
-	{ "RMD",	&CFTPWorker::Delete			},
-	{ "MKD",	&CFTPWorker::MakeDirectory		},
-	{ "CWD",	&CFTPWorker::ChangeWorkingDirectory	},
-	{ "CDUP",	&CFTPWorker::ChangeToParentDirectory	},
-	{ "PWD",	&CFTPWorker::PrintWorkingDirectory	},
-	{ "LIST",	&CFTPWorker::List			},
-	{ "NLST",	&CFTPWorker::ListFileNames		},
-	{ "RNFR",	&CFTPWorker::RenameFrom			},
-	{ "RNTO",	&CFTPWorker::RenameTo			},
-	{ "BYE",	&CFTPWorker::Bye			},
-	{ "QUIT",	&CFTPWorker::Bye			},
-	{ "NOOP",	&CFTPWorker::NoOp			},
+	{"SYST", &CFTPWorker::System},
+	{"USER", &CFTPWorker::Username},
+	{"PASS", &CFTPWorker::Password},
+	{"TYPE", &CFTPWorker::Type},
+	{"PASV", &CFTPWorker::Passive},
+	{"PORT", &CFTPWorker::Port},
+	{"RETR", &CFTPWorker::Retrieve},
+	{"STOR", &CFTPWorker::Store},
+	{"DELE", &CFTPWorker::Delete},
+	{"RMD", &CFTPWorker::Delete},
+	{"MKD", &CFTPWorker::MakeDirectory},
+	{"CWD", &CFTPWorker::ChangeWorkingDirectory},
+	{"CDUP", &CFTPWorker::ChangeToParentDirectory},
+	{"PWD", &CFTPWorker::PrintWorkingDirectory},
+	{"LIST", &CFTPWorker::List},
+	{"NLST", &CFTPWorker::ListFileNames},
+	{"RNFR", &CFTPWorker::RenameFrom},
+	{"RNTO", &CFTPWorker::RenameTo},
+	{"BYE", &CFTPWorker::Bye},
+	{"QUIT", &CFTPWorker::Bye},
+	{"NOOP", &CFTPWorker::NoOp},
 };
 
-u8 CFTPWorker::s_nInstanceCount = 0;
+uint8_t CFTPWorker::s_nInstanceCount = 0;
 
 // Volume names from ffconf.h
 // TODO: Share with soundfontmanager.cpp
-const char* const VolumeNames[] = { FF_VOLUME_STRS };
+const char *const VolumeNames[] = {FF_VOLUME_STRS};
 
-bool ValidateVolumeName(const char* pVolumeName)
+bool ValidateVolumeName(const char *pVolumeName)
 {
 	for (const auto pName : VolumeNames)
 	{
@@ -116,7 +130,7 @@ bool ValidateVolumeName(const char* pVolumeName)
 }
 
 // Comparator for sorting directory listings
-inline bool DirectoryCaseInsensitiveAscending(const TDirectoryListEntry& EntryA, const TDirectoryListEntry& EntryB)
+inline bool DirectoryCaseInsensitiveAscending(const TDirectoryListEntry &EntryA, const TDirectoryListEntry &EntryB)
 {
 	// Directories first in ascending order
 	if (EntryA.Type != EntryB.Type)
@@ -125,26 +139,25 @@ inline bool DirectoryCaseInsensitiveAscending(const TDirectoryListEntry& EntryA,
 	return strncasecmp(EntryA.Name, EntryB.Name, sizeof(TDirectoryListEntry::Name)) < 0;
 }
 
-
-CFTPWorker::CFTPWorker(CSocket* pControlSocket, const char* pExpectedUser, const char* pExpectedPassword, CmDNSPublisher* pMDNSPublisher, CConfig* pConfig)
-	: CTask(TASK_STACK_SIZE),
-	  m_LogName(),
-	  m_pExpectedUser(pExpectedUser),
-	  m_pExpectedPassword(pExpectedPassword),
-	  m_pControlSocket(pControlSocket),
-	  m_pDataSocket(nullptr),
-	  m_nDataSocketPort(0),
-	  m_DataSocketIPAddress(),
-	  m_CommandBuffer{'\0'},
-	  m_DataBuffer{0},
-	  m_User(),
-	  m_Password(),
-	  m_DataType(TDataType::ASCII),
-	  m_TransferMode(TTransferMode::Active),
-	  m_CurrentPath(),
-	  m_RenameFrom(),
-	  m_pmDNSPublisher(pMDNSPublisher),
-	  m_pConfig(pConfig)
+CFTPWorker::CFTPWorker(CSocket *pControlSocket, const char *pExpectedUser, const char *pExpectedPassword, CmDNSPublisher *pMDNSPublisher, CConfig *pConfig) :
+CTask{TASK_STACK_SIZE},
+m_LogName{},
+m_pExpectedUser{pExpectedUser},
+m_pExpectedPassword{pExpectedPassword},
+m_pControlSocket{pControlSocket},
+m_pDataSocket{},
+m_nDataSocketPort{},
+m_DataSocketIPAddress{},
+m_CommandBuffer{'\0'},
+m_DataBuffer{},
+m_User{},
+m_Password{},
+m_DataType{TDataType::ASCII},
+m_TransferMode{TTransferMode::Active},
+m_CurrentPath{},
+m_RenameFrom{},
+m_pmDNSPublisher{pMDNSPublisher},
+m_pConfig{pConfig}
 {
 	++s_nInstanceCount;
 	m_LogName.Format("ftpd[%d]", s_nInstanceCount);
@@ -168,14 +181,14 @@ void CFTPWorker::Run()
 	assert(m_pControlSocket != nullptr);
 
 	const size_t nWorkerNumber = s_nInstanceCount;
-	CScheduler* const pScheduler = CScheduler::Get();
+	CScheduler *const pScheduler = CScheduler::Get();
 
 	LOGNOTE("Worker task %d spawned", nWorkerNumber);
 
 	if (!SendStatus(TFTPStatus::ReadyForNewUser, MOTDBanner))
 		return;
 
-	CTimer* const pTimer = CTimer::Get();
+	CTimer *const pTimer = CTimer::Get();
 	unsigned int nTimeout = pTimer->GetTicks();
 
 	while (m_pControlSocket)
@@ -208,12 +221,12 @@ void CFTPWorker::Run()
 		m_CommandBuffer[nReceiveBytes - 2] = '\0';
 
 #ifdef FTPDAEMON_DEBUG
-		const u8* pIPAddress = m_pControlSocket->GetForeignIP();
+		const u8 *pIPAddress = m_pControlSocket->GetForeignIP();
 		LOGDBG("<-- Received %d bytes from %d.%d.%d.%d: '%s'", nReceiveBytes, pIPAddress[0], pIPAddress[1], pIPAddress[2], pIPAddress[3], m_CommandBuffer);
 #endif
 
-		char* pSavePtr;
-		char* pToken = strtok_r(m_CommandBuffer, " \r\n", &pSavePtr);
+		char *pSavePtr;
+		char *pToken = strtok_r(m_CommandBuffer, " \r\n", &pSavePtr);
 
 		if (!pToken)
 		{
@@ -245,17 +258,17 @@ void CFTPWorker::Run()
 	m_pControlSocket = nullptr;
 }
 
-CSocket* CFTPWorker::OpenDataConnection()
+CSocket *CFTPWorker::OpenDataConnection()
 {
-	CSocket* pDataSocket = nullptr;
-	u8 nRetries = NumRetries;
+	CSocket *pDataSocket = nullptr;
+	int nRetries = NumRetries;
 
 	while (pDataSocket == nullptr && nRetries > 0)
 	{
 		// Active: Create new socket and connect to client
 		if (m_TransferMode == TTransferMode::Active)
 		{
-			CNetSubSystem* const pNet = CNetSubSystem::Get();
+			CNetSubSystem *const pNet = CNetSubSystem::Get();
 			pDataSocket = new CSocket(pNet, IPPROTO_TCP);
 
 			if (pDataSocket == nullptr)
@@ -276,7 +289,7 @@ CSocket* CFTPWorker::OpenDataConnection()
 		else if (m_TransferMode == TTransferMode::Passive && m_pDataSocket != nullptr)
 		{
 			CIPAddress ClientIPAddress;
-			u16 nClientPort;
+			uint16_t nClientPort;
 			pDataSocket = m_pDataSocket->Accept(&ClientIPAddress, &nClientPort);
 		}
 
@@ -292,12 +305,14 @@ CSocket* CFTPWorker::OpenDataConnection()
 	return pDataSocket;
 }
 
-bool CFTPWorker::SendStatus(TFTPStatus StatusCode, const char* pMessage)
+bool CFTPWorker::SendStatus(TFTPStatus StatusCode, const char *pMessage)
 {
 	assert(m_pControlSocket != nullptr);
 
 	const int nLength = snprintf(m_CommandBuffer, sizeof(m_CommandBuffer), "%d %s\r\n", StatusCode, pMessage);
-	if (m_pControlSocket->Send(m_CommandBuffer, nLength, 0) < 0)
+	if (nLength < 0 ||
+	    nLength >= ssizeof(m_CommandBuffer) ||
+	    m_pControlSocket->Send(m_CommandBuffer, static_cast<unsigned>(nLength), 0) < 0)
 	{
 		LOGERR("Failed to send status");
 		return false;
@@ -316,8 +331,8 @@ bool CFTPWorker::SendStatus(TFTPStatus StatusCode, const char* pMessage)
 bool CFTPWorker::CheckLoggedIn()
 {
 #ifdef FTPDAEMON_DEBUG
-	LOGDBG("Username compare: expected '%s', actual '%s'", static_cast<const char*>(m_pExpectedUser), static_cast<const char*>(m_User));
-	LOGDBG("Password compare: expected '%s', actual '%s'", static_cast<const char*>(m_pExpectedPassword),  static_cast<const char*>(m_Password));
+	LOGDBG("Username compare: expected '%s', actual '%s'", static_cast<const char *>(m_pExpectedUser), static_cast<const char *>(m_User));
+	LOGDBG("Password compare: expected '%s', actual '%s'", static_cast<const char *>(m_pExpectedPassword), static_cast<const char *>(m_Password));
 #endif
 
 	if (m_User.Compare(m_pExpectedUser) == 0 && m_Password.Compare(m_pExpectedPassword) == 0)
@@ -327,7 +342,7 @@ bool CFTPWorker::CheckLoggedIn()
 	return false;
 }
 
-CString CFTPWorker::RealPath(const char* pInBuffer) const
+CString CFTPWorker::RealPath(const char *pInBuffer) const
 {
 	assert(pInBuffer != nullptr);
 
@@ -341,25 +356,25 @@ CString CFTPWorker::RealPath(const char* pInBuffer) const
 		Path = Buffer;
 	}
 	else
-		Path.Format("%s/%s", static_cast<const char*>(m_CurrentPath), pInBuffer);
+		Path.Format("%s/%s", static_cast<const char *>(m_CurrentPath), pInBuffer);
 
 	return Path;
 }
 
-const TDirectoryListEntry* CFTPWorker::BuildDirectoryList(size_t& nOutEntries) const
+const TDirectoryListEntry *CFTPWorker::BuildDirectoryList(size_t &nOutEntries) const
 {
 	DIR Dir;
 	FILINFO FileInfo;
 	FRESULT Result;
 
-	TDirectoryListEntry* pEntries = nullptr;
+	TDirectoryListEntry *pEntries = nullptr;
 	nOutEntries = 0;
 
 	// Volume list
 	if (m_CurrentPath.GetLength() == 0)
 	{
 		constexpr size_t nVolumes = Utility::ArraySize(VolumeNames);
-		bool VolumesAvailable[nVolumes] = { false };
+		bool VolumesAvailable[nVolumes]{};
 
 		for (size_t i = 0; i < nVolumes; ++i)
 		{
@@ -383,7 +398,7 @@ const TDirectoryListEntry* CFTPWorker::BuildDirectoryList(size_t& nOutEntries) c
 		{
 			if (VolumesAvailable[i])
 			{
-				TDirectoryListEntry& Entry = pEntries[nCurrentEntry++];
+				TDirectoryListEntry &Entry = pEntries[nCurrentEntry++];
 				strncpy(Entry.Name, VolumeNames[i], sizeof(Entry.Name));
 				Entry.Type = TDirectoryListEntryType::Directory;
 				Entry.nSize = 0;
@@ -414,7 +429,7 @@ const TDirectoryListEntry* CFTPWorker::BuildDirectoryList(size_t& nOutEntries) c
 			Result = f_findfirst(&Dir, &FileInfo, m_CurrentPath, "*");
 			while (Result == FR_OK && *FileInfo.fname)
 			{
-				TDirectoryListEntry& Entry = pEntries[nCurrentEntry++];
+				TDirectoryListEntry &Entry = pEntries[nCurrentEntry++];
 				strncpy(Entry.Name, FileInfo.fname, sizeof(Entry.Name));
 
 				if (FileInfo.fattrib & AM_DIR)
@@ -443,23 +458,23 @@ const TDirectoryListEntry* CFTPWorker::BuildDirectoryList(size_t& nOutEntries) c
 	return pEntries;
 }
 
-bool CFTPWorker::System(const char* pArgs)
+bool CFTPWorker::System(const char *pArgs)
 {
 	// Some FTP clients (e.g. Directory Opus) will only attempt to parse LIST responses as IIS/DOS-style if we pretend to be Windows NT
 	SendStatus(TFTPStatus::SystemType, "Windows_NT");
 	return true;
 }
 
-bool CFTPWorker::Username(const char* pArgs)
+bool CFTPWorker::Username(const char *pArgs)
 {
 	m_User = pArgs;
 	char Buffer[TextBufferSize];
-	snprintf(Buffer, sizeof(Buffer), "Password required for '%s'.", static_cast<const char*>(m_User));
+	snprintf(Buffer, sizeof(Buffer), "Password required for '%s'.", static_cast<const char *>(m_User));
 	SendStatus(TFTPStatus::PasswordRequired, Buffer);
 	return true;
 }
 
-bool CFTPWorker::Port(const char* pArgs)
+bool CFTPWorker::Port(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -477,16 +492,16 @@ bool CFTPWorker::Port(const char* pArgs)
 
 	// TODO: PORT IP Address should match original IP address
 
-	u8 PortBytes[6];
-	char* pSavePtr;
-	char* pToken = strtok_r(Buffer, " ,", &pSavePtr);
+	uint8_t PortBytes[6];
+	char *pSavePtr;
+	char *pToken = strtok_r(Buffer, " ,", &pSavePtr);
 	bool bParseError = (pToken == nullptr);
 
 	if (!bParseError)
 	{
-		PortBytes[0] = static_cast<u8>(atoi(pToken));
+		PortBytes[0] = static_cast<uint8_t>(atoi(pToken));
 
-		for (u8 i = 0; i < 5; ++i)
+		for (int i = 0; i < 5; ++i)
 		{
 			pToken = strtok_r(nullptr, " ,", &pSavePtr);
 			if (pToken == nullptr)
@@ -495,7 +510,7 @@ bool CFTPWorker::Port(const char* pArgs)
 				break;
 			}
 
-			PortBytes[i + 1] = static_cast<u8>(atoi(pToken));
+			PortBytes[i + 1] = static_cast<uint8_t>(atoi(pToken));
 		}
 	}
 
@@ -506,19 +521,19 @@ bool CFTPWorker::Port(const char* pArgs)
 	}
 
 	m_DataSocketIPAddress.Set(PortBytes);
-	m_nDataSocketPort = (PortBytes[4] << 8) + PortBytes[5];
+	m_nDataSocketPort = static_cast<uint16_t>(PortBytes[4] << 8 | PortBytes[5]);
 
 #ifdef FTPDAEMON_DEBUG
 	CString IPAddressString;
 	m_DataSocketIPAddress.Format(&IPAddressString);
-	LOGDBG("PORT set to: %s:%d", static_cast<const char*>(IPAddressString), m_nDataSocketPort);
+	LOGDBG("PORT set to: %s:%d", static_cast<const char *>(IPAddressString), m_nDataSocketPort);
 #endif
 
 	SendStatus(TFTPStatus::Success, "Command OK.");
 	return true;
 }
 
-bool CFTPWorker::Passive(const char* pArgs)
+bool CFTPWorker::Passive(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -528,7 +543,7 @@ bool CFTPWorker::Passive(const char* pArgs)
 		m_TransferMode = TTransferMode::Passive;
 		m_nDataSocketPort = PassivePortBase + s_nInstanceCount - 1;
 
-		CNetSubSystem* const pNet = CNetSubSystem::Get();
+		CNetSubSystem *const pNet = CNetSubSystem::Get();
 		m_pDataSocket = new CSocket(pNet, IPPROTO_TCP);
 
 		if (m_pDataSocket == nullptr)
@@ -554,24 +569,23 @@ bool CFTPWorker::Passive(const char* pArgs)
 		}
 	}
 
-	u8 IPAddress[IP_ADDRESS_SIZE];
+	uint8_t IPAddress[IP_ADDRESS_SIZE];
 	CNetSubSystem::Get()->GetConfig()->GetIPAddress()->CopyTo(IPAddress);
 
 	char Buffer[TextBufferSize];
 	snprintf(Buffer, sizeof(Buffer), "Entering passive mode (%d,%d,%d,%d,%d,%d).",
-		IPAddress[0],
-		IPAddress[1],
-		IPAddress[2],
-		IPAddress[3],
-		(m_nDataSocketPort >> 8) & 0xFF,
-		(m_nDataSocketPort & 0xFF)
-	);
+		 IPAddress[0],
+		 IPAddress[1],
+		 IPAddress[2],
+		 IPAddress[3],
+		 (m_nDataSocketPort >> 8) & 0xFF,
+		 (m_nDataSocketPort & 0xFF));
 
 	SendStatus(TFTPStatus::EnteringPassiveMode, Buffer);
 	return true;
 }
 
-bool CFTPWorker::Password(const char* pArgs)
+bool CFTPWorker::Password(const char *pArgs)
 {
 	if (m_User.GetLength() == 0)
 	{
@@ -588,7 +602,7 @@ bool CFTPWorker::Password(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::Type(const char* pArgs)
+bool CFTPWorker::Type(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -611,7 +625,7 @@ bool CFTPWorker::Type(const char* pArgs)
 	return false;
 }
 
-bool CFTPWorker::Retrieve(const char* pArgs)
+bool CFTPWorker::Retrieve(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -620,12 +634,13 @@ bool CFTPWorker::Retrieve(const char* pArgs)
 	CString Path = RealPath(pArgs);
 
 	// Disallow any file named wpa_supplicant.conf (case-insensitive) in any directory
-	const char* pathStr = Path;
-	const char* lastSep = nullptr;
-	for (const char* p = pathStr; *p; ++p) {
+	const char *pathStr = Path;
+	const char *lastSep = nullptr;
+	for (const char *p = pathStr; *p; ++p)
+	{
 		if (*p == '/' || *p == ':') lastSep = p;
 	}
-	const char* filename = lastSep ? lastSep + 1 : pathStr;
+	const char *filename = lastSep ? lastSep + 1 : pathStr;
 	// Case-insensitive compare using strcasecmp if available
 	if (strcasecmp(filename, "wpa_supplicant.conf") == 0)
 	{
@@ -642,7 +657,7 @@ bool CFTPWorker::Retrieve(const char* pArgs)
 	if (!SendStatus(TFTPStatus::FileStatusOk, "Command OK."))
 		return false;
 
-	CSocket* pDataSocket = OpenDataConnection();
+	CSocket *pDataSocket = OpenDataConnection();
 	if (pDataSocket == nullptr)
 		return false;
 
@@ -674,7 +689,7 @@ bool CFTPWorker::Retrieve(const char* pArgs)
 	return false;
 }
 
-bool CFTPWorker::Store(const char* pArgs)
+bool CFTPWorker::Store(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -693,13 +708,13 @@ bool CFTPWorker::Store(const char* pArgs)
 	if (!SendStatus(TFTPStatus::FileStatusOk, "Command OK."))
 		return false;
 
-	CSocket* pDataSocket = OpenDataConnection();
+	CSocket *pDataSocket = OpenDataConnection();
 	if (pDataSocket == nullptr)
 		return false;
 
 	bool bSuccess = true;
 
-	CTimer* const pTimer = CTimer::Get();
+	CTimer *const pTimer = CTimer::Get();
 	unsigned int nTimeout = pTimer->GetTicks();
 
 	while (true)
@@ -731,10 +746,10 @@ bool CFTPWorker::Store(const char* pArgs)
 		}
 
 #ifdef FTPDAEMON_DEBUG
-		//LOGDBG("Received %d bytes", nReceiveResult);
+		// LOGDBG("Received %d bytes", nReceiveResult);
 #endif
 
-		if ((nWriteResult = f_write(&File, m_DataBuffer, nReceiveResult, &nWritten)) != FR_OK)
+		if ((nWriteResult = f_write(&File, m_DataBuffer, static_cast<unsigned>(nReceiveResult), &nWritten)) != FR_OK)
 		{
 			LOGERR("Write FAILED, return code %d", nWriteResult);
 			bSuccess = false;
@@ -761,7 +776,7 @@ bool CFTPWorker::Store(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::Delete(const char* pArgs)
+bool CFTPWorker::Delete(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -776,7 +791,7 @@ bool CFTPWorker::Delete(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::MakeDirectory(const char* pArgs)
+bool CFTPWorker::MakeDirectory(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -796,7 +811,7 @@ bool CFTPWorker::MakeDirectory(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::ChangeWorkingDirectory(const char* pArgs)
+bool CFTPWorker::ChangeWorkingDirectory(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -841,7 +856,7 @@ bool CFTPWorker::ChangeWorkingDirectory(const char* pArgs)
 		else
 		{
 			CString NewPath;
-			NewPath.Format("%s/%s", static_cast<const char*>(m_CurrentPath), pArgs);
+			NewPath.Format("%s/%s", static_cast<const char *>(m_CurrentPath), pArgs);
 
 			if (f_stat(NewPath, nullptr) == FR_OK)
 			{
@@ -866,7 +881,7 @@ bool CFTPWorker::ChangeWorkingDirectory(const char* pArgs)
 	return bSuccess;
 }
 
-bool CFTPWorker::ChangeToParentDirectory(const char* pArgs)
+bool CFTPWorker::ChangeToParentDirectory(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -909,7 +924,7 @@ bool CFTPWorker::ChangeToParentDirectory(const char* pArgs)
 	return false;
 }
 
-bool CFTPWorker::PrintWorkingDirectory(const char* pArgs)
+bool CFTPWorker::PrintWorkingDirectory(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -927,7 +942,7 @@ bool CFTPWorker::PrintWorkingDirectory(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::List(const char* pArgs)
+bool CFTPWorker::List(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -935,7 +950,7 @@ bool CFTPWorker::List(const char* pArgs)
 	if (!SendStatus(TFTPStatus::FileStatusOk, "Command OK."))
 		return false;
 
-	CSocket* pDataSocket = OpenDataConnection();
+	CSocket *pDataSocket = OpenDataConnection();
 	if (pDataSocket == nullptr)
 		return false;
 
@@ -944,13 +959,13 @@ bool CFTPWorker::List(const char* pArgs)
 	char Time[8];
 
 	size_t nEntries;
-	const TDirectoryListEntry* pDirEntries = BuildDirectoryList(nEntries);
+	const TDirectoryListEntry *pDirEntries = BuildDirectoryList(nEntries);
 
 	if (pDirEntries)
 	{
 		for (size_t i = 0; i < nEntries; ++i)
 		{
-			const TDirectoryListEntry& Entry = pDirEntries[i];
+			const TDirectoryListEntry &Entry = pDirEntries[i];
 			int nLength;
 
 			// Mimic the Microsoft IIS LIST format
@@ -960,9 +975,11 @@ bool CFTPWorker::List(const char* pArgs)
 			if (Entry.Type == TDirectoryListEntryType::Directory)
 				nLength = snprintf(Buffer, sizeof(Buffer), "%-9s %-13s %-14s %s\r\n", Date, Time, "<DIR>", Entry.Name);
 			else
-				nLength = snprintf(Buffer, sizeof(Buffer), "%-9s %-13s %14d %s\r\n", Date, Time, Entry.nSize, Entry.Name);
+				nLength = snprintf(Buffer, sizeof(Buffer), "%-9s %-13s %" PRIu32 " %s\r\n", Date, Time, Entry.nSize, Entry.Name);
 
-			if (pDataSocket->Send(Buffer, nLength, 0) < 0)
+			if (nLength < 0 ||
+			    nLength >= ssizeof(Buffer) ||
+			    pDataSocket->Send(Buffer, static_cast<unsigned>(nLength), 0) < 0)
 			{
 				delete[] pDirEntries;
 				delete pDataSocket;
@@ -979,7 +996,7 @@ bool CFTPWorker::List(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::ListFileNames(const char* pArgs)
+bool CFTPWorker::ListFileNames(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -987,23 +1004,25 @@ bool CFTPWorker::ListFileNames(const char* pArgs)
 	if (!SendStatus(TFTPStatus::FileStatusOk, "Command OK."))
 		return false;
 
-	CSocket* pDataSocket = OpenDataConnection();
+	CSocket *pDataSocket = OpenDataConnection();
 	if (pDataSocket == nullptr)
 		return false;
 
 	char Buffer[TextBufferSize];
 	size_t nEntries;
-	const TDirectoryListEntry* pDirEntries = BuildDirectoryList(nEntries);
+	const TDirectoryListEntry *pDirEntries = BuildDirectoryList(nEntries);
 
 	if (pDirEntries)
 	{
 		for (size_t i = 0; i < nEntries; ++i)
 		{
-			const TDirectoryListEntry& Entry = pDirEntries[i];
+			const TDirectoryListEntry &Entry = pDirEntries[i];
 			if (Entry.Type == TDirectoryListEntryType::Directory)
 				continue;
 			const int nLength = snprintf(Buffer, sizeof(Buffer), "%s\r\n", Entry.Name);
-			if (pDataSocket->Send(Buffer, nLength, 0) < 0)
+			if (nLength < 0 ||
+			    nLength >= ssizeof(Buffer) ||
+			    pDataSocket->Send(Buffer, static_cast<unsigned>(nLength), 0) < 0)
 			{
 				delete[] pDirEntries;
 				delete pDataSocket;
@@ -1020,7 +1039,7 @@ bool CFTPWorker::ListFileNames(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::RenameFrom(const char* pArgs)
+bool CFTPWorker::RenameFrom(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -1031,7 +1050,7 @@ bool CFTPWorker::RenameFrom(const char* pArgs)
 	return false;
 }
 
-bool CFTPWorker::RenameTo(const char* pArgs)
+bool CFTPWorker::RenameTo(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 		return false;
@@ -1055,7 +1074,7 @@ bool CFTPWorker::RenameTo(const char* pArgs)
 	return false;
 }
 
-bool CFTPWorker::Bye(const char* pArgs)
+bool CFTPWorker::Bye(const char *pArgs)
 {
 	if (!CheckLoggedIn())
 	{
@@ -1078,9 +1097,10 @@ bool CFTPWorker::Bye(const char* pArgs)
 	}
 
 	// Non-blocking 2 second delay before reboot
-	CTimer* const pTimer = CTimer::Get();
+	CTimer *const pTimer = CTimer::Get();
 	unsigned int start = pTimer->GetTicks();
-	while ((pTimer->GetTicks() - start) < 2 * HZ) {
+	while ((pTimer->GetTicks() - start) < 2 * HZ)
+	{
 		CScheduler::Get()->Yield();
 	}
 
@@ -1089,18 +1109,18 @@ bool CFTPWorker::Bye(const char* pArgs)
 	return true;
 }
 
-bool CFTPWorker::NoOp(const char* pArgs)
+bool CFTPWorker::NoOp(const char *pArgs)
 {
 	SendStatus(TFTPStatus::Success, "Command OK.");
 	return true;
 }
 
-void CFTPWorker::FatFsPathToFTPPath(const char* pInBuffer, char* pOutBuffer, size_t nSize)
+void CFTPWorker::FatFsPathToFTPPath(const char *pInBuffer, char *pOutBuffer, size_t nSize)
 {
 	assert(pOutBuffer && nSize > 2);
-	const char* pEnd = pOutBuffer + nSize;
-	const char* pInChar = pInBuffer;
-	char* pOutChar = pOutBuffer;
+	const char *pEnd = pOutBuffer + nSize;
+	const char *pInChar = pInBuffer;
+	char *pOutChar = pOutBuffer;
 
 	*pOutChar++ = '"';
 	*pOutChar++ = '/';
@@ -1114,7 +1134,8 @@ void CFTPWorker::FatFsPathToFTPPath(const char* pInBuffer, char* pOutBuffer, siz
 			++pInChar;
 
 			// Kill any slashes after the colon
-			while (*pInChar == '/') ++pInChar;
+			while (*pInChar == '/')
+				++pInChar;
 			continue;
 		}
 
@@ -1122,7 +1143,8 @@ void CFTPWorker::FatFsPathToFTPPath(const char* pInBuffer, char* pOutBuffer, siz
 		if (*pInChar == '/')
 		{
 			*pOutChar++ = *pInChar++;
-			while (*pInChar == '/') ++pInChar;
+			while (*pInChar == '/')
+				++pInChar;
 			continue;
 		}
 
@@ -1138,15 +1160,16 @@ void CFTPWorker::FatFsPathToFTPPath(const char* pInBuffer, char* pOutBuffer, siz
 	*pOutChar++ = '\0';
 }
 
-void CFTPWorker::FTPPathToFatFsPath(const char* pInBuffer, char* pOutBuffer, size_t nSize)
+void CFTPWorker::FTPPathToFatFsPath(const char *pInBuffer, char *pOutBuffer, size_t nSize)
 {
 	assert(pInBuffer && pOutBuffer);
-	const char* pEnd = pOutBuffer + nSize;
-	const char* pInChar = pInBuffer;
-	char* pOutChar = pOutBuffer;
+	const char *pEnd = pOutBuffer + nSize;
+	const char *pInChar = pInBuffer;
+	char *pOutChar = pOutBuffer;
 
 	// Kill leading slashes
-	while (*pInChar == '/') ++pInChar;
+	while (*pInChar == '/')
+		++pInChar;
 
 	bool bGotVolume = false;
 	while (*pInChar != '\0' && pOutChar < pEnd)
@@ -1159,7 +1182,8 @@ void CFTPWorker::FTPPathToFatFsPath(const char* pInBuffer, char* pOutBuffer, siz
 			++pInChar;
 
 			// Kill any slashes after the colon
-			while (*pInChar == '/') ++pInChar;
+			while (*pInChar == '/')
+				++pInChar;
 			continue;
 		}
 
@@ -1167,7 +1191,8 @@ void CFTPWorker::FTPPathToFatFsPath(const char* pInBuffer, char* pOutBuffer, siz
 		if (*pInChar == '/')
 		{
 			*pOutChar++ = *pInChar++;
-			while (*pInChar == '/') ++pInChar;
+			while (*pInChar == '/')
+				++pInChar;
 			continue;
 		}
 
@@ -1187,24 +1212,27 @@ void CFTPWorker::FTPPathToFatFsPath(const char* pInBuffer, char* pOutBuffer, siz
 	*pOutChar++ = '\0';
 }
 
-void CFTPWorker::FatFsParentPath(const char* pInBuffer, char* pOutBuffer, size_t nSize)
+void CFTPWorker::FatFsParentPath(const char *pInBuffer, char *pOutBuffer, int nSize)
 {
 	assert(pInBuffer != nullptr && pOutBuffer != nullptr);
 
-	size_t nLength = strlen(pInBuffer);
+	long nLength = sstrlen(pInBuffer);
 	assert(nLength > 0 && nSize >= nLength);
 
-	const char* pLastChar = pInBuffer + nLength - 1;
-	const char* pInChar = pLastChar;
+	const char *pLastChar = pInBuffer + nLength - 1;
+	const char *pInChar = pLastChar;
 
 	// Kill trailing slashes
-	while (*pInChar == '/' && pInChar > pInBuffer) --pInChar;
+	while (*pInChar == '/' && pInChar > pInBuffer)
+		--pInChar;
 
 	// Kill subdirectory name
-	while (*pInChar != '/' && *pInChar != ':' && pInChar > pInBuffer) --pInChar;
+	while (*pInChar != '/' && *pInChar != ':' && pInChar > pInBuffer)
+		--pInChar;
 
 	// Kill trailing slashes
-	while (*pInChar == '/' && pInChar > pInBuffer) --pInChar;
+	while (*pInChar == '/' && pInChar > pInBuffer)
+		--pInChar;
 
 	// Pointer didn't move (we're already at a volume root), or we reached the start of the string (path invalid)
 	if (pInChar == pLastChar || pInChar == pInBuffer)
@@ -1215,16 +1243,16 @@ void CFTPWorker::FatFsParentPath(const char* pInBuffer, char* pOutBuffer, size_t
 
 	// Truncate string
 	nLength = pInChar - pInBuffer + 1;
-	memcpy(pOutBuffer, pInBuffer, nLength);
+	memcpy(pOutBuffer, pInBuffer, static_cast<size_t>(nLength));
 	pOutBuffer[nLength] = '\0';
 }
 
-void CFTPWorker::FormatLastModifiedDate(u16 nDate, char* pOutBuffer, size_t nSize)
+void CFTPWorker::FormatLastModifiedDate(uint16_t nDate, char *pOutBuffer, size_t nSize)
 {
 	// 2-digit year
-	const u16 nYear = (1980 + (nDate >> 9)) % 100;
-	u16 nMonth = (nDate >> 5) & 0x0F;
-	u16 nDay = nDate & 0x1F;
+	const uint16_t nYear = (1980 + (nDate >> 9)) % 100;
+	uint16_t nMonth = (nDate >> 5) & 0x0F;
+	uint16_t nDay = nDate & 0x1F;
 
 	if (nMonth == 0)
 		nMonth = 1;
@@ -1234,11 +1262,11 @@ void CFTPWorker::FormatLastModifiedDate(u16 nDate, char* pOutBuffer, size_t nSiz
 	snprintf(pOutBuffer, nSize, "%02d-%02d-%02d", nMonth, nDay, nYear);
 }
 
-void CFTPWorker::FormatLastModifiedTime(u16 nDate, char* pOutBuffer, size_t nSize)
+void CFTPWorker::FormatLastModifiedTime(uint16_t nDate, char *pOutBuffer, size_t nSize)
 {
-	u16 nHour = (nDate >> 11) & 0x1F;
-	const u16 nMinute = (nDate >> 5) & 0x3F;
-	const char* pSuffix = nHour < 12 ? "AM" : "PM";
+	uint16_t nHour = (nDate >> 11) & 0x1F;
+	const uint16_t nMinute = (nDate >> 5) & 0x3F;
+	const char *pSuffix = nHour < 12 ? "AM" : "PM";
 
 	if (nHour == 0)
 		nHour = 12;

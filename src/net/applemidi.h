@@ -22,23 +22,26 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <circle/bcmrandom.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/socket.h>
+#include <circle/netdevice.h>
 #include <circle/sched/task.h>
 
 class CAppleMIDIHandler
 {
 public:
-	virtual void OnAppleMIDIDataReceived(const u8* pData, size_t nSize) = 0;
-	virtual void OnAppleMIDIConnect(const CIPAddress* pIPAddress, const char* pName) = 0;
-	virtual void OnAppleMIDIDisconnect(const CIPAddress* pIPAddress, const char* pName) = 0;
+	virtual void OnAppleMIDIDataReceived(const uint8_t *pData, int nSize) = 0;
+	virtual void OnAppleMIDIConnect(const CIPAddress *pIPAddress, const char *pName) = 0;
+	virtual void OnAppleMIDIDisconnect(const CIPAddress *pIPAddress, const char *pName) = 0;
 };
 
 class CAppleMIDIParticipant : protected CTask
 {
 public:
-	CAppleMIDIParticipant(CBcmRandomNumberGenerator* pRandom, CAppleMIDIHandler* pHandler, const char* pSessionName);
+	CAppleMIDIParticipant(CBcmRandomNumberGenerator *pRandom, CAppleMIDIHandler *pHandler, const char *pSessionName);
 	virtual ~CAppleMIDIParticipant() override;
 
 	bool Initialize();
@@ -46,7 +49,7 @@ public:
 	virtual void Run() override;
 
 public:
-	bool SendMIDIToHost(const u8* pData, size_t nSize);
+	bool SendMIDIToHost(const uint8_t *pData, int nSize);
 
 private:
 	void ControlInvitationState();
@@ -54,38 +57,38 @@ private:
 	void ConnectedState();
 	void Reset();
 
-	bool SendPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort, const void* pData, size_t nSize);
-	bool SendAcceptInvitationPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort);
-	bool SendRejectInvitationPacket(CSocket* pSocket, CIPAddress* pIPAddress, u16 nPort, u32 nInitiatorToken);
-	bool SendSyncPacket(u64 nTimestamp1, u64 nTimestamp2);
+	bool SendPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort, const void *pData, int nSize);
+	bool SendAcceptInvitationPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort);
+	bool SendRejectInvitationPacket(CSocket *pSocket, CIPAddress *pIPAddress, uint16_t nPort, uint32_t nInitiatorToken);
+	bool SendSyncPacket(uint64_t nTimestamp1, uint64_t nTimestamp2);
 	bool SendFeedbackPacket();
 
-	CBcmRandomNumberGenerator* m_pRandom;
+	CBcmRandomNumberGenerator *m_pRandom;
 
 	// UDP sockets
-	CSocket* m_pControlSocket;
-	CSocket* m_pMIDISocket;
+	CSocket *m_pControlSocket;
+	CSocket *m_pMIDISocket;
 
 	// Foreign peers
 	CIPAddress m_ForeignControlIPAddress;
 	CIPAddress m_ForeignMIDIIPAddress;
-	u16 m_nForeignControlPort;
-	u16 m_nForeignMIDIPort;
+	uint16_t m_nForeignControlPort;
+	uint16_t m_nForeignMIDIPort;
 
 	// Connected peer
 	CIPAddress m_InitiatorIPAddress;
-	u16 m_nInitiatorControlPort;
-	u16 m_nInitiatorMIDIPort;
+	uint16_t m_nInitiatorControlPort;
+	uint16_t m_nInitiatorMIDIPort;
 
 	// Socket receive buffers
-	u8 m_ControlBuffer[FRAME_BUFFER_SIZE];
-	u8 m_MIDIBuffer[FRAME_BUFFER_SIZE];
+	uint8_t m_ControlBuffer[FRAME_BUFFER_SIZE];
+	uint8_t m_MIDIBuffer[FRAME_BUFFER_SIZE];
 
 	int m_nControlResult;
 	int m_nMIDIResult;
 
 	// Callback handler
-	CAppleMIDIHandler* m_pHandler;
+	CAppleMIDIHandler *m_pHandler;
 
 	// Participant state machine
 	enum class TState
@@ -97,17 +100,17 @@ private:
 
 	TState m_State;
 
-	u32 m_nInitiatorToken = 0;
-	u32 m_nInitiatorSSRC = 0;
-	u32 m_nSSRC = 0;
-	u32 m_nLastMIDISequenceNumber = 0;
+	uint32_t m_nInitiatorToken = 0;
+	uint32_t m_nInitiatorSSRC = 0;
+	uint32_t m_nSSRC = 0;
+	uint32_t m_nLastMIDISequenceNumber = 0;
 
-	u64 m_nOffsetEstimate = 0;
-	u64 m_nLastSyncTime = 0;
+	uint64_t m_nOffsetEstimate = 0;
+	uint64_t m_nLastSyncTime = 0;
 
-	u16 m_nSequence = 0;
-	u16 m_nLastFeedbackSequence = 0;
-	u64 m_nLastFeedbackTime = 0;
+	uint16_t m_nSequence = 0;
+	uint16_t m_nLastFeedbackSequence = 0;
+	uint64_t m_nLastFeedbackTime = 0;
 
-	const char* m_pSessionName;
+	const char *m_pSessionName;
 };

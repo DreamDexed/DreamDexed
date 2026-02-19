@@ -23,6 +23,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include <circle/string.h>
 #include <circle/util.h>
 
@@ -33,158 +36,170 @@
 #define CONFIG_ENUM_STRING(VALUE, STRING) #STRING,
 
 // Macro to declare the enum itself
-#define CONFIG_ENUM(NAME, VALUES) enum class NAME { VALUES(CONFIG_ENUM_VALUE) }
+#define CONFIG_ENUM(NAME, VALUES) enum class NAME \
+{ \
+	VALUES(CONFIG_ENUM_VALUE) \
+}
 
 // Macro to declare an array of string representations for an enum
-#define CONFIG_ENUM_STRINGS(NAME, DATA) static const char* NAME##Strings[] = { DATA(CONFIG_ENUM_STRING) }
+#define CONFIG_ENUM_STRINGS(NAME, DATA) static const char *NAME##Strings[] = {DATA(CONFIG_ENUM_STRING)}
+
+#ifndef ssizeof
+#define ssizeof(x) static_cast<long>(sizeof(x))
+#endif
+
+#ifndef sstrlen
+#define sstrlen(x) static_cast<int>(strlen(x))
+#endif
 
 namespace Utility
 {
-	// Templated function for clamping a value between a minimum and a maximum
-	template <class T>
-	constexpr T Clamp(const T& nValue, const T& nMin, const T& nMax)
+// Templated function for clamping a value between a minimum and a maximum
+template <class T>
+constexpr T Clamp(const T &nValue, const T &nMin, const T &nMax)
+{
+	return (nValue < nMin) ? nMin : (nValue > nMax) ? nMax
+							: nValue;
+}
+
+// Templated function for taking the minimum of two values
+template <class T>
+constexpr T Min(const T &nLHS, const T &nRHS)
+{
+	return nLHS < nRHS ? nLHS : nRHS;
+}
+
+// Templated function for taking the maximum of two values
+template <class T>
+constexpr T Max(const T &nLHS, const T &nRHS)
+{
+	return nLHS > nRHS ? nLHS : nRHS;
+}
+
+// Function for performing a linear interpolation of a value
+constexpr float Lerp(float nValue, float nMinA, float nMaxA, float nMinB, float nMaxB)
+{
+	return nMinB + (nValue - nMinA) * ((nMaxB - nMinB) / (nMaxA - nMinA));
+}
+
+// Return number of elements in an array
+template <class T, size_t N>
+constexpr size_t ArraySize(const T (&)[N]) { return N; }
+
+// Returns whether some value is a power of 2
+template <class T>
+constexpr bool IsPowerOfTwo(const T &nValue)
+{
+	return nValue && ((nValue & (nValue - 1)) == 0);
+}
+
+// Rounds a number to a nearest multiple; only works for integer values/multiples
+template <class T>
+constexpr T RoundToNearestMultiple(const T &nValue, const T &nMultiple)
+{
+	return ((nValue + nMultiple / 2) / nMultiple) * nMultiple;
+}
+
+// Convert between milliseconds and ticks of a 1MHz clock
+template <class T>
+constexpr T MillisToTicks(const T &nMillis)
+{
+	return nMillis * 1000;
+}
+
+template <class T>
+constexpr T TicksToMillis(const T &nTicks)
+{
+	return nTicks / 1000;
+}
+
+// Computes the Roland checksum
+constexpr uint8_t RolandChecksum(const uint8_t *pData, size_t nSize)
+{
+	uint8_t nSum = 0;
+	for (size_t i = 0; i < nSize; ++i)
+		nSum = (nSum + pData[i]) & 0x7F;
+
+	return 128 - nSum;
+}
+
+// Comparators for sorting
+namespace Comparator
+{
+template <class T>
+using TComparator = bool (*)(const T &, const T &);
+
+template <class T>
+inline bool LessThan(const T &ObjectA, const T &ObjectB)
+{
+	return ObjectA < ObjectB;
+}
+
+template <class T>
+inline bool GreaterThan(const T &ObjectA, const T &ObjectB)
+{
+	return ObjectA > ObjectB;
+}
+
+inline bool CaseInsensitiveAscending(const CString &StringA, const CString &StringB)
+{
+	return strcasecmp(StringA, StringB) < 0;
+}
+} // namespace Comparator
+
+// Swaps two objects in-place
+template <class T>
+inline void Swap(T &ObjectA, T &ObjectB)
+{
+	uint8_t Buffer[sizeof(T)];
+	memcpy(Buffer, &ObjectA, sizeof(T));
+	memcpy(&ObjectA, &ObjectB, sizeof(T));
+	memcpy(&ObjectB, Buffer, sizeof(T));
+}
+
+namespace
+{
+// Quicksort partition function (private)
+template <class T>
+size_t Partition(T *Items, Comparator::TComparator<T> Comparator, size_t nLow, size_t nHigh)
+{
+	const size_t nPivotIndex = (nHigh + nLow) / 2;
+	T *Pivot = &Items[nPivotIndex];
+
+	while (true)
 	{
-		return (nValue < nMin) ? nMin : (nValue > nMax) ? nMax : nValue;
-	}
+		while (Comparator(Items[nLow], *Pivot))
+			++nLow;
 
-	// Templated function for taking the minimum of two values
-	template <class T>
-	constexpr T Min(const T& nLHS, const T& nRHS)
-	{
-		return nLHS < nRHS ? nLHS : nRHS;
-	}
+		while (Comparator(*Pivot, Items[nHigh]))
+			--nHigh;
 
-	// Templated function for taking the maximum of two values
-	template <class T>
-	constexpr T Max(const T& nLHS, const T& nRHS)
-	{
-		return nLHS > nRHS ? nLHS : nRHS;
-	}
+		if (nLow >= nHigh)
+			return nHigh;
 
-	// Function for performing a linear interpolation of a value
-	constexpr float Lerp(float nValue, float nMinA, float nMaxA, float nMinB, float nMaxB)
-	{
-		return nMinB + (nValue - nMinA) * ((nMaxB - nMinB) / (nMaxA - nMinA));
-	}
+		Swap(Items[nLow], Items[nHigh]);
 
-	// Return number of elements in an array
-	template <class T, size_t N>
-	constexpr size_t ArraySize(const T(&)[N]) { return N; }
+		// Update pointer if pivot was swapped
+		if (nPivotIndex == nLow)
+			Pivot = &Items[nHigh];
+		else if (nPivotIndex == nHigh)
+			Pivot = &Items[nLow];
 
-	// Returns whether some value is a power of 2
-	template <class T>
-	constexpr bool IsPowerOfTwo(const T& nValue)
-	{
-		return nValue && ((nValue & (nValue - 1)) == 0);
-	}
-
-	// Rounds a number to a nearest multiple; only works for integer values/multiples
-	template <class T>
-	constexpr T RoundToNearestMultiple(const T& nValue, const T& nMultiple)
-	{
-		return ((nValue + nMultiple / 2) / nMultiple) * nMultiple;
-	}
-
-	// Convert between milliseconds and ticks of a 1MHz clock
-	template <class T>
-	constexpr T MillisToTicks(const T& nMillis)
-	{
-		return nMillis * 1000;
-	}
-
-	template <class T>
-	constexpr T TicksToMillis(const T& nTicks)
-	{
-		return nTicks / 1000;
-	}
-
-	// Computes the Roland checksum
-	constexpr u8 RolandChecksum(const u8* pData, size_t nSize)
-	{
-		u8 nSum = 0;
-		for (size_t i = 0; i < nSize; ++i)
-			nSum = (nSum + pData[i]) & 0x7F;
-
-		return 128 - nSum;
-	}
-
-	// Comparators for sorting
-	namespace Comparator
-	{
-		template<class T>
-		using TComparator = bool (*)(const T&, const T&);
-
-		template<class T>
-		inline bool LessThan(const T& ObjectA, const T& ObjectB)
-		{
-			return ObjectA < ObjectB;
-		}
-
-		template<class T>
-		inline bool GreaterThan(const T& ObjectA, const T& ObjectB)
-		{
-			return ObjectA > ObjectB;
-		}
-
-		inline bool CaseInsensitiveAscending(const CString& StringA, const CString& StringB)
-		{
-			return strcasecmp(StringA, StringB) < 0;
-		}
-	}
-
-	// Swaps two objects in-place
-	template<class T>
-	inline void Swap(T& ObjectA, T& ObjectB)
-	{
-		u8 Buffer[sizeof(T)];
-		memcpy(Buffer, &ObjectA, sizeof(T));
-		memcpy(&ObjectA, &ObjectB, sizeof(T));
-		memcpy(&ObjectB, Buffer, sizeof(T));
-	}
-
-	namespace
-	{
-		// Quicksort partition function (private)
-		template<class T>
-		size_t Partition(T* Items, Comparator::TComparator<T> Comparator, size_t nLow, size_t nHigh)
-		{
-			const size_t nPivotIndex = (nHigh + nLow) / 2;
-			T* Pivot = &Items[nPivotIndex];
-
-			while (true)
-			{
-				while (Comparator(Items[nLow], *Pivot))
-					++nLow;
-
-				while (Comparator(*Pivot, Items[nHigh]))
-					--nHigh;
-
-				if (nLow >= nHigh)
-					return nHigh;
-
-				Swap(Items[nLow], Items[nHigh]);
-
-				// Update pointer if pivot was swapped
-				if (nPivotIndex == nLow)
-					Pivot = &Items[nHigh];
-				else if (nPivotIndex == nHigh)
-					Pivot = &Items[nLow];
-
-				++nLow;
-				--nHigh;
-			}
-		}
-	}
-
-	// Sorts an array in-place using the Tony Hoare Quicksort algorithm
-	template <class T>
-	void QSort(T* Items, Comparator::TComparator<T> Comparator, size_t nLow, size_t nHigh)
-	{
-		if (nLow < nHigh)
-		{
-			size_t p = Partition(Items, Comparator, nLow, nHigh);
-			QSort(Items, Comparator, nLow, p);
-			QSort(Items, Comparator, p + 1, nHigh);
-		}
+		++nLow;
+		--nHigh;
 	}
 }
+} // namespace
+
+// Sorts an array in-place using the Tony Hoare Quicksort algorithm
+template <class T>
+void QSort(T *Items, Comparator::TComparator<T> Comparator, size_t nLow, size_t nHigh)
+{
+	if (nLow < nHigh)
+	{
+		size_t p = Partition(Items, Comparator, nLow, nHigh);
+		QSort(Items, Comparator, nLow, p);
+		QSort(Items, Comparator, p + 1, nHigh);
+	}
+}
+} // namespace Utility

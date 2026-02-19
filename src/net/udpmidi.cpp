@@ -20,22 +20,28 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include "udpmidi.h"
+
+#include <cassert>
+#include <cstdint>
+
 #include <circle/logger.h>
 #include <circle/net/in.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
 #include <circle/sched/scheduler.h>
-
-#include "udpmidi.h"
+#include <circle/sched/task.h>
+#include <circle/sysconfig.h>
 
 LOGMODULE("udpmidi");
 
-constexpr u16 MIDIPort = 1999;
+constexpr uint16_t MIDIPort = 1999;
 
-CUDPMIDIReceiver::CUDPMIDIReceiver(CUDPMIDIHandler* pHandler)
-	: CTask(TASK_STACK_SIZE, true),
-	  m_pMIDISocket(nullptr),
-	  m_MIDIBuffer{0},
-	  m_pHandler(pHandler)
+CUDPMIDIReceiver::CUDPMIDIReceiver(CUDPMIDIHandler *pHandler) :
+CTask{TASK_STACK_SIZE, true},
+m_pMIDISocket{},
+m_MIDIBuffer{},
+m_pHandler{pHandler}
 {
 }
 
@@ -49,7 +55,7 @@ bool CUDPMIDIReceiver::Initialize()
 {
 	assert(m_pMIDISocket == nullptr);
 
-	CNetSubSystem* const pNet = CNetSubSystem::Get();
+	CNetSubSystem *const pNet = CNetSubSystem::Get();
 
 	if ((m_pMIDISocket = new CSocket(pNet, IPPROTO_UDP)) == nullptr)
 		return false;
@@ -71,7 +77,7 @@ void CUDPMIDIReceiver::Run()
 	assert(m_pHandler != nullptr);
 	assert(m_pMIDISocket != nullptr);
 
-	CScheduler* const pScheduler = CScheduler::Get();
+	CScheduler *const pScheduler = CScheduler::Get();
 
 	while (true)
 	{
