@@ -13,12 +13,12 @@
 #include "zyn/Phaser.h"
 #include "zyn/Sympathetic.h"
 
-FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
+FX::ParameterType FX::s_Parameter[FX::Unknown] =
 {
-	{0, FX::effects_num - 1, 0, 1, "Slot1", ToEffectName, FX::FXSaveAsString},
-	{0, FX::effects_num - 1, 0, 1, "Slot2", ToEffectName, FX::FXSaveAsString},
-	{0, FX::effects_num - 1, 0, 1, "Slot3", ToEffectName, FX::FXSaveAsString},
-	{0, zyn::Distortion::presets_num - 1, 0, 1, "ZynDistortionPreset", zyn::Distortion::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, FX::effects_num - 1, 0, 1, "Slot1", ToEffectName, FX::Flag::SaveAsString},
+	{0, FX::effects_num - 1, 0, 1, "Slot2", ToEffectName, FX::Flag::SaveAsString},
+	{0, FX::effects_num - 1, 0, 1, "Slot3", ToEffectName, FX::Flag::SaveAsString},
+	{0, zyn::Distortion::presets_num - 1, 0, 1, "ZynDistortionPreset", zyn::Distortion::ToPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 100, 0, 1, "ZynDistortionMix", ToDryWet},
 	{0, 127, 0, 1, "ZynDistortionPanning", ToPan},
 	{0, 127, 0, 1, "ZynDistortionDrive"},
@@ -39,7 +39,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 100, 50, 1, "YKChorusLFORate1"},
 	{0, 100, 83, 1, "YKChorusLFORate2"},
 	{0, 1, 0, 1, "YKChorusBypass", ToOnOff},
-	{0, zyn::Chorus::presets_num - 1, 0, 1, "ZynChorusPreset", zyn::Chorus::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, zyn::Chorus::presets_num - 1, 0, 1, "ZynChorusPreset", zyn::Chorus::ToPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 100, 0, 1, "ZynChorusMix", ToDryWet},
 	{0, 127, 64, 1, "ZynChorusPanning", ToPan},
 	{1, 600, 14, 1, "ZynChorusLFOFreq"},
@@ -53,7 +53,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 3, 0, 1, "ZynChorusMode", zyn::Chorus::ToChorusMode},
 	{0, 1, 0, 1, "ZynChorusSubtractive", ToOnOff},
 	{0, 1, 0, 1, "ZynChorusBypass", ToOnOff},
-	{0, zyn::Sympathetic::presets_num - 1, 0, 1, "ZynSympatheticPreset", zyn::Sympathetic::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, zyn::Sympathetic::presets_num - 1, 0, 1, "ZynSympatheticPreset", zyn::Sympathetic::ToPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 100, 0, 1, "ZynSympatheticMix", ToDryWet},
 	{0, 127, 64, 1, "ZynSympatheticPanning", ToPan},
 	{0, 127, 125, 1, "ZynSympatheticQ"},
@@ -70,7 +70,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 60, 60, 1, "ZynSympatheticHighcut", ToHz},
 	{0, 1, 0, 1, "ZynSympatheticNegate", ToOnOff},
 	{0, 1, 0, 1, "ZynSympatheticBypass", ToOnOff},
-	{0, zyn::APhaser::presets_num - 1, 0, 1, "ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, zyn::APhaser::presets_num - 1, 0, 1, "ZynAPhaserPreset", zyn::APhaser::ToPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 100, 0, 1, "ZynAPhaserMix", ToDryWet},
 	{0, 127, 64, 1, "ZynAPhaserPanning", ToPan},
 	{1, 600, 14, 1, "ZynAPhaserLFOFreq"},
@@ -87,7 +87,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 127, 10, 1, "ZynAPhaserMismatch"},
 	{0, 1, 1, 1, "ZynAPhaserHyper", ToOnOff},
 	{0, 1, 0, 1, "ZynAPhaserBypass", ToOnOff},
-	{0, zyn::Phaser::presets_num - 1, 0, 1, "ZynPhaserPreset", zyn::Phaser::ToPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, zyn::Phaser::presets_num - 1, 0, 1, "ZynPhaserPreset", zyn::Phaser::ToPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 100, 0, 1, "ZynPhaserMix", ToDryWet},
 	{0, 127, 64, 1, "ZynPhaserPanning", ToPan},
 	{1, 600, 11, 1, "ZynPhaserLFOFreq"},
@@ -103,7 +103,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 1, 0, 1, "ZynPhaserBypass", ToOnOff},
 	{0, 100, 0, 1, "DreamDelayMix", ToDryWet},
 	{0, 2, 0, 1, "DreamDelayMode", ToDelayMode},
-	{0, 112, 36, 1, "DreamDelayTime", ToDelayTime, FX::FXComposite},
+	{0, 112, 36, 1, "DreamDelayTime", ToDelayTime, FX::Flag::Composite},
 	{0, 112, 36, 1, "DreamDelayTimeL", ToDelayTime},
 	{0, 112, 36, 1, "DreamDelayTimeR", ToDelayTime},
 	{30, 240, 120, 1, "DreamDelayTempo", ToBPM},
@@ -117,7 +117,7 @@ FX::FXParameterType FX::s_FXParameter[FX::FXParameterUnknown] =
 	{0, 99, 85, 1, "PlateReverbLowPass"},
 	{0, 99, 65, 1, "PlateReverbDiffusion"},
 	{0, 1, 0, 1, "PlateReverbBypass", ToOnOff},
-	{0, AudioEffectCloudSeed2::presets_num - 1, 0, 1, "CloudSeed2Preset", AudioEffectCloudSeed2::getPresetName, FX::FXComposite | FX::FXSaveAsString},
+	{0, AudioEffectCloudSeed2::presets_num - 1, 0, 1, "CloudSeed2Preset", AudioEffectCloudSeed2::getPresetName, FX::Flag::Composite | FX::Flag::SaveAsString},
 	{0, 1, 0, 1, "CloudSeed2Interpolation", ToOnOff},
 	{0, 1, 0, 1, "CloudSeed2LowCutEnabled", ToOnOff},
 	{0, 1, 0, 1, "CloudSeed2HighCutEnabled", ToOnOff},
@@ -196,25 +196,25 @@ static int getIDFromEffectName(const char *name)
 	return 0;
 }
 
-int FX::getIDFromName(TFXParameter param, const char *name)
+int FX::getIDFromName(Parameter param, const char *name)
 {
 	switch (param)
 	{
-	case FX::FXParameterSlot0:
-	case FX::FXParameterSlot1:
-	case FX::FXParameterSlot2:
+	case FX::Parameter::Slot0:
+	case FX::Parameter::Slot1:
+	case FX::Parameter::Slot2:
 		return getIDFromEffectName(name);
-	case FX::FXParameterZynDistortionPreset:
+	case FX::Parameter::ZynDistortionPreset:
 		return zyn::Distortion::ToIDFromPreset(name);
-	case FX::FXParameterZynChorusPreset:
+	case FX::Parameter::ZynChorusPreset:
 		return zyn::Chorus::ToIDFromPreset(name);
-	case FX::FXParameterZynSympatheticPreset:
+	case FX::Parameter::ZynSympatheticPreset:
 		return zyn::Sympathetic::ToIDFromPreset(name);
-	case FX::FXParameterZynAPhaserPreset:
+	case FX::Parameter::ZynAPhaserPreset:
 		return zyn::APhaser::ToIDFromPreset(name);
-	case FX::FXParameterZynPhaserPreset:
+	case FX::Parameter::ZynPhaserPreset:
 		return zyn::Phaser::ToIDFromPreset(name);
-	case FX::FXParameterCloudSeed2Preset:
+	case FX::Parameter::CloudSeed2Preset:
 		return AudioEffectCloudSeed2::getIDFromPresetName(name);
 	default:
 		assert(false);
@@ -222,26 +222,26 @@ int FX::getIDFromName(TFXParameter param, const char *name)
 	return 0;
 }
 
-const char *FX::getNameFromID(TFXParameter param, int nID)
+const char *FX::getNameFromID(Parameter param, int nID)
 {
 	switch (param)
 	{
-	case FX::FXParameterSlot0:
-	case FX::FXParameterSlot1:
-	case FX::FXParameterSlot2:
+	case FX::Parameter::Slot0:
+	case FX::Parameter::Slot1:
+	case FX::Parameter::Slot2:
 		assert(nID < FX::effects_num);
 		return FX::s_effects[nID].Name;
-	case FX::FXParameterZynDistortionPreset:
+	case FX::Parameter::ZynDistortionPreset:
 		return zyn::Distortion::ToPresetNameChar(nID);
-	case FX::FXParameterZynChorusPreset:
+	case FX::Parameter::ZynChorusPreset:
 		return zyn::Chorus::ToPresetNameChar(nID);
-	case FX::FXParameterZynSympatheticPreset:
+	case FX::Parameter::ZynSympatheticPreset:
 		return zyn::Sympathetic::ToPresetNameChar(nID);
-	case FX::FXParameterZynAPhaserPreset:
+	case FX::Parameter::ZynAPhaserPreset:
 		return zyn::APhaser::ToPresetNameChar(nID);
-	case FX::FXParameterZynPhaserPreset:
+	case FX::Parameter::ZynPhaserPreset:
 		return zyn::Phaser::ToPresetNameChar(nID);
-	case FX::FXParameterCloudSeed2Preset:
+	case FX::Parameter::CloudSeed2Preset:
 		return AudioEffectCloudSeed2::getPresetNameChar(nID);
 	default:
 		assert(false);

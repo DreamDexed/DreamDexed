@@ -316,17 +316,17 @@ bool CPerformanceConfig::Load()
 	{
 		CString PropertyName;
 
-		for (int nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (int nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
+			const FX::ParameterType &p = FX::s_Parameter[nParam];
 
 			if (nFX == CConfig::MasterFX)
 				PropertyName.Format("MasterFX%s", p.Name);
 			else
 				PropertyName.Format("SendFX%d%s", nFX + 1, p.Name);
 
-			if (p.Flags & FX::FXSaveAsString)
-				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::TFXParameter(nParam), m_Properties.GetString(PropertyName, ""));
+			if (p.Flags & FX::Flag::SaveAsString)
+				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::Parameter(nParam), m_Properties.GetString(PropertyName, ""));
 			else
 				m_nFXParameter[nFX][nParam] = m_Properties.GetSignedNumber(PropertyName, p.Default);
 		}
@@ -334,7 +334,7 @@ bool CPerformanceConfig::Load()
 
 	if (CConfig::FXChains)
 	{
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterReturnLevel] = FX::s_FXParameter[FX::FXParameterReturnLevel].Maximum;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::ReturnLevel] = FX::s_Parameter[FX::Parameter::ReturnLevel].Maximum;
 	}
 
 	m_nMixerDryLevel = m_Properties.GetNumber("MixerDryLevel", 99);
@@ -345,27 +345,27 @@ bool CPerformanceConfig::Load()
 	{
 		bool bHasCompressor = m_Properties.GetNumber("CompressorEnable", 0);
 
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterSlot0] = bHasCompressor ? FX::getIDFromName(FX::FXParameterSlot0, "Compressor") : 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorPreGain] = 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorThresh] = -7;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRatio] = 5;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorAttack] = 0;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorRelease] = 200;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorHPFilterEnable] = 1;
-		m_nFXParameter[CConfig::MasterFX][FX::FXParameterCompressorBypass] = 0;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::Slot0] = bHasCompressor ? FX::getIDFromName(FX::Parameter::Slot0, "Compressor") : 0;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorPreGain] = 0;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorThresh] = -7;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorRatio] = 5;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorAttack] = 0;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorRelease] = 200;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorHPFilterEnable] = 1;
+		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorBypass] = 0;
 	}
 
 	if (m_Properties.IsSet("ReverbEnable") && CConfig::FXChains)
 	{
 		// setup Reverb to FX1
-		m_nFXParameter[0][FX::FXParameterSlot0] = FX::getIDFromName(FX::FXParameterSlot0, "PlateReverb");
-		m_nFXParameter[0][FX::FXParameterPlateReverbMix] = m_Properties.GetNumber("ReverbEnable", 1) ? 100 : 0;
-		m_nFXParameter[0][FX::FXParameterPlateReverbSize] = m_Properties.GetSignedNumber("ReverbSize", 70);
-		m_nFXParameter[0][FX::FXParameterPlateReverbHighDamp] = m_Properties.GetSignedNumber("ReverbHighDamp", 50);
-		m_nFXParameter[0][FX::FXParameterPlateReverbLowDamp] = m_Properties.GetSignedNumber("ReverbLowDamp", 50);
-		m_nFXParameter[0][FX::FXParameterPlateReverbLowPass] = m_Properties.GetSignedNumber("ReverbLowPass", 30);
-		m_nFXParameter[0][FX::FXParameterPlateReverbDiffusion] = m_Properties.GetSignedNumber("ReverbDiffusion", 65);
-		m_nFXParameter[0][FX::FXParameterReturnLevel] = m_Properties.GetNumber("ReverbEnable", 1) ? m_Properties.GetSignedNumber("ReverbLevel", 99) : 0;
+		m_nFXParameter[0][FX::Parameter::Slot0] = FX::getIDFromName(FX::Parameter::Slot0, "PlateReverb");
+		m_nFXParameter[0][FX::Parameter::PlateReverbMix] = m_Properties.GetNumber("ReverbEnable", 1) ? 100 : 0;
+		m_nFXParameter[0][FX::Parameter::PlateReverbSize] = m_Properties.GetSignedNumber("ReverbSize", 70);
+		m_nFXParameter[0][FX::Parameter::PlateReverbHighDamp] = m_Properties.GetSignedNumber("ReverbHighDamp", 50);
+		m_nFXParameter[0][FX::Parameter::PlateReverbLowDamp] = m_Properties.GetSignedNumber("ReverbLowDamp", 50);
+		m_nFXParameter[0][FX::Parameter::PlateReverbLowPass] = m_Properties.GetSignedNumber("ReverbLowPass", 30);
+		m_nFXParameter[0][FX::Parameter::PlateReverbDiffusion] = m_Properties.GetSignedNumber("ReverbDiffusion", 65);
+		m_nFXParameter[0][FX::Parameter::ReturnLevel] = m_Properties.GetNumber("ReverbEnable", 1) ? m_Properties.GetSignedNumber("ReverbLevel", 99) : 0;
 	}
 
 	return bResult;
@@ -574,17 +574,17 @@ bool CPerformanceConfig::Save()
 
 		for (int nSlot = 0; nSlot < 3; ++nSlot)
 		{
-			int nSlotParam = FX::FXParameterSlot0 + nSlot;
+			int nSlotParam = FX::Parameter::Slot0 + nSlot;
 			int nEffectID = m_nFXParameter[nFX][nSlotParam];
 			const FX::EffectType &effect = FX::s_effects[nEffectID];
 
-			PropertyName.Format("%s%s", FXName.c_str(), FX::s_FXParameter[nSlotParam].Name);
+			PropertyName.Format("%s%s", FXName.c_str(), FX::s_Parameter[nSlotParam].Name);
 			m_Properties.SetString(PropertyName, effect.Name);
 		}
 
 		for (int nSlot = 0; nSlot < 3; ++nSlot)
 		{
-			int nSlotParam = FX::FXParameterSlot0 + nSlot;
+			int nSlotParam = FX::Parameter::Slot0 + nSlot;
 			int nEffectID = m_nFXParameter[nFX][nSlotParam];
 			const FX::EffectType &effect = FX::s_effects[nEffectID];
 
@@ -592,11 +592,11 @@ bool CPerformanceConfig::Save()
 
 			for (int nParam = effect.MinID; nParam <= effect.MaxID; ++nParam)
 			{
-				const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-				PropertyName.Format("%s%s", FXName.c_str(), FX::s_FXParameter[nParam].Name);
+				const FX::ParameterType &p = FX::s_Parameter[nParam];
+				PropertyName.Format("%s%s", FXName.c_str(), FX::s_Parameter[nParam].Name);
 
-				if (p.Flags & FX::FXSaveAsString)
-					m_Properties.SetString(PropertyName, FX::getNameFromID(FX::TFXParameter(nParam), m_nFXParameter[nFX][nParam]));
+				if (p.Flags & FX::Flag::SaveAsString)
+					m_Properties.SetString(PropertyName, FX::getNameFromID(FX::Parameter(nParam), m_nFXParameter[nFX][nParam]));
 				else
 					m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][nParam]);
 			}
@@ -604,12 +604,12 @@ bool CPerformanceConfig::Save()
 
 		if (nFX != CConfig::MasterFX)
 		{
-			PropertyName.Format("%s%s", FXName.c_str(), FX::s_FXParameter[FX::FXParameterReturnLevel].Name);
-			m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::FXParameterReturnLevel]);
+			PropertyName.Format("%s%s", FXName.c_str(), FX::s_Parameter[FX::Parameter::ReturnLevel].Name);
+			m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::Parameter::ReturnLevel]);
 		}
 
-		PropertyName.Format("%s%s", FXName.c_str(), FX::s_FXParameter[FX::FXParameterBypass].Name);
-		m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::FXParameterBypass]);
+		PropertyName.Format("%s%s", FXName.c_str(), FX::s_Parameter[FX::Parameter::Bypass].Name);
+		m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::Parameter::Bypass]);
 	}
 
 	m_Properties.SetNumber("MixerDryLevel", m_nMixerDryLevel);
@@ -942,17 +942,17 @@ void CPerformanceConfig::SetEQPreHighcut(int nValue, int nTG)
 	m_nEQPreHighcut[nTG] = nValue;
 }
 
-int CPerformanceConfig::GetFXParameter(FX::TFXParameter nParameter, int nFX) const
+int CPerformanceConfig::GetFXParameter(FX::Parameter nParameter, int nFX) const
 {
 	assert(nFX < CConfig::FXChains);
-	assert(nParameter < FX::FXParameterUnknown);
+	assert(nParameter < FX::Parameter::Unknown);
 	return m_nFXParameter[nFX][nParameter];
 }
 
-void CPerformanceConfig::SetFXParameter(FX::TFXParameter nParameter, int nValue, int nFX)
+void CPerformanceConfig::SetFXParameter(FX::Parameter nParameter, int nValue, int nFX)
 {
 	assert(nFX < CConfig::FXChains);
-	assert(nParameter < FX::FXParameterUnknown);
+	assert(nParameter < FX::Parameter::Unknown);
 	m_nFXParameter[nFX][nParameter] = nValue;
 }
 

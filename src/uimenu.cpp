@@ -199,8 +199,8 @@ const CUIMenu::TMenuItem CUIMenu::s_MixerMenu[] =
 	{"Master Volume", EditGlobalParameter, 0, CMiniDexed::ParameterMasterVolume},
 #ifdef ARM_ALLOW_MULTI_CORE
 	{"Dry Level", EditGlobalParameter, 0, CMiniDexed::ParameterMixerDryLevel},
-	{"FX1 Return", EditFXParameterG, 0, FX::FXParameterReturnLevel, .Parameter2 = 0},
-	{"FX2 Return", EditFXParameterG, 0, FX::FXParameterReturnLevel, .Parameter2 = 1},
+	{"FX1 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .Parameter2 = 0},
+	{"FX2 Return", EditFXParameterG, 0, FX::Parameter::ReturnLevel, .Parameter2 = 1},
 #endif
 	{0},
 };
@@ -218,20 +218,20 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_SendFXMenu[] =
 {
-	{"Slot1", MenuHandler, s_FXListMenu, FX::FXParameterSlot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot2", MenuHandler, s_FXListMenu, FX::FXParameterSlot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot3", MenuHandler, s_FXListMenu, FX::FXParameterSlot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Return Level", EditFXParameter2, 0, FX::FXParameterReturnLevel},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterBypass},
+	{"Slot1", MenuHandler, s_FXListMenu, FX::Parameter::Slot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Slot2", MenuHandler, s_FXListMenu, FX::Parameter::Slot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Slot3", MenuHandler, s_FXListMenu, FX::Parameter::Slot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Return Level", EditFXParameter2, 0, FX::Parameter::ReturnLevel},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::Bypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_MasterFXMenu[] =
 {
-	{"Slot1", MenuHandler, s_FXListMenu, FX::FXParameterSlot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot2", MenuHandler, s_FXListMenu, FX::FXParameterSlot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Slot3", MenuHandler, s_FXListMenu, FX::FXParameterSlot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterBypass},
+	{"Slot1", MenuHandler, s_FXListMenu, FX::Parameter::Slot0, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Slot2", MenuHandler, s_FXListMenu, FX::Parameter::Slot1, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Slot3", MenuHandler, s_FXListMenu, FX::Parameter::Slot2, .OnSelect = SelectCurrentEffect, .StepDown = StepDownEffect, .StepUp = StepUpEffect},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::Bypass},
 	{0},
 };
 
@@ -254,154 +254,154 @@ const CUIMenu::TMenuItem CUIMenu::s_FXListMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_ZynDistortionMenu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterZynDistortionPreset},
-	{"Mix", EditFXParameter2, 0, FX::FXParameterZynDistortionMix},
-	{"Panning", EditFXParameter2, 0, FX::FXParameterZynDistortionPanning},
-	{"Drive", EditFXParameter2, 0, FX::FXParameterZynDistortionDrive},
-	{"Level", EditFXParameter2, 0, FX::FXParameterZynDistortionLevel},
-	{"Type", EditFXParameter2, 0, FX::FXParameterZynDistortionType},
-	{"Negate", EditFXParameter2, 0, FX::FXParameterZynDistortionNegate},
-	{"Filtering", EditFXParameter2, 0, FX::FXParameterZynDistortionFiltering},
-	{"Lowcut", EditFXParameter2, 0, FX::FXParameterZynDistortionLowcut},
-	{"Highcut", EditFXParameter2, 0, FX::FXParameterZynDistortionHighcut},
-	{"Stereo", EditFXParameter2, 0, FX::FXParameterZynDistortionStereo},
-	{"LR Cross", EditFXParameter2, 0, FX::FXParameterZynDistortionLRCross},
-	{"Shape", EditFXParameter2, 0, FX::FXParameterZynDistortionShape},
-	{"Offset", EditFXParameter2, 0, FX::FXParameterZynDistortionOffset},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterZynDistortionBypass},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::ZynDistortionPreset},
+	{"Mix", EditFXParameter2, 0, FX::Parameter::ZynDistortionMix},
+	{"Panning", EditFXParameter2, 0, FX::Parameter::ZynDistortionPanning},
+	{"Drive", EditFXParameter2, 0, FX::Parameter::ZynDistortionDrive},
+	{"Level", EditFXParameter2, 0, FX::Parameter::ZynDistortionLevel},
+	{"Type", EditFXParameter2, 0, FX::Parameter::ZynDistortionType},
+	{"Negate", EditFXParameter2, 0, FX::Parameter::ZynDistortionNegate},
+	{"Filtering", EditFXParameter2, 0, FX::Parameter::ZynDistortionFiltering},
+	{"Lowcut", EditFXParameter2, 0, FX::Parameter::ZynDistortionLowcut},
+	{"Highcut", EditFXParameter2, 0, FX::Parameter::ZynDistortionHighcut},
+	{"Stereo", EditFXParameter2, 0, FX::Parameter::ZynDistortionStereo},
+	{"LR Cross", EditFXParameter2, 0, FX::Parameter::ZynDistortionLRCross},
+	{"Shape", EditFXParameter2, 0, FX::Parameter::ZynDistortionShape},
+	{"Offset", EditFXParameter2, 0, FX::Parameter::ZynDistortionOffset},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::ZynDistortionBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_YKChorusMenu[] =
 {
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterYKChorusMix},
-	{"Enable I", EditFXParameter2, 0, FX::FXParameterYKChorusEnable1},
-	{"Enable II", EditFXParameter2, 0, FX::FXParameterYKChorusEnable2},
-	{"LFO Rate I", EditFXParameter2, 0, FX::FXParameterYKChorusLFORate1},
-	{"LFO Rate II", EditFXParameter2, 0, FX::FXParameterYKChorusLFORate2},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterYKChorusBypass},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::YKChorusMix},
+	{"Enable I", EditFXParameter2, 0, FX::Parameter::YKChorusEnable1},
+	{"Enable II", EditFXParameter2, 0, FX::Parameter::YKChorusEnable2},
+	{"LFO Rate I", EditFXParameter2, 0, FX::Parameter::YKChorusLFORate1},
+	{"LFO Rate II", EditFXParameter2, 0, FX::Parameter::YKChorusLFORate2},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::YKChorusBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_ZynChorusMenu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterZynChorusPreset},
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterZynChorusMix},
-	{"Panning", EditFXParameter2, 0, FX::FXParameterZynChorusPanning},
-	{"LFO Freq", EditFXParameter2, 0, FX::FXParameterZynChorusLFOFreq},
-	{"LFO Rndness", EditFXParameter2, 0, FX::FXParameterZynChorusLFORandomness},
-	{"LFO Type", EditFXParameter2, 0, FX::FXParameterZynChorusLFOType},
-	{"LFO LR Delay", EditFXParameter2, 0, FX::FXParameterZynChorusLFOLRDelay},
-	{"Depth", EditFXParameter2, 0, FX::FXParameterZynChorusDepth},
-	{"Delay", EditFXParameter2, 0, FX::FXParameterZynChorusDelay},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterZynChorusFeedback},
-	{"LR Cross", EditFXParameter2, 0, FX::FXParameterZynChorusLRCross},
-	{"Mode", EditFXParameter2, 0, FX::FXParameterZynChorusMode},
-	{"Subtractive", EditFXParameter2, 0, FX::FXParameterZynChorusSubtractive},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterZynChorusBypass},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::ZynChorusPreset},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::ZynChorusMix},
+	{"Panning", EditFXParameter2, 0, FX::Parameter::ZynChorusPanning},
+	{"LFO Freq", EditFXParameter2, 0, FX::Parameter::ZynChorusLFOFreq},
+	{"LFO Rndness", EditFXParameter2, 0, FX::Parameter::ZynChorusLFORandomness},
+	{"LFO Type", EditFXParameter2, 0, FX::Parameter::ZynChorusLFOType},
+	{"LFO LR Delay", EditFXParameter2, 0, FX::Parameter::ZynChorusLFOLRDelay},
+	{"Depth", EditFXParameter2, 0, FX::Parameter::ZynChorusDepth},
+	{"Delay", EditFXParameter2, 0, FX::Parameter::ZynChorusDelay},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::ZynChorusFeedback},
+	{"LR Cross", EditFXParameter2, 0, FX::Parameter::ZynChorusLRCross},
+	{"Mode", EditFXParameter2, 0, FX::Parameter::ZynChorusMode},
+	{"Subtractive", EditFXParameter2, 0, FX::Parameter::ZynChorusSubtractive},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::ZynChorusBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_ZynSympatheticMenu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterZynSympatheticPreset},
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterZynSympatheticMix},
-	{"Panning", EditFXParameter2, 0, FX::FXParameterZynSympatheticPanning},
-	{"Q", EditFXParameter2, 0, FX::FXParameterZynSympatheticQ},
-	{"Q Sustain", EditFXParameter2, 0, FX::FXParameterZynSympatheticQSustain},
-	{"Drive", EditFXParameter2, 0, FX::FXParameterZynSympatheticDrive},
-	{"Level", EditFXParameter2, 0, FX::FXParameterZynSympatheticLevel},
-	{"Type", EditFXParameter2, 0, FX::FXParameterZynSympatheticType},
-	{"Unison Size", EditFXParameter2, 0, FX::FXParameterZynSympatheticUnisonSize},
-	{"Unison Spread", EditFXParameter2, 0, FX::FXParameterZynSympatheticUnisonSpread},
-	{"Strings", EditFXParameter2, 0, FX::FXParameterZynSympatheticStrings},
-	{"Interval", EditFXParameter2, 0, FX::FXParameterZynSympatheticInterval},
-	{"Base Note", EditFXParameter2, 0, FX::FXParameterZynSympatheticBaseNote},
-	{"Lowcut", EditFXParameter2, 0, FX::FXParameterZynSympatheticLowcut},
-	{"Highcut", EditFXParameter2, 0, FX::FXParameterZynSympatheticHighcut},
-	{"Negate", EditFXParameter2, 0, FX::FXParameterZynSympatheticNegate},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterZynSympatheticBypass},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::ZynSympatheticPreset},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::ZynSympatheticMix},
+	{"Panning", EditFXParameter2, 0, FX::Parameter::ZynSympatheticPanning},
+	{"Q", EditFXParameter2, 0, FX::Parameter::ZynSympatheticQ},
+	{"Q Sustain", EditFXParameter2, 0, FX::Parameter::ZynSympatheticQSustain},
+	{"Drive", EditFXParameter2, 0, FX::Parameter::ZynSympatheticDrive},
+	{"Level", EditFXParameter2, 0, FX::Parameter::ZynSympatheticLevel},
+	{"Type", EditFXParameter2, 0, FX::Parameter::ZynSympatheticType},
+	{"Unison Size", EditFXParameter2, 0, FX::Parameter::ZynSympatheticUnisonSize},
+	{"Unison Spread", EditFXParameter2, 0, FX::Parameter::ZynSympatheticUnisonSpread},
+	{"Strings", EditFXParameter2, 0, FX::Parameter::ZynSympatheticStrings},
+	{"Interval", EditFXParameter2, 0, FX::Parameter::ZynSympatheticInterval},
+	{"Base Note", EditFXParameter2, 0, FX::Parameter::ZynSympatheticBaseNote},
+	{"Lowcut", EditFXParameter2, 0, FX::Parameter::ZynSympatheticLowcut},
+	{"Highcut", EditFXParameter2, 0, FX::Parameter::ZynSympatheticHighcut},
+	{"Negate", EditFXParameter2, 0, FX::Parameter::ZynSympatheticNegate},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::ZynSympatheticBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_ZynAPhaserMenu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterZynAPhaserPreset},
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterZynAPhaserMix},
-	{"Panning", EditFXParameter2, 0, FX::FXParameterZynAPhaserPanning},
-	{"LFO Freq", EditFXParameter2, 0, FX::FXParameterZynAPhaserLFOFreq},
-	{"LFO Rndness", EditFXParameter2, 0, FX::FXParameterZynAPhaserLFORandomness},
-	{"LFO Type", EditFXParameter2, 0, FX::FXParameterZynAPhaserLFOType},
-	{"LFO LR Delay", EditFXParameter2, 0, FX::FXParameterZynAPhaserLFOLRDelay},
-	{"Depth", EditFXParameter2, 0, FX::FXParameterZynAPhaserDepth},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterZynAPhaserFeedback},
-	{"Stages", EditFXParameter2, 0, FX::FXParameterZynAPhaserStages},
-	{"LR Cross", EditFXParameter2, 0, FX::FXParameterZynAPhaserLRCross},
-	{"Subtractive", EditFXParameter2, 0, FX::FXParameterZynAPhaserSubtractive},
-	{"Width", EditFXParameter2, 0, FX::FXParameterZynAPhaserWidth},
-	{"Distortion", EditFXParameter2, 0, FX::FXParameterZynAPhaserDistortion},
-	{"Mismatch", EditFXParameter2, 0, FX::FXParameterZynAPhaserMismatch},
-	{"Hyper", EditFXParameter2, 0, FX::FXParameterZynAPhaserHyper},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterZynAPhaserBypass},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::ZynAPhaserPreset},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::ZynAPhaserMix},
+	{"Panning", EditFXParameter2, 0, FX::Parameter::ZynAPhaserPanning},
+	{"LFO Freq", EditFXParameter2, 0, FX::Parameter::ZynAPhaserLFOFreq},
+	{"LFO Rndness", EditFXParameter2, 0, FX::Parameter::ZynAPhaserLFORandomness},
+	{"LFO Type", EditFXParameter2, 0, FX::Parameter::ZynAPhaserLFOType},
+	{"LFO LR Delay", EditFXParameter2, 0, FX::Parameter::ZynAPhaserLFOLRDelay},
+	{"Depth", EditFXParameter2, 0, FX::Parameter::ZynAPhaserDepth},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::ZynAPhaserFeedback},
+	{"Stages", EditFXParameter2, 0, FX::Parameter::ZynAPhaserStages},
+	{"LR Cross", EditFXParameter2, 0, FX::Parameter::ZynAPhaserLRCross},
+	{"Subtractive", EditFXParameter2, 0, FX::Parameter::ZynAPhaserSubtractive},
+	{"Width", EditFXParameter2, 0, FX::Parameter::ZynAPhaserWidth},
+	{"Distortion", EditFXParameter2, 0, FX::Parameter::ZynAPhaserDistortion},
+	{"Mismatch", EditFXParameter2, 0, FX::Parameter::ZynAPhaserMismatch},
+	{"Hyper", EditFXParameter2, 0, FX::Parameter::ZynAPhaserHyper},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::ZynAPhaserBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_ZynPhaserMenu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterZynPhaserPreset},
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterZynPhaserMix},
-	{"Panning", EditFXParameter2, 0, FX::FXParameterZynPhaserPanning},
-	{"LFO Freq", EditFXParameter2, 0, FX::FXParameterZynPhaserLFOFreq},
-	{"LFO Rndness", EditFXParameter2, 0, FX::FXParameterZynPhaserLFORandomness},
-	{"LFO Type", EditFXParameter2, 0, FX::FXParameterZynPhaserLFOType},
-	{"LFO LR Delay", EditFXParameter2, 0, FX::FXParameterZynPhaserLFOLRDelay},
-	{"Depth", EditFXParameter2, 0, FX::FXParameterZynPhaserDepth},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterZynPhaserFeedback},
-	{"Stages", EditFXParameter2, 0, FX::FXParameterZynPhaserStages},
-	{"LR Cross", EditFXParameter2, 0, FX::FXParameterZynPhaserLRCross},
-	{"Subtractive", EditFXParameter2, 0, FX::FXParameterZynPhaserSubtractive},
-	{"Phase", EditFXParameter2, 0, FX::FXParameterZynPhaserPhase},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterZynPhaserBypass},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::ZynPhaserPreset},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::ZynPhaserMix},
+	{"Panning", EditFXParameter2, 0, FX::Parameter::ZynPhaserPanning},
+	{"LFO Freq", EditFXParameter2, 0, FX::Parameter::ZynPhaserLFOFreq},
+	{"LFO Rndness", EditFXParameter2, 0, FX::Parameter::ZynPhaserLFORandomness},
+	{"LFO Type", EditFXParameter2, 0, FX::Parameter::ZynPhaserLFOType},
+	{"LFO LR Delay", EditFXParameter2, 0, FX::Parameter::ZynPhaserLFOLRDelay},
+	{"Depth", EditFXParameter2, 0, FX::Parameter::ZynPhaserDepth},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::ZynPhaserFeedback},
+	{"Stages", EditFXParameter2, 0, FX::Parameter::ZynPhaserStages},
+	{"LR Cross", EditFXParameter2, 0, FX::Parameter::ZynPhaserLRCross},
+	{"Subtractive", EditFXParameter2, 0, FX::Parameter::ZynPhaserSubtractive},
+	{"Phase", EditFXParameter2, 0, FX::Parameter::ZynPhaserPhase},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::ZynPhaserBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_DreamDelayMenu[] =
 {
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterDreamDelayMix},
-	{"Mode", EditFXParameter2, 0, FX::FXParameterDreamDelayMode},
-	{"Time", EditFXParameter2, 0, FX::FXParameterDreamDelayTime},
-	{"Time Left", EditFXParameter2, 0, FX::FXParameterDreamDelayTimeL},
-	{"Time Right", EditFXParameter2, 0, FX::FXParameterDreamDelayTimeR},
-	{"Tempo", EditFXParameter2, 0, FX::FXParameterDreamDelayTempo},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterDreamDelayFeedback},
-	{"HighCut", EditFXParameter2, 0, FX::FXParameterDreamDelayHighCut},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterDreamDelayBypass},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::DreamDelayMix},
+	{"Mode", EditFXParameter2, 0, FX::Parameter::DreamDelayMode},
+	{"Time", EditFXParameter2, 0, FX::Parameter::DreamDelayTime},
+	{"Time Left", EditFXParameter2, 0, FX::Parameter::DreamDelayTimeL},
+	{"Time Right", EditFXParameter2, 0, FX::Parameter::DreamDelayTimeR},
+	{"Tempo", EditFXParameter2, 0, FX::Parameter::DreamDelayTempo},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::DreamDelayFeedback},
+	{"HighCut", EditFXParameter2, 0, FX::Parameter::DreamDelayHighCut},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::DreamDelayBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_PlateReverbMenu[] =
 {
-	{"Mix Dry:Wet", EditFXParameter2, 0, FX::FXParameterPlateReverbMix},
-	{"Size", EditFXParameter2, 0, FX::FXParameterPlateReverbSize},
-	{"High damp", EditFXParameter2, 0, FX::FXParameterPlateReverbHighDamp},
-	{"Low damp", EditFXParameter2, 0, FX::FXParameterPlateReverbLowDamp},
-	{"Low pass", EditFXParameter2, 0, FX::FXParameterPlateReverbLowPass},
-	{"Diffusion", EditFXParameter2, 0, FX::FXParameterPlateReverbDiffusion},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterPlateReverbBypass},
+	{"Mix Dry:Wet", EditFXParameter2, 0, FX::Parameter::PlateReverbMix},
+	{"Size", EditFXParameter2, 0, FX::Parameter::PlateReverbSize},
+	{"High damp", EditFXParameter2, 0, FX::Parameter::PlateReverbHighDamp},
+	{"Low damp", EditFXParameter2, 0, FX::Parameter::PlateReverbLowDamp},
+	{"Low pass", EditFXParameter2, 0, FX::Parameter::PlateReverbLowPass},
+	{"Diffusion", EditFXParameter2, 0, FX::Parameter::PlateReverbDiffusion},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::PlateReverbBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2Menu[] =
 {
-	{"Load Preset", EditFXParameter2, 0, FX::FXParameterCloudSeed2Preset},
-	{"Dry Out", EditFXParameter2, 0, FX::FXParameterCloudSeed2DryOut},
-	{"Early Out", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyOut},
-	{"Late Out", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateOut},
-	{"Early FB", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseFeedback},
-	{"Late FB", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseFeedback},
-	{"Tap Decay", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapDecay},
-	{"Late Decay", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineDecay},
-	{"Late Lines", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineCount},
+	{"Load Preset", EditFXParameter2, 0, FX::Parameter::CloudSeed2Preset},
+	{"Dry Out", EditFXParameter2, 0, FX::Parameter::CloudSeed2DryOut},
+	{"Early Out", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyOut},
+	{"Late Out", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateOut},
+	{"Early FB", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseFeedback},
+	{"Late FB", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseFeedback},
+	{"Tap Decay", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapDecay},
+	{"Late Decay", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineDecay},
+	{"Late Lines", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineCount},
 	{"Input", MenuHandler, s_CloudSeed2InputMenu},
 	{"Multitap Delay", MenuHandler, s_CloudSeed2MultitapMenu},
 	{"Early Diffusion", MenuHandler, s_CloudSeed2EarlyDiffusionMenu},
@@ -410,111 +410,111 @@ const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2Menu[] =
 	{"Low Shelf", MenuHandler, s_CloudSeed2LowShelfMenu},
 	{"High Shelf", MenuHandler, s_CloudSeed2HighShelfMenu},
 	{"Low Pass", MenuHandler, s_CloudSeed2LowPassMenu},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterCloudSeed2Bypass},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::CloudSeed2Bypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2InputMenu[] =
 {
-	{"Interpolation", EditFXParameter2, 0, FX::FXParameterCloudSeed2Interpolation},
-	{"L/R Input Mix", EditFXParameter2, 0, FX::FXParameterCloudSeed2InputMix},
-	{"High Cut Enabled", EditFXParameter2, 0, FX::FXParameterCloudSeed2HighCutEnabled},
-	{"High Cut", EditFXParameter2, 0, FX::FXParameterCloudSeed2HighCut},
-	{"Low Cut Enabled", EditFXParameter2, 0, FX::FXParameterCloudSeed2LowCutEnabled},
-	{"Low Cut", EditFXParameter2, 0, FX::FXParameterCloudSeed2LowCut},
+	{"Interpolation", EditFXParameter2, 0, FX::Parameter::CloudSeed2Interpolation},
+	{"L/R Input Mix", EditFXParameter2, 0, FX::Parameter::CloudSeed2InputMix},
+	{"High Cut Enabled", EditFXParameter2, 0, FX::Parameter::CloudSeed2HighCutEnabled},
+	{"High Cut", EditFXParameter2, 0, FX::Parameter::CloudSeed2HighCut},
+	{"Low Cut Enabled", EditFXParameter2, 0, FX::Parameter::CloudSeed2LowCutEnabled},
+	{"Low Cut", EditFXParameter2, 0, FX::Parameter::CloudSeed2LowCut},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2MultitapMenu[] =
 {
-	{"Enabled", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapEnabled},
-	{"Count", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapCount},
-	{"Decay", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapDecay},
-	{"Predelay", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapPredelay},
-	{"Length", EditFXParameter2, 0, FX::FXParameterCloudSeed2TapLength},
+	{"Enabled", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapEnabled},
+	{"Count", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapCount},
+	{"Decay", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapDecay},
+	{"Predelay", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapPredelay},
+	{"Length", EditFXParameter2, 0, FX::Parameter::CloudSeed2TapLength},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2EarlyDiffusionMenu[] =
 {
-	{"Enabled", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseEnabled},
-	{"Stage Count", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseCount},
-	{"Delay", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseDelay},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseFeedback},
-	{"Mod Amount", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseModAmount},
-	{"Mod Rate", EditFXParameter2, 0, FX::FXParameterCloudSeed2EarlyDiffuseModRate},
+	{"Enabled", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseEnabled},
+	{"Stage Count", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseCount},
+	{"Delay", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseDelay},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseFeedback},
+	{"Mod Amount", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseModAmount},
+	{"Mod Rate", EditFXParameter2, 0, FX::Parameter::CloudSeed2EarlyDiffuseModRate},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LateDiffusionMenu[] =
 {
-	{"Enabled", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseEnabled},
-	{"Stage Count", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseCount},
-	{"Delay", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseDelay},
-	{"Feedback", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseFeedback},
-	{"Mod Amount", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseModAmount},
-	{"Mod Rate", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateDiffuseModRate},
+	{"Enabled", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseEnabled},
+	{"Stage Count", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseCount},
+	{"Delay", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseDelay},
+	{"Feedback", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseFeedback},
+	{"Mod Amount", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseModAmount},
+	{"Mod Rate", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateDiffuseModRate},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LateLineMenu[] =
 {
-	{"Mode", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateMode},
-	{"Count", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineCount},
-	{"Size", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineSize},
-	{"Decay", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineDecay},
-	{"Mod Amt", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineModAmount},
-	{"Mod Rate", EditFXParameter2, 0, FX::FXParameterCloudSeed2LateLineModRate},
+	{"Mode", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateMode},
+	{"Count", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineCount},
+	{"Size", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineSize},
+	{"Decay", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineDecay},
+	{"Mod Amt", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineModAmount},
+	{"Mod Rate", EditFXParameter2, 0, FX::Parameter::CloudSeed2LateLineModRate},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowShelfMenu[] =
 {
-	{"Enable", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqLowShelfEnabled},
-	{"Freq", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqLowFreq},
-	{"Gain", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqLowGain},
+	{"Enable", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqLowShelfEnabled},
+	{"Freq", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqLowFreq},
+	{"Gain", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqLowGain},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2HighShelfMenu[] =
 {
-	{"Enable", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqHighShelfEnabled},
-	{"Freq", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqHighFreq},
-	{"Gain", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqHighGain},
+	{"Enable", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqHighShelfEnabled},
+	{"Freq", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqHighFreq},
+	{"Gain", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqHighGain},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CloudSeed2LowPassMenu[] =
 {
-	{"Enable", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqLowpassEnabled},
-	{"Cutoff", EditFXParameter2, 0, FX::FXParameterCloudSeed2EqCutoff},
+	{"Enable", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqLowpassEnabled},
+	{"Cutoff", EditFXParameter2, 0, FX::Parameter::CloudSeed2EqCutoff},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_CompressorMenu[] =
 {
-	{"Pre Gain", EditFXParameter2, 0, FX::FXParameterCompressorPreGain},
-	{"Threshold", EditFXParameter2, 0, FX::FXParameterCompressorThresh},
-	{"Ratio", EditFXParameter2, 0, FX::FXParameterCompressorRatio},
-	{"Attack", EditFXParameter2, 0, FX::FXParameterCompressorAttack},
-	{"Release", EditFXParameter2, 0, FX::FXParameterCompressorRelease},
-	{"Makeup Gain", EditFXParameter2, 0, FX::FXParameterCompressorMakeupGain},
-	{"HPFilter", EditFXParameter2, 0, FX::FXParameterCompressorHPFilterEnable},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterCompressorBypass},
+	{"Pre Gain", EditFXParameter2, 0, FX::Parameter::CompressorPreGain},
+	{"Threshold", EditFXParameter2, 0, FX::Parameter::CompressorThresh},
+	{"Ratio", EditFXParameter2, 0, FX::Parameter::CompressorRatio},
+	{"Attack", EditFXParameter2, 0, FX::Parameter::CompressorAttack},
+	{"Release", EditFXParameter2, 0, FX::Parameter::CompressorRelease},
+	{"Makeup Gain", EditFXParameter2, 0, FX::Parameter::CompressorMakeupGain},
+	{"HPFilter", EditFXParameter2, 0, FX::Parameter::CompressorHPFilterEnable},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::CompressorBypass},
 	{0},
 };
 
 const CUIMenu::TMenuItem CUIMenu::s_FXEQMenu[] =
 {
-	{"Low Level", EditFXParameter2, 0, FX::FXParameterEQLow},
-	{"Mid Level", EditFXParameter2, 0, FX::FXParameterEQMid},
-	{"High Level", EditFXParameter2, 0, FX::FXParameterEQHigh},
-	{"Gain", EditFXParameter2, 0, FX::FXParameterEQGain},
-	{"Low-Mid Freq", EditFXParameter2, 0, FX::FXParameterEQLowMidFreq},
-	{"Mid-High Freq", EditFXParameter2, 0, FX::FXParameterEQMidHighFreq},
-	{"Pre Lowcut", EditFXParameter2, 0, FX::FXParameterEQPreLowCut},
-	{"Pre Highcut", EditFXParameter2, 0, FX::FXParameterEQPreHighCut},
-	{"Bypass", EditFXParameter2, 0, FX::FXParameterEQBypass},
+	{"Low Level", EditFXParameter2, 0, FX::Parameter::EQLow},
+	{"Mid Level", EditFXParameter2, 0, FX::Parameter::EQMid},
+	{"High Level", EditFXParameter2, 0, FX::Parameter::EQHigh},
+	{"Gain", EditFXParameter2, 0, FX::Parameter::EQGain},
+	{"Low-Mid Freq", EditFXParameter2, 0, FX::Parameter::EQLowMidFreq},
+	{"Mid-High Freq", EditFXParameter2, 0, FX::Parameter::EQMidHighFreq},
+	{"Pre Lowcut", EditFXParameter2, 0, FX::Parameter::EQPreLowCut},
+	{"Pre Highcut", EditFXParameter2, 0, FX::Parameter::EQPreHighCut},
+	{"Bypass", EditFXParameter2, 0, FX::Parameter::EQBypass},
 	{0},
 };
 
@@ -1406,8 +1406,8 @@ void CUIMenu::EditTGParameter2(CUIMenu *pUIMenu, TMenuEvent Event) // second men
 
 void CUIMenu::EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event)
 {
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
-	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
+	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nFX = pUIMenu->m_nMenuStackParameter[2];
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
@@ -1458,8 +1458,8 @@ void CUIMenu::EditFXParameter2(CUIMenu *pUIMenu, TMenuEvent Event)
 
 void CUIMenu::EditFXParameterG(CUIMenu *pUIMenu, TMenuEvent Event)
 {
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
-	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
+	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nFX = pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Parameter2;
 
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
@@ -1731,9 +1731,9 @@ std::string CUIMenu::GetFXValueString(int nFXParameter, int nValue, int nWidth)
 {
 	std::string Result;
 
-	assert(nFXParameter < FX::FXParameterUnknown);
+	assert(nFXParameter < FX::Parameter::Unknown);
 
-	CUIMenu::TToString *pToString = FX::s_FXParameter[nFXParameter].ToString;
+	CUIMenu::TToString *pToString = FX::s_Parameter[nFXParameter].ToString;
 	if (pToString)
 	{
 		Result = (*pToString)(nValue, nWidth);
@@ -2215,7 +2215,7 @@ void CUIMenu::SelectCurrentEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	assert(pUIMenu);
 
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 	int nFX = pUIMenu->m_nMenuStackParameter[2];
 	int nValue = pUIMenu->m_pMiniDexed->GetFXParameter(Param, nFX);
 
@@ -2230,9 +2230,9 @@ void CUIMenu::StepDownEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	assert(pUIMenu);
 
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 	int nFX = pUIMenu->m_nMenuStackParameter[2];
-	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nValue = pUIMenu->m_nCurrentSelection;
 	int increment = rParam.Increment;
 
@@ -2259,9 +2259,9 @@ void CUIMenu::StepUpEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 {
 	assert(pUIMenu);
 
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 	int nFX = pUIMenu->m_nMenuStackParameter[2];
-	const FX::FXParameterType &rParam = FX::s_FXParameter[Param];
+	const FX::ParameterType &rParam = FX::s_Parameter[Param];
 	int nValue = pUIMenu->m_nCurrentSelection;
 	int increment = rParam.Increment;
 
@@ -2287,19 +2287,19 @@ void CUIMenu::StepUpEffect(CUIMenu *pUIMenu, TMenuEvent Event)
 bool CUIMenu::FXSlotFilter(CUIMenu *pUIMenu, TMenuEvent Event, int nValue)
 {
 	assert(pUIMenu);
-	FX::TFXParameter Param = (FX::TFXParameter)pUIMenu->m_nCurrentParameter;
+	FX::Parameter Param = (FX::Parameter)pUIMenu->m_nCurrentParameter;
 
 	int nFX = pUIMenu->m_nMenuStackParameter[2];
 
 	if (nValue == 0) return false;
 
-	if (Param != FX::FXParameterSlot0 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot0, nFX))
+	if (Param != FX::Parameter::Slot0 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::Parameter::Slot0, nFX))
 		return true;
 
-	if (Param != FX::FXParameterSlot1 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot1, nFX))
+	if (Param != FX::Parameter::Slot1 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::Parameter::Slot1, nFX))
 		return true;
 
-	if (Param != FX::FXParameterSlot2 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::FXParameterSlot2, nFX))
+	if (Param != FX::Parameter::Slot2 && nValue == pUIMenu->m_pMiniDexed->GetFXParameter(FX::Parameter::Slot2, nFX))
 		return true;
 
 	return false;

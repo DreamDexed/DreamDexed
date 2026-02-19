@@ -322,15 +322,13 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 	{
 		fx_chain[nFX] = new AudioFXChain(pConfig->GetSampleRate());
 
-		for (int nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (int nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-			bool bSaveOnly = p.Flags & FX::FXComposite;
-			SetFXParameter(FX::TFXParameter(nParam), p.Default, nFX, bSaveOnly);
+			const FX::ParameterType &p = FX::s_Parameter[nParam];
+			bool bSaveOnly = p.Flags & FX::Flag::Composite;
+			SetFXParameter(FX::Parameter(nParam), p.Default, nFX, bSaveOnly);
 		}
 	}
-
-	// END setup reverb
 
 	SetParameter(ParameterMasterVolume, pConfig->GetMasterVolume());
 	SetParameter(ParameterSDFilter, 0);
@@ -1247,12 +1245,12 @@ int CMiniDexed::GetParameter(TParameter Parameter)
 	return m_nParameter[Parameter];
 }
 
-void CMiniDexed::SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX, bool bSaveOnly)
+void CMiniDexed::SetFXParameter(FX::Parameter Parameter, int nValue, int nFX, bool bSaveOnly)
 {
 	assert(nFX < CConfig::FXChains);
-	assert(Parameter < FX::FXParameterUnknown);
+	assert(Parameter < FX::Parameter::Unknown);
 
-	const FX::FXParameterType &p = FX::s_FXParameter[Parameter];
+	const FX::ParameterType &p = FX::s_Parameter[Parameter];
 	nValue = constrain(nValue, p.Minimum, p.Maximum);
 
 	m_nFXParameter[nFX][Parameter] = nValue;
@@ -1261,206 +1259,206 @@ void CMiniDexed::SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX,
 
 	switch (Parameter)
 	{
-	case FX::FXParameterSlot0:
-	case FX::FXParameterSlot1:
-	case FX::FXParameterSlot2:
-		fx_chain[nFX]->setSlot(Parameter - FX::FXParameterSlot0, nValue);
+	case FX::Parameter::Slot0:
+	case FX::Parameter::Slot1:
+	case FX::Parameter::Slot2:
+		fx_chain[nFX]->setSlot(Parameter - FX::Parameter::Slot0, nValue);
 		break;
 
-	case FX::FXParameterZynDistortionPreset:
+	case FX::Parameter::ZynDistortionPreset:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->zyn_distortion.loadpreset(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynDistortionMix:
-	case FX::FXParameterZynDistortionPanning:
-	case FX::FXParameterZynDistortionDrive:
-	case FX::FXParameterZynDistortionLevel:
-	case FX::FXParameterZynDistortionType:
-	case FX::FXParameterZynDistortionNegate:
-	case FX::FXParameterZynDistortionFiltering:
-	case FX::FXParameterZynDistortionLowcut:
-	case FX::FXParameterZynDistortionHighcut:
-	case FX::FXParameterZynDistortionStereo:
-	case FX::FXParameterZynDistortionLRCross:
-	case FX::FXParameterZynDistortionShape:
-	case FX::FXParameterZynDistortionOffset:
+	case FX::Parameter::ZynDistortionMix:
+	case FX::Parameter::ZynDistortionPanning:
+	case FX::Parameter::ZynDistortionDrive:
+	case FX::Parameter::ZynDistortionLevel:
+	case FX::Parameter::ZynDistortionType:
+	case FX::Parameter::ZynDistortionNegate:
+	case FX::Parameter::ZynDistortionFiltering:
+	case FX::Parameter::ZynDistortionLowcut:
+	case FX::Parameter::ZynDistortionHighcut:
+	case FX::Parameter::ZynDistortionStereo:
+	case FX::Parameter::ZynDistortionLRCross:
+	case FX::Parameter::ZynDistortionShape:
+	case FX::Parameter::ZynDistortionOffset:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->zyn_distortion.changepar(Parameter - FX::FXParameterZynDistortionMix, nValue);
+		fx_chain[nFX]->zyn_distortion.changepar(Parameter - FX::Parameter::ZynDistortionMix, nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynDistortionBypass:
+	case FX::Parameter::ZynDistortionBypass:
 		fx_chain[nFX]->zyn_distortion.bypass = nValue;
 		break;
 
-	case FX::FXParameterYKChorusMix:
+	case FX::Parameter::YKChorusMix:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->yk_chorus.setMix(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusEnable1:
+	case FX::Parameter::YKChorusEnable1:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->yk_chorus.setChorus1(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusEnable2:
+	case FX::Parameter::YKChorusEnable2:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->yk_chorus.setChorus2(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusLFORate1:
+	case FX::Parameter::YKChorusLFORate1:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->yk_chorus.setChorus1LFORate(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusLFORate2:
+	case FX::Parameter::YKChorusLFORate2:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->yk_chorus.setChorus2LFORate(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterYKChorusBypass:
+	case FX::Parameter::YKChorusBypass:
 		fx_chain[nFX]->yk_chorus.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynChorusPreset:
+	case FX::Parameter::ZynChorusPreset:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->zyn_chorus.loadpreset(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynChorusMix:
-	case FX::FXParameterZynChorusPanning:
-	case FX::FXParameterZynChorusLFOFreq:
-	case FX::FXParameterZynChorusLFORandomness:
-	case FX::FXParameterZynChorusLFOType:
-	case FX::FXParameterZynChorusLFOLRDelay:
-	case FX::FXParameterZynChorusDepth:
-	case FX::FXParameterZynChorusDelay:
-	case FX::FXParameterZynChorusFeedback:
-	case FX::FXParameterZynChorusLRCross:
-	case FX::FXParameterZynChorusMode:
-	case FX::FXParameterZynChorusSubtractive:
+	case FX::Parameter::ZynChorusMix:
+	case FX::Parameter::ZynChorusPanning:
+	case FX::Parameter::ZynChorusLFOFreq:
+	case FX::Parameter::ZynChorusLFORandomness:
+	case FX::Parameter::ZynChorusLFOType:
+	case FX::Parameter::ZynChorusLFOLRDelay:
+	case FX::Parameter::ZynChorusDepth:
+	case FX::Parameter::ZynChorusDelay:
+	case FX::Parameter::ZynChorusFeedback:
+	case FX::Parameter::ZynChorusLRCross:
+	case FX::Parameter::ZynChorusMode:
+	case FX::Parameter::ZynChorusSubtractive:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->zyn_chorus.changepar(Parameter - FX::FXParameterZynChorusMix, nValue);
+		fx_chain[nFX]->zyn_chorus.changepar(Parameter - FX::Parameter::ZynChorusMix, nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynChorusBypass:
+	case FX::Parameter::ZynChorusBypass:
 		fx_chain[nFX]->zyn_chorus.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynSympatheticPreset:
+	case FX::Parameter::ZynSympatheticPreset:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->zyn_sympathetic.loadpreset(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynSympatheticMix:
-	case FX::FXParameterZynSympatheticPanning:
-	case FX::FXParameterZynSympatheticQ:
-	case FX::FXParameterZynSympatheticQSustain:
-	case FX::FXParameterZynSympatheticDrive:
-	case FX::FXParameterZynSympatheticLevel:
-	case FX::FXParameterZynSympatheticType:
-	case FX::FXParameterZynSympatheticUnisonSize:
-	case FX::FXParameterZynSympatheticUnisonSpread:
-	case FX::FXParameterZynSympatheticStrings:
-	case FX::FXParameterZynSympatheticInterval:
-	case FX::FXParameterZynSympatheticBaseNote:
-	case FX::FXParameterZynSympatheticLowcut:
-	case FX::FXParameterZynSympatheticHighcut:
-	case FX::FXParameterZynSympatheticNegate:
+	case FX::Parameter::ZynSympatheticMix:
+	case FX::Parameter::ZynSympatheticPanning:
+	case FX::Parameter::ZynSympatheticQ:
+	case FX::Parameter::ZynSympatheticQSustain:
+	case FX::Parameter::ZynSympatheticDrive:
+	case FX::Parameter::ZynSympatheticLevel:
+	case FX::Parameter::ZynSympatheticType:
+	case FX::Parameter::ZynSympatheticUnisonSize:
+	case FX::Parameter::ZynSympatheticUnisonSpread:
+	case FX::Parameter::ZynSympatheticStrings:
+	case FX::Parameter::ZynSympatheticInterval:
+	case FX::Parameter::ZynSympatheticBaseNote:
+	case FX::Parameter::ZynSympatheticLowcut:
+	case FX::Parameter::ZynSympatheticHighcut:
+	case FX::Parameter::ZynSympatheticNegate:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::FXParameterZynSympatheticMix, nValue, true);
+		fx_chain[nFX]->zyn_sympathetic.changepar(Parameter - FX::Parameter::ZynSympatheticMix, nValue, true);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynSympatheticBypass:
+	case FX::Parameter::ZynSympatheticBypass:
 		fx_chain[nFX]->zyn_sympathetic.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynAPhaserPreset:
+	case FX::Parameter::ZynAPhaserPreset:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->zyn_aphaser.loadpreset(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynAPhaserMix:
-	case FX::FXParameterZynAPhaserPanning:
-	case FX::FXParameterZynAPhaserLFOFreq:
-	case FX::FXParameterZynAPhaserLFORandomness:
-	case FX::FXParameterZynAPhaserLFOType:
-	case FX::FXParameterZynAPhaserLFOLRDelay:
-	case FX::FXParameterZynAPhaserDepth:
-	case FX::FXParameterZynAPhaserFeedback:
-	case FX::FXParameterZynAPhaserStages:
-	case FX::FXParameterZynAPhaserLRCross:
-	case FX::FXParameterZynAPhaserSubtractive:
-	case FX::FXParameterZynAPhaserWidth:
-	case FX::FXParameterZynAPhaserDistortion:
-	case FX::FXParameterZynAPhaserMismatch:
-	case FX::FXParameterZynAPhaserHyper:
+	case FX::Parameter::ZynAPhaserMix:
+	case FX::Parameter::ZynAPhaserPanning:
+	case FX::Parameter::ZynAPhaserLFOFreq:
+	case FX::Parameter::ZynAPhaserLFORandomness:
+	case FX::Parameter::ZynAPhaserLFOType:
+	case FX::Parameter::ZynAPhaserLFOLRDelay:
+	case FX::Parameter::ZynAPhaserDepth:
+	case FX::Parameter::ZynAPhaserFeedback:
+	case FX::Parameter::ZynAPhaserStages:
+	case FX::Parameter::ZynAPhaserLRCross:
+	case FX::Parameter::ZynAPhaserSubtractive:
+	case FX::Parameter::ZynAPhaserWidth:
+	case FX::Parameter::ZynAPhaserDistortion:
+	case FX::Parameter::ZynAPhaserMismatch:
+	case FX::Parameter::ZynAPhaserHyper:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->zyn_aphaser.changepar(Parameter - FX::FXParameterZynAPhaserMix, nValue);
+		fx_chain[nFX]->zyn_aphaser.changepar(Parameter - FX::Parameter::ZynAPhaserMix, nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynAPhaserBypass:
+	case FX::Parameter::ZynAPhaserBypass:
 		fx_chain[nFX]->zyn_aphaser.bypass = nValue;
 		break;
 
-	case FX::FXParameterZynPhaserPreset:
+	case FX::Parameter::ZynPhaserPreset:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->zyn_phaser.loadpreset(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynPhaserMix:
-	case FX::FXParameterZynPhaserPanning:
-	case FX::FXParameterZynPhaserLFOFreq:
-	case FX::FXParameterZynPhaserLFORandomness:
-	case FX::FXParameterZynPhaserLFOType:
-	case FX::FXParameterZynPhaserLFOLRDelay:
-	case FX::FXParameterZynPhaserDepth:
-	case FX::FXParameterZynPhaserFeedback:
-	case FX::FXParameterZynPhaserStages:
-	case FX::FXParameterZynPhaserLRCross:
-	case FX::FXParameterZynPhaserSubtractive:
-	case FX::FXParameterZynPhaserPhase:
+	case FX::Parameter::ZynPhaserMix:
+	case FX::Parameter::ZynPhaserPanning:
+	case FX::Parameter::ZynPhaserLFOFreq:
+	case FX::Parameter::ZynPhaserLFORandomness:
+	case FX::Parameter::ZynPhaserLFOType:
+	case FX::Parameter::ZynPhaserLFOLRDelay:
+	case FX::Parameter::ZynPhaserDepth:
+	case FX::Parameter::ZynPhaserFeedback:
+	case FX::Parameter::ZynPhaserStages:
+	case FX::Parameter::ZynPhaserLRCross:
+	case FX::Parameter::ZynPhaserSubtractive:
+	case FX::Parameter::ZynPhaserPhase:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->zyn_phaser.changepar(Parameter - FX::FXParameterZynPhaserMix, nValue);
+		fx_chain[nFX]->zyn_phaser.changepar(Parameter - FX::Parameter::ZynPhaserMix, nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterZynPhaserBypass:
+	case FX::Parameter::ZynPhaserBypass:
 		fx_chain[nFX]->zyn_phaser.bypass = nValue;
 		break;
 
-	case FX::FXParameterDreamDelayMix:
+	case FX::Parameter::DreamDelayMix:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->dream_delay.setMix(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayMode:
+	case FX::Parameter::DreamDelayMode:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->dream_delay.setMode((AudioEffectDreamDelay::Mode)nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTime:
-		SetFXParameter(FX::FXParameterDreamDelayTimeL, nValue, nFX);
-		SetFXParameter(FX::FXParameterDreamDelayTimeR, nValue, nFX);
+	case FX::Parameter::DreamDelayTime:
+		SetFXParameter(FX::Parameter::DreamDelayTimeL, nValue, nFX);
+		SetFXParameter(FX::Parameter::DreamDelayTimeR, nValue, nFX);
 		break;
 
-	case FX::FXParameterDreamDelayTimeL:
+	case FX::Parameter::DreamDelayTimeL:
 		m_FXSpinLock.Acquire();
 
 		if (nValue <= 100)
@@ -1476,7 +1474,7 @@ void CMiniDexed::SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX,
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTimeR:
+	case FX::Parameter::DreamDelayTimeR:
 		m_FXSpinLock.Acquire();
 
 		if (nValue <= 100)
@@ -1492,229 +1490,229 @@ void CMiniDexed::SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX,
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayTempo:
+	case FX::Parameter::DreamDelayTempo:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->dream_delay.setTempo(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayFeedback:
+	case FX::Parameter::DreamDelayFeedback:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->dream_delay.setFeedback(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayHighCut:
+	case FX::Parameter::DreamDelayHighCut:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->dream_delay.setHighCut(MIDI_EQ_HZ[nValue]);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterDreamDelayBypass:
+	case FX::Parameter::DreamDelayBypass:
 		fx_chain[nFX]->dream_delay.bypass = nValue;
 		break;
 
-	case FX::FXParameterPlateReverbMix:
+	case FX::Parameter::PlateReverbMix:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.set_mix(nValue / 100.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbSize:
+	case FX::Parameter::PlateReverbSize:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.size(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbHighDamp:
+	case FX::Parameter::PlateReverbHighDamp:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.hidamp(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbLowDamp:
+	case FX::Parameter::PlateReverbLowDamp:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.lodamp(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbLowPass:
+	case FX::Parameter::PlateReverbLowPass:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.lowpass(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbDiffusion:
+	case FX::Parameter::PlateReverbDiffusion:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->plate_reverb.diffusion(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterPlateReverbBypass:
+	case FX::Parameter::PlateReverbBypass:
 		fx_chain[nFX]->plate_reverb.bypass = nValue;
 		break;
 
-	case FX::FXParameterCloudSeed2Preset:
+	case FX::Parameter::CloudSeed2Preset:
 		fx_chain[nFX]->cloudseed2.loadPreset(nValue);
 		break;
 
-	case FX::FXParameterCloudSeed2Interpolation:
-	case FX::FXParameterCloudSeed2LowCutEnabled:
-	case FX::FXParameterCloudSeed2HighCutEnabled:
-	case FX::FXParameterCloudSeed2InputMix:
-	case FX::FXParameterCloudSeed2LowCut:
-	case FX::FXParameterCloudSeed2HighCut:
-	case FX::FXParameterCloudSeed2DryOut:
-	case FX::FXParameterCloudSeed2EarlyOut:
-	case FX::FXParameterCloudSeed2LateOut:
-	case FX::FXParameterCloudSeed2TapEnabled:
-	case FX::FXParameterCloudSeed2TapCount:
-	case FX::FXParameterCloudSeed2TapDecay:
-	case FX::FXParameterCloudSeed2TapPredelay:
-	case FX::FXParameterCloudSeed2TapLength:
-	case FX::FXParameterCloudSeed2EarlyDiffuseEnabled:
-	case FX::FXParameterCloudSeed2EarlyDiffuseCount:
-	case FX::FXParameterCloudSeed2EarlyDiffuseDelay:
-	case FX::FXParameterCloudSeed2EarlyDiffuseModAmount:
-	case FX::FXParameterCloudSeed2EarlyDiffuseFeedback:
-	case FX::FXParameterCloudSeed2EarlyDiffuseModRate:
-	case FX::FXParameterCloudSeed2LateMode:
-	case FX::FXParameterCloudSeed2LateLineCount:
-	case FX::FXParameterCloudSeed2LateDiffuseEnabled:
-	case FX::FXParameterCloudSeed2LateDiffuseCount:
-	case FX::FXParameterCloudSeed2LateLineSize:
-	case FX::FXParameterCloudSeed2LateLineModAmount:
-	case FX::FXParameterCloudSeed2LateDiffuseDelay:
-	case FX::FXParameterCloudSeed2LateDiffuseModAmount:
-	case FX::FXParameterCloudSeed2LateLineDecay:
-	case FX::FXParameterCloudSeed2LateLineModRate:
-	case FX::FXParameterCloudSeed2LateDiffuseFeedback:
-	case FX::FXParameterCloudSeed2LateDiffuseModRate:
-	case FX::FXParameterCloudSeed2EqLowShelfEnabled:
-	case FX::FXParameterCloudSeed2EqHighShelfEnabled:
-	case FX::FXParameterCloudSeed2EqLowpassEnabled:
-	case FX::FXParameterCloudSeed2EqLowFreq:
-	case FX::FXParameterCloudSeed2EqHighFreq:
-	case FX::FXParameterCloudSeed2EqCutoff:
-	case FX::FXParameterCloudSeed2EqLowGain:
-	case FX::FXParameterCloudSeed2EqHighGain:
-	case FX::FXParameterCloudSeed2EqCrossSeed:
-	case FX::FXParameterCloudSeed2SeedTap:
-	case FX::FXParameterCloudSeed2SeedDiffusion:
-	case FX::FXParameterCloudSeed2SeedDelay:
-	case FX::FXParameterCloudSeed2SeedPostDiffusion:
-		fx_chain[nFX]->cloudseed2.setParameter(Parameter - FX::FXParameterCloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
+	case FX::Parameter::CloudSeed2Interpolation:
+	case FX::Parameter::CloudSeed2LowCutEnabled:
+	case FX::Parameter::CloudSeed2HighCutEnabled:
+	case FX::Parameter::CloudSeed2InputMix:
+	case FX::Parameter::CloudSeed2LowCut:
+	case FX::Parameter::CloudSeed2HighCut:
+	case FX::Parameter::CloudSeed2DryOut:
+	case FX::Parameter::CloudSeed2EarlyOut:
+	case FX::Parameter::CloudSeed2LateOut:
+	case FX::Parameter::CloudSeed2TapEnabled:
+	case FX::Parameter::CloudSeed2TapCount:
+	case FX::Parameter::CloudSeed2TapDecay:
+	case FX::Parameter::CloudSeed2TapPredelay:
+	case FX::Parameter::CloudSeed2TapLength:
+	case FX::Parameter::CloudSeed2EarlyDiffuseEnabled:
+	case FX::Parameter::CloudSeed2EarlyDiffuseCount:
+	case FX::Parameter::CloudSeed2EarlyDiffuseDelay:
+	case FX::Parameter::CloudSeed2EarlyDiffuseModAmount:
+	case FX::Parameter::CloudSeed2EarlyDiffuseFeedback:
+	case FX::Parameter::CloudSeed2EarlyDiffuseModRate:
+	case FX::Parameter::CloudSeed2LateMode:
+	case FX::Parameter::CloudSeed2LateLineCount:
+	case FX::Parameter::CloudSeed2LateDiffuseEnabled:
+	case FX::Parameter::CloudSeed2LateDiffuseCount:
+	case FX::Parameter::CloudSeed2LateLineSize:
+	case FX::Parameter::CloudSeed2LateLineModAmount:
+	case FX::Parameter::CloudSeed2LateDiffuseDelay:
+	case FX::Parameter::CloudSeed2LateDiffuseModAmount:
+	case FX::Parameter::CloudSeed2LateLineDecay:
+	case FX::Parameter::CloudSeed2LateLineModRate:
+	case FX::Parameter::CloudSeed2LateDiffuseFeedback:
+	case FX::Parameter::CloudSeed2LateDiffuseModRate:
+	case FX::Parameter::CloudSeed2EqLowShelfEnabled:
+	case FX::Parameter::CloudSeed2EqHighShelfEnabled:
+	case FX::Parameter::CloudSeed2EqLowpassEnabled:
+	case FX::Parameter::CloudSeed2EqLowFreq:
+	case FX::Parameter::CloudSeed2EqHighFreq:
+	case FX::Parameter::CloudSeed2EqCutoff:
+	case FX::Parameter::CloudSeed2EqLowGain:
+	case FX::Parameter::CloudSeed2EqHighGain:
+	case FX::Parameter::CloudSeed2EqCrossSeed:
+	case FX::Parameter::CloudSeed2SeedTap:
+	case FX::Parameter::CloudSeed2SeedDiffusion:
+	case FX::Parameter::CloudSeed2SeedDelay:
+	case FX::Parameter::CloudSeed2SeedPostDiffusion:
+		fx_chain[nFX]->cloudseed2.setParameter(Parameter - FX::Parameter::CloudSeed2Interpolation, mapfloat(nValue, p.Minimum, p.Maximum, 0.0f, 1.0f));
 		break;
 
-	case FX::FXParameterCloudSeed2Bypass:
+	case FX::Parameter::CloudSeed2Bypass:
 		fx_chain[nFX]->cloudseed2.bypass = nValue;
 		break;
 
-	case FX::FXParameterCompressorPreGain:
+	case FX::Parameter::CompressorPreGain:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setPreGain_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorThresh:
+	case FX::Parameter::CompressorThresh:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setThresh_dBFS(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorRatio:
+	case FX::Parameter::CompressorRatio:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setCompressionRatio(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorAttack:
+	case FX::Parameter::CompressorAttack:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setAttack_sec((nValue ?: 1) / 1000.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorRelease:
+	case FX::Parameter::CompressorRelease:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setRelease_sec((nValue ?: 1) / 1000.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorMakeupGain:
+	case FX::Parameter::CompressorMakeupGain:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.setMakeupGain_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorHPFilterEnable:
+	case FX::Parameter::CompressorHPFilterEnable:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->compressor.enableHPFilter(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterCompressorBypass:
+	case FX::Parameter::CompressorBypass:
 		fx_chain[nFX]->compressor.bypass = nValue;
 		break;
 
-	case FX::FXParameterEQLow:
+	case FX::Parameter::EQLow:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setLow_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQMid:
+	case FX::Parameter::EQMid:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setMid_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQHigh:
+	case FX::Parameter::EQHigh:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setHigh_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQGain:
+	case FX::Parameter::EQGain:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setGain_dB(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQLowMidFreq:
+	case FX::Parameter::EQLowMidFreq:
 		m_FXSpinLock.Acquire();
 		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setLowMidFreq_n(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQMidHighFreq:
+	case FX::Parameter::EQMidHighFreq:
 		m_FXSpinLock.Acquire();
 		m_nFXParameter[nFX][Parameter] = fx_chain[nFX]->eq.setMidHighFreq_n(nValue);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQPreLowCut:
+	case FX::Parameter::EQPreLowCut:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setPreLowCut(MIDI_EQ_HZ[nValue]);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQPreHighCut:
+	case FX::Parameter::EQPreHighCut:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->eq.setPreHighCut(MIDI_EQ_HZ[nValue]);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterEQBypass:
+	case FX::Parameter::EQBypass:
 		fx_chain[nFX]->eq.bypass = nValue;
 		break;
 
-	case FX::FXParameterReturnLevel:
+	case FX::Parameter::ReturnLevel:
 		m_FXSpinLock.Acquire();
 		fx_chain[nFX]->set_level(nValue / 99.0f);
 		m_FXSpinLock.Release();
 		break;
 
-	case FX::FXParameterBypass:
+	case FX::Parameter::Bypass:
 		fx_chain[nFX]->bypass = nValue;
 		break;
 
@@ -1724,40 +1722,40 @@ void CMiniDexed::SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX,
 	}
 }
 
-int CMiniDexed::GetFXParameter(FX::TFXParameter Parameter, int nFX)
+int CMiniDexed::GetFXParameter(FX::Parameter Parameter, int nFX)
 {
 	assert(nFX < CConfig::FXChains);
-	assert(Parameter < FX::FXParameterUnknown);
+	assert(Parameter < FX::Parameter::Unknown);
 
-	if (Parameter >= FX::FXParameterZynDistortionMix && Parameter <= FX::FXParameterZynDistortionOffset)
+	if (Parameter >= FX::Parameter::ZynDistortionMix && Parameter <= FX::Parameter::ZynDistortionOffset)
 	{
-		return fx_chain[nFX]->zyn_distortion.getpar(Parameter - FX::FXParameterZynDistortionMix);
+		return fx_chain[nFX]->zyn_distortion.getpar(Parameter - FX::Parameter::ZynDistortionMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynChorusMix && Parameter <= FX::FXParameterZynChorusSubtractive)
+	if (Parameter >= FX::Parameter::ZynChorusMix && Parameter <= FX::Parameter::ZynChorusSubtractive)
 	{
-		return fx_chain[nFX]->zyn_chorus.getpar(Parameter - FX::FXParameterZynChorusMix);
+		return fx_chain[nFX]->zyn_chorus.getpar(Parameter - FX::Parameter::ZynChorusMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynSympatheticMix && Parameter <= FX::FXParameterZynSympatheticNegate)
+	if (Parameter >= FX::Parameter::ZynSympatheticMix && Parameter <= FX::Parameter::ZynSympatheticNegate)
 	{
-		return fx_chain[nFX]->zyn_sympathetic.getpar(Parameter - FX::FXParameterZynSympatheticMix);
+		return fx_chain[nFX]->zyn_sympathetic.getpar(Parameter - FX::Parameter::ZynSympatheticMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynAPhaserMix && Parameter <= FX::FXParameterZynAPhaserHyper)
+	if (Parameter >= FX::Parameter::ZynAPhaserMix && Parameter <= FX::Parameter::ZynAPhaserHyper)
 	{
-		return fx_chain[nFX]->zyn_aphaser.getpar(Parameter - FX::FXParameterZynAPhaserMix);
+		return fx_chain[nFX]->zyn_aphaser.getpar(Parameter - FX::Parameter::ZynAPhaserMix);
 	}
 
-	if (Parameter >= FX::FXParameterZynPhaserMix && Parameter <= FX::FXParameterZynPhaserPhase)
+	if (Parameter >= FX::Parameter::ZynPhaserMix && Parameter <= FX::Parameter::ZynPhaserPhase)
 	{
-		return fx_chain[nFX]->zyn_phaser.getpar(Parameter - FX::FXParameterZynPhaserMix);
+		return fx_chain[nFX]->zyn_phaser.getpar(Parameter - FX::Parameter::ZynPhaserMix);
 	}
 
-	if (Parameter >= FX::FXParameterCloudSeed2Interpolation && Parameter <= FX::FXParameterCloudSeed2SeedPostDiffusion)
+	if (Parameter >= FX::Parameter::CloudSeed2Interpolation && Parameter <= FX::Parameter::CloudSeed2SeedPostDiffusion)
 	{
-		const FX::FXParameterType &p = FX::s_FXParameter[Parameter];
-		return mapfloat(fx_chain[nFX]->cloudseed2.getParameter(Parameter - FX::FXParameterCloudSeed2Interpolation), 0.0f, 1.0f, p.Minimum, p.Maximum);
+		const FX::ParameterType &p = FX::s_Parameter[Parameter];
+		return mapfloat(fx_chain[nFX]->cloudseed2.getParameter(Parameter - FX::Parameter::CloudSeed2Interpolation), 0.0f, 1.0f, p.Minimum, p.Maximum);
 	}
 
 	return m_nFXParameter[nFX][Parameter];
@@ -2560,9 +2558,9 @@ bool CMiniDexed::DoSavePerformance()
 
 	for (int nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
-		for (int nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (int nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			FX::TFXParameter param = FX::TFXParameter(nParam);
+			FX::Parameter param = FX::Parameter(nParam);
 			m_PerformanceConfig.SetFXParameter(param, GetFXParameter(param, nFX), nFX);
 		}
 	}
@@ -3302,11 +3300,11 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 	for (int nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
-		for (int nParam = 0; nParam < FX::FXParameterUnknown; ++nParam)
+		for (int nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
-			FX::TFXParameter param = FX::TFXParameter(nParam);
-			const FX::FXParameterType &p = FX::s_FXParameter[nParam];
-			bool bSaveOnly = p.Flags & FX::FXComposite;
+			FX::Parameter param = FX::Parameter(nParam);
+			const FX::ParameterType &p = FX::s_Parameter[nParam];
+			bool bSaveOnly = p.Flags & FX::Flag::Composite;
 			SetFXParameter(param, m_PerformanceConfig.GetFXParameter(param, nFX), nFX, bSaveOnly);
 		}
 	}
