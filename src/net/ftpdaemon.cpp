@@ -20,27 +20,36 @@
 // mt32-pi. If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include "ftpdaemon.h"
+
+#include <cassert>
+#include <cstdint>
+
 #include <circle/logger.h>
 #include <circle/net/in.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
+#include <circle/sched/task.h>
 #include <circle/string.h>
+#include <circle/sysconfig.h>
 
-#include "ftpdaemon.h"
+#include "../config.h"
 #include "ftpworker.h"
+#include "mdnspublisher.h"
 
 LOGMODULE("ftpd");
 
-constexpr u16 ListenPort = 21;
-constexpr u8 MaxConnections = 1;
+constexpr uint16_t ListenPort = 21;
+constexpr uint8_t MaxConnections = 1;
 
-CFTPDaemon::CFTPDaemon(const char* pUser, const char* pPassword, CmDNSPublisher* pMDNSPublisher, CConfig* pConfig)
-	: CTask(TASK_STACK_SIZE, true),
-	  m_pListenSocket(nullptr),
-	  m_pUser(pUser),
-	  m_pPassword(pPassword),
-	  m_pmDNSPublisher(pMDNSPublisher),
-	  m_pConfig(pConfig)
+CFTPDaemon::CFTPDaemon(const char *pUser, const char *pPassword, CmDNSPublisher *pMDNSPublisher, CConfig *pConfig) :
+CTask{TASK_STACK_SIZE, true},
+m_pListenSocket{},
+m_pUser{pUser},
+m_pPassword{pPassword},
+m_pmDNSPublisher{pMDNSPublisher},
+m_pConfig{pConfig}
 {
 }
 
@@ -52,7 +61,7 @@ CFTPDaemon::~CFTPDaemon()
 
 bool CFTPDaemon::Initialize()
 {
-	CNetSubSystem* const pNet = CNetSubSystem::Get();
+	CNetSubSystem *const pNet = CNetSubSystem::Get();
 
 	if ((m_pListenSocket = new CSocket(pNet, IPPROTO_TCP)) == nullptr)
 		return false;
@@ -84,10 +93,10 @@ void CFTPDaemon::Run()
 	while (true)
 	{
 		CIPAddress ClientIPAddress;
-		u16 nClientPort;
+		uint16_t nClientPort;
 
 		LOGDBG("Listener: waiting for connection");
-		CSocket* pConnection = m_pListenSocket->Accept(&ClientIPAddress, &nClientPort);
+		CSocket *pConnection = m_pListenSocket->Accept(&ClientIPAddress, &nClientPort);
 
 		if (pConnection == nullptr)
 		{
@@ -97,7 +106,7 @@ void CFTPDaemon::Run()
 
 		CString IPAddressString;
 		ClientIPAddress.Format(&IPAddressString);
-		LOGNOTE("Incoming connection from %s:%d", static_cast<const char*>(IPAddressString), nClientPort);
+		LOGNOTE("Incoming connection from %s:%d", static_cast<const char *>(IPAddressString), nClientPort);
 
 		if (CFTPWorker::GetInstanceCount() >= MaxConnections)
 		{

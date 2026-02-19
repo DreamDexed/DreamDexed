@@ -17,125 +17,146 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+//
+
 #include "mdnspublisher.h"
-#include <circle/sched/scheduler.h>
-#include <circle/net/in.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+
 #include <circle/logger.h>
+#include <circle/net/in.h>
+#include <circle/net/ipaddress.h>
+#include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
+#include <circle/ptrlist.h>
+#include <circle/sched/scheduler.h>
+#include <circle/string.h>
 #include <circle/util.h>
-#include <assert.h>
-#define MDNS_HOST_GROUP		{224, 0, 0, 251}
-#define MDNS_PORT		5353
-#define MDNS_DOMAIN		"local"
-#define RR_TYPE_A		1
-#define RR_TYPE_PTR		12
-#define RR_TYPE_TXT		16
-#define RR_TYPE_SRV		33
-#define RR_CLASS_IN		1
-#define RR_CACHE_FLUSH		0x8000
-LOGMODULE ("mdnspub");
-CmDNSPublisher::CmDNSPublisher (CNetSubSystem *pNet)
-:	m_pNet (pNet),
-	m_pSocket (nullptr),
-	m_bRunning (FALSE),
-	m_pWritePtr (nullptr),
-	m_pDataLen (nullptr)
+
+#include "utility.h"
+
+#define MDNS_HOST_GROUP {224, 0, 0, 251}
+#define MDNS_PORT 5353
+#define MDNS_DOMAIN "local"
+#define RR_TYPE_A 1
+#define RR_TYPE_PTR 12
+#define RR_TYPE_TXT 16
+#define RR_TYPE_SRV 33
+#define RR_CLASS_IN 1
+#define RR_CACHE_FLUSH 0x8000
+
+LOGMODULE("mdnspub");
+
+CmDNSPublisher::CmDNSPublisher(CNetSubSystem *pNet) :
+m_pNet{pNet},
+m_pSocket{},
+m_bRunning{},
+m_pWritePtr{},
+m_pDataLen{}
 {
-	SetName ("mdnspub");
+	SetName("mdnspub");
 }
-CmDNSPublisher::~CmDNSPublisher (void)
+
+CmDNSPublisher::~CmDNSPublisher()
 {
-	assert (!m_pSocket);
-	m_bRunning = FALSE;
+	assert(!m_pSocket);
+	m_bRunning = false;
 }
-boolean CmDNSPublisher::PublishService (const char *pServiceName, const char *pServiceType,
-					u16 usServicePort, const char *ppText[])
+
+bool CmDNSPublisher::PublishService(const char *pServiceName, const char *pServiceType,
+				    uint16_t usServicePort, const char *ppText[])
 {
 	if (!m_bRunning)
 	{
 		// Let task can run once to initialize
-		CScheduler::Get ()->Yield ();
+		CScheduler::Get()->Yield();
 		if (!m_bRunning)
 		{
-			return FALSE;
+			return false;
 		}
 	}
-	assert (pServiceName);
-	assert (pServiceType);
-	TService *pService = new TService {pServiceName, pServiceType, usServicePort, 0};
-	assert (pService);
+	assert(pServiceName);
+	assert(pServiceType);
+	TService *pService = new TService{pServiceName, pServiceType, usServicePort, 0, {}};
+	assert(pService);
 	if (ppText)
 	{
-		for (unsigned i = 0; i < MaxTextRecords && ppText[i]; i++)
+		for (int i = 0; i < MaxTextRecords && ppText[i]; i++)
 		{
-			pService->ppText[i] = new CString (ppText[i]);
-			assert (pService->ppText[i]);
+			pService->ppText[i] = new CString(ppText[i]);
+			assert(pService->ppText[i]);
 			pService->nTextRecords++;
 		}
 	}
-	m_Mutex.Acquire ();
+	m_Mutex.Acquire();
 	// Insert as first element into list
-	TPtrListElement *pElement = m_ServiceList.GetFirst ();
+	TPtrListElement *pElement = m_ServiceList.GetFirst();
 	if (pElement)
 	{
-		m_ServiceList.InsertBefore (pElement, pService);
+		m_ServiceList.InsertBefore(pElement, pService);
 	}
 	else
 	{
-		m_ServiceList.InsertAfter (nullptr, pService);
+		m_ServiceList.InsertAfter(nullptr, pService);
 	}
-	m_Mutex.Release ();
-	LOGDBG ("Publish service %s", (const char *) pService->ServiceName);
-	m_Event.Set ();		// Trigger resent for everything
-	return TRUE;
+	m_Mutex.Release();
+	LOGDBG("Publish service %s", pService->ServiceName.c_str());
+	m_Event.Set(); // Trigger resent for everything
+	return true;
 }
-boolean CmDNSPublisher::UnpublishService (const char *pServiceName)
+
+bool CmDNSPublisher::UnpublishService(const char *pServiceName)
 {
 	if (!m_bRunning)
 	{
-		return FALSE;
+		return false;
 	}
-	assert (pServiceName);
-	m_Mutex.Acquire ();
+	assert(pServiceName);
+	m_Mutex.Acquire();
 	// Find service in the list and remove it
 	TService *pService = nullptr;
-	TPtrListElement *pElement = m_ServiceList.GetFirst ();
+	TPtrListElement *pElement = m_ServiceList.GetFirst();
 	while (pElement)
 	{
-		pService = static_cast<TService *> (CPtrList::GetPtr (pElement));
-		assert (pService);
-		if (pService->ServiceName.Compare (pServiceName) == 0)
+		pService = static_cast<TService *>(CPtrList::GetPtr(pElement));
+		assert(pService);
+		if (pService->ServiceName.Compare(pServiceName) == 0)
 		{
-			m_ServiceList.Remove (pElement);
+			m_ServiceList.Remove(pElement);
 			break;
 		}
 		pService = nullptr;
-		pElement = m_ServiceList.GetNext (pElement);
+		pElement = m_ServiceList.GetNext(pElement);
 	}
-	m_Mutex.Release ();
+	m_Mutex.Release();
 	if (!pService)
 	{
-		return FALSE;
+		return false;
 	}
-	LOGDBG ("Unpublish service %s", (const char *) pService->ServiceName);
-	SendResponse (pService, FALSE);
+	LOGDBG("Unpublish service %s", pService->ServiceName.c_str());
+	SendResponse(pService, false);
 	/*
 	if (!SendResponse (pService, TRUE))
 	{
 		LOGWARN ("Send failed");
 	}
 	*/
-	for (unsigned i = 0; i < pService->nTextRecords; i++)
+	for (int i = 0; i < pService->nTextRecords; i++)
 	{
 		delete pService->ppText[i];
 	}
 	delete pService;
-	return TRUE;
+	return true;
 }
-boolean CmDNSPublisher::UnpublishService(const char *pServiceName, const char *pServiceType, u16 usServicePort)
+
+bool CmDNSPublisher::UnpublishService(const char *pServiceName, const char *pServiceType, uint16_t usServicePort)
 {
 	if (!m_bRunning)
 	{
-		return FALSE;
+		return false;
 	}
 	assert(pServiceName);
 	assert(pServiceType);
@@ -159,232 +180,242 @@ boolean CmDNSPublisher::UnpublishService(const char *pServiceName, const char *p
 	m_Mutex.Release();
 	if (!pService)
 	{
-		return FALSE;
+		return false;
 	}
-	LOGDBG("Unpublish service %s %s %u", (const char *)pService->ServiceName, (const char *)pService->ServiceType, pService->usServicePort);
-	SendResponse(pService, FALSE);
-	for (unsigned i = 0; i < pService->nTextRecords; i++)
+	LOGDBG("Unpublish service %s %s %u", pService->ServiceName.c_str(), pService->ServiceType.c_str(), pService->usServicePort);
+	SendResponse(pService, false);
+	for (int i = 0; i < pService->nTextRecords; i++)
 	{
 		delete pService->ppText[i];
 	}
 	delete pService;
-	return TRUE;
+	return true;
 }
-void CmDNSPublisher::Run (void)
+
+void CmDNSPublisher::Run()
 {
-	assert (m_pNet);
-	assert (!m_pSocket);
-	m_pSocket = new CSocket (m_pNet, IPPROTO_UDP);
-	assert (m_pSocket);
-	if (m_pSocket->Bind (MDNS_PORT) < 0)
+	assert(m_pNet);
+	assert(!m_pSocket);
+	m_pSocket = new CSocket(m_pNet, IPPROTO_UDP);
+	assert(m_pSocket);
+	if (m_pSocket->Bind(MDNS_PORT) < 0)
 	{
-		LOGERR ("Cannot bind to port %u", MDNS_PORT);
+		LOGERR("Cannot bind to port %d", MDNS_PORT);
 		delete m_pSocket;
 		m_pSocket = nullptr;
 		while (1)
 		{
-			m_Event.Clear ();
-			m_Event.Wait ();
+			m_Event.Clear();
+			m_Event.Wait();
 		}
 	}
-	static const u8 mDNSIPAddress[] = MDNS_HOST_GROUP;
-	CIPAddress mDNSIP (mDNSIPAddress);
-	if (m_pSocket->Connect (mDNSIP, MDNS_PORT) < 0)
+	static const uint8_t mDNSIPAddress[] = MDNS_HOST_GROUP;
+	CIPAddress mDNSIP(mDNSIPAddress);
+	if (m_pSocket->Connect(mDNSIP, MDNS_PORT) < 0)
 	{
-		LOGERR ("Cannot connect to mDNS host group");
+		LOGERR("Cannot connect to mDNS host group");
 		delete m_pSocket;
 		m_pSocket = nullptr;
 		while (1)
 		{
-			m_Event.Clear ();
-			m_Event.Wait ();
+			m_Event.Clear();
+			m_Event.Wait();
 		}
 	}
-	m_bRunning = TRUE;
+	m_bRunning = true;
 	while (1)
 	{
-		m_Event.Clear ();
-		m_Event.WaitWithTimeout ((TTLShort - 10) * 1000000);
-		for (unsigned i = 1; i <= 3; i++)
+		m_Event.Clear();
+		m_Event.WaitWithTimeout((TTLShort - 10) * 1000000);
+		for (int i = 1; i <= 3; i++)
 		{
-			m_Mutex.Acquire ();
-			TPtrListElement *pElement = m_ServiceList.GetFirst ();
+			m_Mutex.Acquire();
+			TPtrListElement *pElement = m_ServiceList.GetFirst();
 			while (pElement)
 			{
-				TService *pService =
-					static_cast<TService *> (CPtrList::GetPtr (pElement));
-				assert (pService);
-				SendResponse (pService, FALSE);
+				TService *pService = static_cast<TService *>(CPtrList::GetPtr(pElement));
+				assert(pService);
+				SendResponse(pService, false);
 				/*
 				if (!SendResponse (pService, FALSE))
 				{
 					LOGWARN ("Send failed");
 				}
 				*/
-				pElement = m_ServiceList.GetNext (pElement);
+				pElement = m_ServiceList.GetNext(pElement);
 			}
-			m_Mutex.Release ();
-			CScheduler::Get ()->Sleep (1);
+			m_Mutex.Release();
+			CScheduler::Get()->Sleep(1);
 		}
 	}
 }
-boolean CmDNSPublisher::SendResponse (TService *pService, boolean bDelete)
+
+bool CmDNSPublisher::SendResponse(TService *pService, bool bDelete)
 {
-	assert (pService);
-	assert (m_pNet);
+	assert(pService);
+	assert(m_pNet);
 	// Collect data
 	static const char Domain[] = "." MDNS_DOMAIN;
-	CString ServiceType (pService->ServiceType);
-	ServiceType.Append (Domain);
-	CString ServiceName (pService->ServiceName);
-	ServiceName.Append (".");
-	ServiceName.Append (ServiceType);
-	CString Hostname (m_pNet->GetHostname ());
-	Hostname.Append (Domain);
+	CString ServiceType(pService->ServiceType);
+	ServiceType.Append(Domain);
+	CString ServiceName(pService->ServiceName);
+	ServiceName.Append(".");
+	ServiceName.Append(ServiceType);
+	CString Hostname(m_pNet->GetHostname());
+	Hostname.Append(Domain);
 	// Start writing buffer
-	assert (!m_pWritePtr);
+	assert(!m_pWritePtr);
 	m_pWritePtr = m_Buffer;
 	// mDNS Header
-	PutWord (0);		// Transaction ID
-	PutWord (0x8400);	// Message is a response, Server is an authority for the domain
-	PutWord (0);		// Questions
-	PutWord (5); 		// Answer RRs
-	PutWord (0);		// Authority RRs
-	PutWord (0);		// Additional RRs
+	PutWord(0); // Transaction ID
+	PutWord(0x8400); // Message is a response, Server is an authority for the domain
+	PutWord(0); // Questions
+	PutWord(5); // Answer RRs
+	PutWord(0); // Authority RRs
+	PutWord(0); // Additional RRs
 	// Answer RRs
 	// PTR
-	PutDNSName ("_services._dns-sd._udp.local");
-	PutWord (RR_TYPE_PTR);
-	PutWord (RR_CLASS_IN);
-	PutDWord (bDelete ? TTLDelete : TTLLong);
-	ReserveDataLength ();
-	u8 *pServiceTypePtr = m_pWritePtr;
-	PutDNSName (ServiceType);
-	SetDataLength ();
+	PutDNSName("_services._dns-sd._udp.local");
+	PutWord(RR_TYPE_PTR);
+	PutWord(RR_CLASS_IN);
+	PutDWord(bDelete ? TTLDelete : TTLLong);
+	ReserveDataLength();
+	uint8_t *pServiceTypePtr = m_pWritePtr;
+	PutDNSName(ServiceType);
+	SetDataLength();
 	// PTR
-	PutCompressedString (pServiceTypePtr);
-	PutWord (RR_TYPE_PTR);
-	PutWord (RR_CLASS_IN);
-	PutDWord (bDelete ? TTLDelete : TTLLong);
-	ReserveDataLength ();
-	u8 *pServiceNamePtr = m_pWritePtr;
-	PutDNSName (ServiceName);
-	SetDataLength ();
+	PutCompressedString(pServiceTypePtr);
+	PutWord(RR_TYPE_PTR);
+	PutWord(RR_CLASS_IN);
+	PutDWord(bDelete ? TTLDelete : TTLLong);
+	ReserveDataLength();
+	uint8_t *pServiceNamePtr = m_pWritePtr;
+	PutDNSName(ServiceName);
+	SetDataLength();
 	// SRV
-	PutCompressedString (pServiceNamePtr);
-	PutWord (RR_TYPE_SRV);
-	PutWord (RR_CLASS_IN | RR_CACHE_FLUSH);
-	PutDWord (bDelete ? TTLDelete : TTLShort);
-	ReserveDataLength ();
-	PutWord (0);		// Priority
-	PutWord (0);		// Weight
-	PutWord (pService->usServicePort);
-	u8 *pHostnamePtr = m_pWritePtr;
-	PutDNSName (Hostname);
-	SetDataLength ();
+	PutCompressedString(pServiceNamePtr);
+	PutWord(RR_TYPE_SRV);
+	PutWord(RR_CLASS_IN | RR_CACHE_FLUSH);
+	PutDWord(bDelete ? TTLDelete : TTLShort);
+	ReserveDataLength();
+	PutWord(0); // Priority
+	PutWord(0); // Weight
+	PutWord(pService->usServicePort);
+	uint8_t *pHostnamePtr = m_pWritePtr;
+	PutDNSName(Hostname);
+	SetDataLength();
 	// A
-	PutCompressedString (pHostnamePtr);
-	PutWord (RR_TYPE_A);
-	PutWord (RR_CLASS_IN | RR_CACHE_FLUSH);
-	PutDWord (TTLShort);
-	ReserveDataLength ();
-	PutIPAddress (*m_pNet->GetConfig ()->GetIPAddress ());
-	SetDataLength ();
+	PutCompressedString(pHostnamePtr);
+	PutWord(RR_TYPE_A);
+	PutWord(RR_CLASS_IN | RR_CACHE_FLUSH);
+	PutDWord(TTLShort);
+	ReserveDataLength();
+	PutIPAddress(*m_pNet->GetConfig()->GetIPAddress());
+	SetDataLength();
 	// TXT
-	PutCompressedString (pServiceNamePtr);
-	PutWord (RR_TYPE_TXT);
-	PutWord (RR_CLASS_IN | RR_CACHE_FLUSH);
-	PutDWord (bDelete ? TTLDelete : TTLLong);
-	ReserveDataLength ();
-	for (int i = pService->nTextRecords-1; i >= 0; i--)	// In reverse order
+	PutCompressedString(pServiceNamePtr);
+	PutWord(RR_TYPE_TXT);
+	PutWord(RR_CLASS_IN | RR_CACHE_FLUSH);
+	PutDWord(bDelete ? TTLDelete : TTLLong);
+	ReserveDataLength();
+	for (int i = pService->nTextRecords - 1; i >= 0; i--) // In reverse order
 	{
-		assert (pService->ppText[i]);
-		PutString (*pService->ppText[i]);
+		assert(pService->ppText[i]);
+		PutString(*pService->ppText[i]);
 	}
-	SetDataLength ();
-	unsigned nMsgSize = m_pWritePtr - m_Buffer;
+	SetDataLength();
+	long nMsgSize = m_pWritePtr - m_Buffer;
 	m_pWritePtr = nullptr;
 	if (nMsgSize >= MaxMessageSize)
 	{
-		return FALSE;
+		return false;
 	}
-	assert (m_pSocket);
-	return m_pSocket->Send (m_Buffer, nMsgSize, MSG_DONTWAIT) == (int) nMsgSize;
+	assert(m_pSocket);
+	return m_pSocket->Send(m_Buffer, static_cast<unsigned>(nMsgSize), MSG_DONTWAIT) == nMsgSize;
 }
-void CmDNSPublisher::PutByte (u8 uchValue)
+
+void CmDNSPublisher::PutByte(uint8_t uchValue)
 {
-	assert (m_pWritePtr);
-	if ((unsigned) (m_pWritePtr - m_Buffer) < MaxMessageSize)
+	assert(m_pWritePtr);
+	if (m_pWritePtr - m_Buffer < MaxMessageSize)
 	{
 		*m_pWritePtr++ = uchValue;
 	}
 }
-void CmDNSPublisher::PutWord (u16 usValue)
+
+void CmDNSPublisher::PutWord(uint16_t usValue)
 {
-	PutByte (usValue >> 8);
-	PutByte (usValue & 0xFF);
+	PutByte(usValue >> 8);
+	PutByte(usValue & 0xFF);
 }
-void CmDNSPublisher::PutDWord (u32 nValue)
+
+void CmDNSPublisher::PutDWord(uint32_t nValue)
 {
-	PutWord (nValue >> 16);
-	PutWord (nValue & 0xFFFF);
+	PutWord(nValue >> 16);
+	PutWord(nValue & 0xFFFF);
 }
-void CmDNSPublisher::PutString (const char *pValue)
+
+void CmDNSPublisher::PutString(const char *pValue)
 {
-	assert (pValue);
-	size_t nLen = strlen (pValue);
-	assert (nLen <= 255);
-	PutByte (nLen);
+	assert(pValue);
+	size_t nLen = strlen(pValue);
+	assert(nLen <= 255);
+	PutByte(static_cast<uint8_t>(nLen));
 	while (*pValue)
 	{
-		PutByte (static_cast<u8> (*pValue++));
+		PutByte(static_cast<uint8_t>(*pValue++));
 	}
 }
-void CmDNSPublisher::PutCompressedString (const u8 *pWritePtr)
+
+void CmDNSPublisher::PutCompressedString(const uint8_t *pWritePtr)
 {
-	assert (m_pWritePtr);
-	assert (pWritePtr < m_pWritePtr);
-	unsigned nOffset = pWritePtr - m_Buffer;
-	assert (nOffset < MaxMessageSize);
+	assert(m_pWritePtr);
+	assert(pWritePtr < m_pWritePtr);
+	long nOffset = pWritePtr - m_Buffer;
+	assert(nOffset < MaxMessageSize);
 	nOffset |= 0xC000;
-	PutWord (static_cast<u16> (nOffset));
+	PutWord(static_cast<uint16_t>(nOffset));
 }
-void CmDNSPublisher::PutDNSName (const char *pValue)
+
+void CmDNSPublisher::PutDNSName(const char *pValue)
 {
 	char Buffer[256];
-	assert (pValue);
-	strncpy (Buffer, pValue, sizeof Buffer);
-	Buffer[sizeof Buffer-1] = '\0';
+	assert(pValue);
+	strncpy(Buffer, pValue, sizeof Buffer);
+	Buffer[sizeof Buffer - 1] = '\0';
 	char *pSavePtr = nullptr;
-	char *pToken = strtok_r (Buffer, ".", &pSavePtr);
+	char *pToken = strtok_r(Buffer, ".", &pSavePtr);
 	while (pToken)
 	{
-		PutString (pToken);
-		pToken = strtok_r (nullptr, ".", &pSavePtr);
+		PutString(pToken);
+		pToken = strtok_r(nullptr, ".", &pSavePtr);
 	}
-	PutByte (0);
+	PutByte(0);
 }
-void CmDNSPublisher::PutIPAddress (const CIPAddress &rValue)
+
+void CmDNSPublisher::PutIPAddress(const CIPAddress &rValue)
 {
-	u8 Buffer[IP_ADDRESS_SIZE];
-	rValue.CopyTo (Buffer);
-	for (unsigned i = 0; i < IP_ADDRESS_SIZE; i++)
+	uint8_t Buffer[IP_ADDRESS_SIZE];
+	rValue.CopyTo(Buffer);
+	for (int i = 0; i < IP_ADDRESS_SIZE; i++)
 	{
-		PutByte (Buffer[i]);
+		PutByte(Buffer[i]);
 	}
 }
-void CmDNSPublisher::ReserveDataLength (void)
+
+void CmDNSPublisher::ReserveDataLength()
 {
-	assert (!m_pDataLen);
+	assert(!m_pDataLen);
 	m_pDataLen = m_pWritePtr;
-	assert (m_pDataLen);
-	PutWord (0);
+	assert(m_pDataLen);
+	PutWord(0);
 }
-void CmDNSPublisher::SetDataLength (void)
+
+void CmDNSPublisher::SetDataLength()
 {
-	assert (m_pDataLen);
-	assert (m_pWritePtr);
-	assert (m_pWritePtr > m_pDataLen);
-	*reinterpret_cast<u16 *> (m_pDataLen) = le2be16 (m_pWritePtr - m_pDataLen - sizeof (u16));
+	assert(m_pDataLen);
+	assert(m_pWritePtr);
+	assert(m_pWritePtr > m_pDataLen);
+	*reinterpret_cast<uint16_t *>(m_pDataLen) = le2be16(static_cast<uint16_t>(m_pWritePtr - m_pDataLen - ssizeof(uint16_t)));
 	m_pDataLen = nullptr;
 }

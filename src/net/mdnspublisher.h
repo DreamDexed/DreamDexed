@@ -17,79 +17,86 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 #pragma once
-#include <circle/sched/task.h>
-#include <circle/sched/mutex.h>
-#include <circle/sched/synchronizationevent.h>
+
+#include <cstdint>
+
+#include <circle/net/ipaddress.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/socket.h>
-#include <circle/net/ipaddress.h>
 #include <circle/ptrlist.h>
+#include <circle/sched/mutex.h>
+#include <circle/sched/synchronizationevent.h>
+#include <circle/sched/task.h>
 #include <circle/string.h>
-#include <circle/types.h>
-class CmDNSPublisher : public CTask	/// mDNS / Bonjour client task
+
+class CmDNSPublisher : public CTask /// mDNS / Bonjour client task
 {
 public:
 	static constexpr const char *ServiceTypeAppleMIDI = "_apple-midi._udp";
 	static constexpr const char *ServiceTypeFTP = "_ftp._tcp";
+
 public:
 	/// \param pNet Pointer to the network subsystem object
-	CmDNSPublisher (CNetSubSystem *pNet);
-	~CmDNSPublisher (void);
+	CmDNSPublisher(CNetSubSystem *pNet);
+	~CmDNSPublisher();
 	/// \brief Start publishing a service
 	/// \param pServiceName Name of the service to be published
 	/// \param pServiceType Type of the service to be published (e.g. ServiceTypeAppleMIDI)
 	/// \param usServicePort Port number of the service to be published (in host byte order)
 	/// \param ppText Descriptions of the service (terminated with a nullptr, or nullptr itself)
 	/// \return Operation successful?
-	boolean PublishService (const char *pServiceName,
-				const char *pServiceType,
-				u16	    usServicePort,
-				const char *ppText[] = nullptr);
+	bool PublishService(const char *pServiceName,
+			    const char *pServiceType,
+			    uint16_t usServicePort,
+			    const char *ppText[] = nullptr);
 	/// \brief Stop publishing a service
 	/// \param pServiceName Name of the service to be unpublished (same as when published)
 	/// \return Operation successful?
-	boolean UnpublishService (const char *pServiceName);
+	bool UnpublishService(const char *pServiceName);
 	/// \brief Stop publishing a service
 	/// \param pServiceName Name of the service to be unpublished
 	/// \param pServiceType Type of the service to be unpublished
 	/// \param usServicePort Port number of the service to be unpublished
 	/// \return Operation successful?
-	boolean UnpublishService (const char *pServiceName, const char *pServiceType, u16 usServicePort);
-	void Run (void) override;
+	bool UnpublishService(const char *pServiceName, const char *pServiceType, uint16_t usServicePort);
+	void Run() override;
+
 private:
-	static const unsigned MaxTextRecords = 10;
-	static const unsigned MaxMessageSize = 1400;	// safe UDP payload in an Ethernet frame
-	static const unsigned TTLShort = 15;		// seconds
-	static const unsigned TTLLong = 4500;
-	static const unsigned TTLDelete = 0;
+	static constexpr int MaxTextRecords = 10;
+	static constexpr int MaxMessageSize = 1400; // safe UDP payload in an Ethernet frame
+	static constexpr int TTLShort = 15; // seconds
+	static constexpr int TTLLong = 4500;
+	static constexpr int TTLDelete = 0;
 	struct TService
 	{
-		CString	  ServiceName;
-		CString	  ServiceType;
-		u16	  usServicePort;
-		unsigned  nTextRecords;
-		CString	 *ppText[MaxTextRecords];
+		CString ServiceName;
+		CString ServiceType;
+		uint16_t usServicePort;
+		int nTextRecords;
+		CString *ppText[MaxTextRecords];
 	};
-	boolean SendResponse (TService *pService, boolean bDelete);
+	bool SendResponse(TService *pService, bool bDelete);
 	// Helpers for writing to buffer
-	void PutByte (u8 uchValue);
-	void PutWord (u16 usValue);
-	void PutDWord (u32 nValue);
-	void PutString (const char *pValue);
-	void PutCompressedString (const u8 *pWritePtr);
-	void PutDNSName (const char *pValue);
-	void PutIPAddress (const CIPAddress &rValue);
-	void ReserveDataLength (void);
-	void SetDataLength (void);
+	void PutByte(uint8_t uchValue);
+	void PutWord(uint16_t usValue);
+	void PutDWord(uint32_t nValue);
+	void PutString(const char *pValue);
+	void PutCompressedString(const uint8_t *pWritePtr);
+	void PutDNSName(const char *pValue);
+	void PutIPAddress(const CIPAddress &rValue);
+	void ReserveDataLength();
+	void SetDataLength();
+
 private:
 	CNetSubSystem *m_pNet;
 	CPtrList m_ServiceList;
 	CMutex m_Mutex;
 	CSocket *m_pSocket;
-	boolean m_bRunning;
+	bool m_bRunning;
 	CSynchronizationEvent m_Event;
-	u8 m_Buffer[MaxMessageSize];
-	u8 *m_pWritePtr;
-	u8 *m_pDataLen;
+	uint8_t m_Buffer[MaxMessageSize];
+	uint8_t *m_pWritePtr;
+	uint8_t *m_pDataLen;
 };

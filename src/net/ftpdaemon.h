@@ -24,13 +24,14 @@
 
 #include <circle/net/socket.h>
 #include <circle/sched/task.h>
-#include "mdnspublisher.h"
+
 #include "../config.h"
+#include "mdnspublisher.h"
 
 class CFTPDaemon : protected CTask
 {
 public:
-	CFTPDaemon(const char* pUser, const char* pPassword, CmDNSPublisher* pMDNSPublisher, CConfig* pConfig);
+	CFTPDaemon(const char *pUser, const char *pPassword, CmDNSPublisher *pMDNSPublisher, CConfig *pConfig);
 	virtual ~CFTPDaemon() override;
 
 	bool Initialize();
@@ -39,10 +40,10 @@ public:
 
 private:
 	// TCP sockets
-	CSocket* m_pListenSocket;
+	CSocket *m_pListenSocket;
 
-	const char* m_pUser;
-	const char* m_pPassword;
-	CmDNSPublisher* m_pmDNSPublisher;
-	CConfig* m_pConfig;
+	const char *m_pUser;
+	const char *m_pPassword;
+	CmDNSPublisher *m_pmDNSPublisher;
+	CConfig *m_pConfig;
 };

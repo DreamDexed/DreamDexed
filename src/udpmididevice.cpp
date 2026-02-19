@@ -113,7 +113,7 @@ bool CUDPMIDIDevice::Initialize()
 
 // Methods to handle MIDI events
 
-void CUDPMIDIDevice::OnAppleMIDIDataReceived(const uint8_t *pData, size_t nSize)
+void CUDPMIDIDevice::OnAppleMIDIDataReceived(const uint8_t *pData, int nSize)
 {
 	MIDIMessageHandler(pData, nSize, VIRTUALCABLE);
 }
@@ -130,7 +130,7 @@ void CUDPMIDIDevice::OnAppleMIDIDisconnect(const CIPAddress *pIPAddress, const c
 	LOGNOTE("RTP Device disconnected");
 }
 
-void CUDPMIDIDevice::OnUDPMIDIDataReceived(const uint8_t *pData, size_t nSize)
+void CUDPMIDIDevice::OnUDPMIDIDataReceived(const uint8_t *pData, int nSize)
 {
 	MIDIMessageHandler(pData, nSize, VIRTUALCABLE);
 }
