@@ -117,7 +117,7 @@ public:
 	void SetPortamentoGlissando(int nValue, int nTG);
 	void SetPortamentoTime(int nValue, int nTG);
 	void SetVoiceDataToTxt(const uint8_t *pData, int nTG);
-	uint8_t *GetVoiceDataFromTxt(int nTG);
+	void GetVoiceDataFromTxt(uint8_t pData[156], int nTG);
 	void SetMonoMode(bool bOKValue, int nTG);
 	void SetTGLink(int nTGLink, int nTG);
 

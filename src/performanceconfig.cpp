@@ -1253,18 +1253,15 @@ void CPerformanceConfig::SetVoiceDataToTxt(const uint8_t *pData, int nTG)
 	}
 }
 
-uint8_t *CPerformanceConfig::GetVoiceDataFromTxt(int nTG)
+void CPerformanceConfig::GetVoiceDataFromTxt(uint8_t pData[156], int nTG)
 {
 	assert(nTG < CConfig::AllToneGenerators);
-	static uint8_t pData[NUM_VOICE_PARAM];
 	std::string nHtoD = "0123456789ABCDEF";
 
 	for (int i = 0; i < NUM_VOICE_PARAM; ++i)
 	{
 		pData[i] = static_cast<uint8_t>(strtol(m_nVoiceDataTxt[nTG].c_str() + i * 3, nullptr, 16));
 	}
-
-	return pData;
 }
 
 bool CPerformanceConfig::VoiceDataFilled(int nTG)

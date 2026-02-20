@@ -3223,7 +3223,8 @@ void CMiniDexed::LoadPerformanceParameters(void)
 
 		if (m_PerformanceConfig.VoiceDataFilled(nTG) && nTG < m_nToneGenerators)
 		{
-			uint8_t *tVoiceData = m_PerformanceConfig.GetVoiceDataFromTxt(nTG);
+			uint8_t tVoiceData[156];
+			m_PerformanceConfig.GetVoiceDataFromTxt(tVoiceData, nTG);
 			m_pTG[nTG]->loadVoiceParameters(tVoiceData);
 			setOPMask(0b111111, nTG);
 		}
