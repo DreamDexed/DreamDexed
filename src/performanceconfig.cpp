@@ -28,7 +28,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <string>
 
 #include <Properties/propertiesfatfsfile.h>
@@ -483,8 +482,7 @@ bool CPerformanceConfig::Save()
 		m_Properties.SetSignedNumber(PropertyName, m_nPortamentoTime[nTG]);
 
 		PropertyName.Format("VoiceData%d", nTG + 1);
-		char *cstr = &m_nVoiceDataTxt[nTG][0];
-		m_Properties.SetString(PropertyName, cstr);
+		m_Properties.SetString(PropertyName, m_nVoiceDataTxt[nTG].c_str());
 
 		PropertyName.Format("MonoMode%d", nTG + 1);
 		m_Properties.SetNumber(PropertyName, m_bMonoMode[nTG] ? 1 : 0);
@@ -1271,7 +1269,7 @@ uint8_t *CPerformanceConfig::GetVoiceDataFromTxt(int nTG)
 
 bool CPerformanceConfig::VoiceDataFilled(int nTG)
 {
-	return (strcmp(m_nVoiceDataTxt[nTG].c_str(), "") != 0);
+	return m_nVoiceDataTxt[nTG].length() >= 156 * 3 - 1;
 }
 
 std::string CPerformanceConfig::GetPerformanceFileName(int nID)
@@ -1415,7 +1413,7 @@ bool CPerformanceConfig::CreateNewPerformanceFile()
 
 	nFileName = nIndex;
 	nFileName += "_";
-	if (strcmp(sPerformanceName.c_str(), "") == 0)
+	if (sPerformanceName.empty())
 	{
 		nFileName += "Perf";
 		nFileName += nIndex;
@@ -1490,7 +1488,7 @@ bool CPerformanceConfig::ListPerformances()
 			{
 				std::string OriFileName = FileInfo.fname;
 				size_t nLen = OriFileName.length();
-				if (nLen > 8 && nLen < 26 && strcmp(OriFileName.substr(6, 1).c_str(), "_") == 0)
+				if (nLen > 8 && nLen < 26 && OriFileName.substr(6, 1) == "_")
 				{
 					// Note: m_nLastPerformance - refers to the number (index) of the last performance in memory,
 					//       which includes a default performance.
@@ -1665,7 +1663,7 @@ bool CPerformanceConfig::ListPerformanceBanks()
 			//
 			std::string OriFileName = FileInfo.fname;
 			size_t nLen = OriFileName.length();
-			if (nLen > 4 && nLen < 26 && strcmp(OriFileName.substr(3, 1).c_str(), "_") == 0)
+			if (nLen > 4 && nLen < 26 && OriFileName.substr(3, 1) == "_")
 			{
 				int nBankIndex = stoi(OriFileName.substr(0, 3));
 				// Recall user index numbered 002..NUM_PERFORMANCE_BANKS
