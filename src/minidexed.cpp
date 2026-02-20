@@ -1708,7 +1708,7 @@ void CMiniDexed::SetFXParameter(FX::Parameter Parameter, int nValue, int nFX, bo
 
 	case FX::Parameter::ReturnLevel:
 		m_FXSpinLock.Acquire();
-		fx_chain[nFX]->set_level(nValue / 99.0f);
+		fx_chain[nFX]->set_level(powf(nValue / 99.0f, 2));
 		m_FXSpinLock.Release();
 		break;
 
