@@ -22,49 +22,52 @@
 //
 #pragma once
 
-#include "mididevice.h"
-#include "config.h"
-#include <circle/usb/usbmidi.h>
-#include <circle/device.h>
-#include <circle/string.h>
-#include <circle/types.h>
+#include <cstdint>
 #include <queue>
 
-#define USB_SYSEX_BUFFER_SIZE (MAX_DX7_SYSEX_LENGTH+128) // Allow a bit spare to handle unexpected SysEx messages
+#include <circle/device.h>
+#include <circle/string.h>
+#include <circle/usb/usbmidi.h>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
+
+#define USB_SYSEX_BUFFER_SIZE (MAX_DX7_SYSEX_LENGTH + 128) // Allow a bit spare to handle unexpected SysEx messages
 
 class CMiniDexed;
 
 class CMIDIKeyboard : public CMIDIDevice
 {
 public:
-	CMIDIKeyboard (CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI, unsigned nInstance = 0);
-	~CMIDIKeyboard (void);
+	CMIDIKeyboard(CMiniDexed *pSynthesizer, CConfig *pConfig, CUserInterface *pUI, int nInstance = 0);
+	~CMIDIKeyboard();
 
-	void Process (boolean bPlugAndPlayUpdated);
+	void Process(bool bPlugAndPlayUpdated);
 
-	void Send (const u8 *pMessage, size_t nLength, unsigned nCable = 0) override;
+	void Send(const uint8_t *pMessage, int nLength, int nCable = 0) override;
 
 private:
-	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength, unsigned nDevice, void *pParam);
-	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
-	
-	void USBMIDIMessageHandler (u8 *pPacket, unsigned nLength, unsigned nCable, unsigned nDevice);
+	static void MIDIPacketHandler(unsigned nCable, uint8_t *pPacket, unsigned nLength, unsigned nDevice, void *pParam);
+	static void DeviceRemovedHandler(CDevice *pDevice, void *pContext);
+
+	void USBMIDIMessageHandler(uint8_t *pPacket, int nLength, int nCable, int nDevice);
 
 private:
 	struct TSendQueueEntry
 	{
-		u8	*pMessage;
-		size_t	 nLength;
-		unsigned nCable;
+		uint8_t *pMessage;
+		int nLength;
+		int nCable;
 	};
 	uint8_t m_SysEx[USB_SYSEX_BUFFER_SIZE];
-	unsigned m_nSysExIdx;
+	int m_nSysExIdx;
 
 private:
-	unsigned m_nInstance;
+	int m_nInstance;
 	CString m_DeviceName;
 
-	CUSBMIDIDevice * volatile m_pMIDIDevice;
+	CUSBMIDIDevice *volatile m_pMIDIDevice;
 
 	std::queue<TSendQueueEntry> m_SendQueue;
 };

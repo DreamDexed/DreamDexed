@@ -21,10 +21,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <circle/logger.h>
-#include <cstring>
 #include "serialmididevice.h"
+
 #include <cassert>
+#include <cstdint>
+#include <cstring>
+
+#include <circle/interrupt.h>
+#include <circle/logger.h>
+#include <circle/serial.h>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
 
 LOGMODULE("serialmididevice");
 
@@ -32,89 +41,89 @@ LOGMODULE("serialmididevice");
 // 0 corresponds to GP14/GP15 on all RPi versions.
 #define SERIAL_MIDI_DEVICE 0
 
-CSerialMIDIDevice::CSerialMIDIDevice (CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt,
-				      CConfig *pConfig, CUserInterface *pUI)
-:	CMIDIDevice (pSynthesizer, pConfig, pUI),
-	m_pConfig (pConfig),
-	m_Serial (pInterrupt, TRUE, SERIAL_MIDI_DEVICE),
-	m_nSerialState (0),
-	m_nSysEx (0),
-	m_SendBuffer (&m_Serial)
+CSerialMIDIDevice::CSerialMIDIDevice(CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt,
+				     CConfig *pConfig, CUserInterface *pUI) :
+CMIDIDevice{pSynthesizer, pConfig, pUI},
+m_pConfig{pConfig},
+m_Serial{pInterrupt, true, SERIAL_MIDI_DEVICE},
+m_nSerialState{},
+m_nSysEx{},
+m_SendBuffer{&m_Serial}
 {
-	AddDevice ("ttyS1");
+	AddDevice("ttyS1");
 }
 
-CSerialMIDIDevice::~CSerialMIDIDevice (void)
+CSerialMIDIDevice::~CSerialMIDIDevice()
 
 {
 	m_nSerialState = 255;
 }
 
-boolean CSerialMIDIDevice::Initialize (void)
+bool CSerialMIDIDevice::Initialize()
 {
-	assert (m_pConfig);
-	boolean res = m_Serial.Initialize (m_pConfig->GetMIDIBaudRate ());
+	assert(m_pConfig);
+	bool res = m_Serial.Initialize(m_pConfig->GetMIDIBaudRate());
 	unsigned ser_options = m_Serial.GetOptions();
 	// Ensure CR->CRLF translation is disabled for MIDI links
-	ser_options &= ~(SERIAL_OPTION_ONLCR);
+	ser_options &= static_cast<unsigned>(~(SERIAL_OPTION_ONLCR));
 	m_Serial.SetOptions(ser_options);
 	return res;
 }
 
-void CSerialMIDIDevice::Process (void)
+void CSerialMIDIDevice::Process()
 {
-	m_SendBuffer.Update ();
+	m_SendBuffer.Update();
 
 	// Read serial MIDI data
-	u8 Buffer[100];
-	int nResult = m_Serial.Read (Buffer, sizeof Buffer);
+	uint8_t Buffer[100];
+	int nResult = m_Serial.Read(Buffer, sizeof Buffer);
 	if (nResult <= 0)
 	{
-		if(nResult!=0)
-			LOGERR("Serial.Read() error: %d\n",nResult);
+		if (nResult != 0)
+			LOGERR("Serial.Read() error: %d\n", nResult);
 		return;
 	}
 
-/*        if (m_pConfig->GetMIDIDumpEnabled ())
-	{
-		printf("Incoming MIDI data:");
-		for (uint16_t i = 0; i < nResult; i++)
+	/*        if (m_pConfig->GetMIDIDumpEnabled ())
 		{
-			if((i % 8) == 0)
-				printf("\n%04d:",i);
-			printf(" 0x%02x",Buffer[i]);
-		}
-		printf("\n");
-	}*/
+			printf("Incoming MIDI data:");
+			for (int i = 0; i < nResult; i++)
+			{
+				if((i % 8) == 0)
+					printf("\n%04d:",i);
+				printf(" 0x%02x",Buffer[i]);
+			}
+			printf("\n");
+		}*/
 
 	// Process MIDI messages
 	// See: https://www.midi.org/specifications/item/table-1-summary-of-midi-message
-	// "Running status" see: https://www.lim.di.unimi.it/IEEE/MIDI/SOT5.HTM#Running-	
-	
+	// "Running status" see: https://www.lim.di.unimi.it/IEEE/MIDI/SOT5.HTM#Running-
+
 	for (int i = 0; i < nResult; i++)
 	{
-		u8 uchData = Buffer[i];
+		uint8_t uchData = Buffer[i];
 
-		if(uchData == 0xF0)
+		if (uchData == 0xF0)
 		{
 			// SYSEX found
-			m_SerialMessage[m_nSysEx++]=uchData;
+			m_SerialMessage[m_nSysEx++] = uchData;
 			continue;
 		}
 
 		// System Real Time messages may appear anywhere in the byte stream, so handle them specially
-		if(uchData == 0xF8 || uchData == 0xFA || uchData == 0xFB || uchData == 0xFC || uchData == 0xFE || uchData == 0xFF)
+		if (uchData == 0xF8 || uchData == 0xFA || uchData == 0xFB || uchData == 0xFC || uchData == 0xFE || uchData == 0xFF)
 		{
-			MIDIMessageHandler (&uchData, 1);
+			MIDIMessageHandler(&uchData, 1);
 			continue;
 		}
-		else if(m_nSysEx > 0)
+		else if (m_nSysEx > 0)
 		{
-			m_SerialMessage[m_nSysEx++]=uchData;
+			m_SerialMessage[m_nSysEx++] = uchData;
 			if ((uchData & 0x80) == 0x80 || m_nSysEx >= MAX_MIDI_MESSAGE)
 			{
-				if(uchData == 0xF7)
-					MIDIMessageHandler (m_SerialMessage, m_nSysEx);
+				if (uchData == 0xF7)
+					MIDIMessageHandler(m_SerialMessage, m_nSysEx);
 				m_nSysEx = 0;
 			}
 			continue;
@@ -125,57 +134,56 @@ void CSerialMIDIDevice::Process (void)
 			{
 			case 0:
 			MIDIRestart:
-				if (   (uchData & 0x80) == 0x80		// status byte, all channels
-				    && (uchData & 0xF0) != 0xF0)	// ignore system messages
+				if ((uchData & 0x80) == 0x80 // status byte, all channels
+				    && (uchData & 0xF0) != 0xF0) // ignore system messages
 				{
 					m_SerialMessage[m_nSerialState++] = uchData;
 				}
 				break;
-	
+
 			case 1:
 			case 2:
 			DATABytes:
-				if (uchData & 0x80)			// got status when parameter expected
+				if (uchData & 0x80) // got status when parameter expected
 				{
 					m_nSerialState = 0;
-	
+
 					goto MIDIRestart;
 				}
-	
+
 				m_SerialMessage[m_nSerialState++] = uchData;
-	
-				if (   (m_SerialMessage[0] & 0xE0) == 0xC0
-				    || m_nSerialState == 3		// message is complete
-				    || (m_SerialMessage[0] & 0xF0) == 0xD0)   // channel aftertouch
+
+				if ((m_SerialMessage[0] & 0xE0) == 0xC0 || m_nSerialState == 3 // message is complete
+				    || (m_SerialMessage[0] & 0xF0) == 0xD0) // channel aftertouch
 				{
-					MIDIMessageHandler (m_SerialMessage, m_nSerialState);
-	
-					m_nSerialState = 4; // State 4 for test if 4th byte is a status byte or a data byte 
+					MIDIMessageHandler(m_SerialMessage, m_nSerialState);
+
+					m_nSerialState = 4; // State 4 for test if 4th byte is a status byte or a data byte
 				}
-	
+
 				break;
 			case 4:
-				
-				if ((uchData & 0x80) == 0)  // true data byte, false status byte
+
+				if ((uchData & 0x80) == 0) // true data byte, false status byte
 				{
 					m_nSerialState = 1;
 					goto DATABytes;
 				}
-				else 
+				else
 				{
 					m_nSerialState = 0;
-					goto MIDIRestart; 
+					goto MIDIRestart;
 				}
 				break;
 			default:
-				assert (0);
+				assert(0);
 				break;
 			}
 		}
 	}
 }
 
-void CSerialMIDIDevice::Send (const u8 *pMessage, size_t nLength, unsigned nCable)
+void CSerialMIDIDevice::Send(const uint8_t *pMessage, int nLength, int nCable)
 {
-	m_SendBuffer.Write (pMessage, nLength);
+	m_SendBuffer.Write(pMessage, static_cast<size_t>(nLength));
 }
