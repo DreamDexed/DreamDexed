@@ -3025,7 +3025,7 @@ int16_t CMiniDexed::checkSystemExclusive(const uint8_t *pMessage, int nLength, i
 void CMiniDexed::getSysExVoiceDump(uint8_t *dest, int nTG)
 {
 	uint8_t checksum = 0;
-	uint8_t data[155];
+	uint8_t data[156];
 
 	assert(nTG < CConfig::AllToneGenerators);
 	if (nTG < m_nToneGenerators)
