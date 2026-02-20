@@ -22,35 +22,37 @@
 //
 #pragma once
 
+#include <cstdint>
 
-#include "mididevice.h"
-#include "config.h"
 #include <circle/interrupt.h>
 #include <circle/serial.h>
 #include <circle/writebuffer.h>
-#include <circle/types.h>
+
+#include "config.h"
+#include "mididevice.h"
+#include "userinterface.h"
 
 class CMiniDexed;
 
 class CSerialMIDIDevice : public CMIDIDevice
 {
 public:
-	CSerialMIDIDevice (CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt, CConfig *pConfig, CUserInterface *pUI);
-	~CSerialMIDIDevice (void);
+	CSerialMIDIDevice(CMiniDexed *pSynthesizer, CInterruptSystem *pInterrupt, CConfig *pConfig, CUserInterface *pUI);
+	~CSerialMIDIDevice();
 
-	boolean Initialize (void);
+	bool Initialize();
 
-	void Process (void);
+	void Process();
 
-	void Send (const u8 *pMessage, size_t nLength, unsigned nCable = 0) override;
+	void Send(const uint8_t *pMessage, int nLength, int nCable = 0) override;
 
 private:
 	CConfig *m_pConfig;
 
 	CSerialDevice m_Serial;
-	unsigned m_nSerialState;
-	unsigned m_nSysEx;
-	u8 m_SerialMessage[MAX_MIDI_MESSAGE];
+	int m_nSerialState;
+	int m_nSysEx;
+	uint8_t m_SerialMessage[MAX_MIDI_MESSAGE];
 
 	CWriteBufferDevice m_SendBuffer;
 };
