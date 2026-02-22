@@ -124,4 +124,12 @@ void CombFilterBank::filterout(float *smp, int period)
 	}
 }
 
+void CombFilterBank::cleanup()
+{
+	for (int i = 0; i < strings_nr; ++i)
+	{
+		std::fill_n(string_smps[i], mem_size, 0.0f);
+	}
+}
+
 } // namespace zyn
