@@ -56,6 +56,7 @@ void Sympathetic::cleanup()
 {
 	lpf.cleanup();
 	hpf.cleanup();
+	filterBank.cleanup();
 }
 
 void Sympathetic::process(float *inputL, float *inputR, int period)

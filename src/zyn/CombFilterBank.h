@@ -12,6 +12,8 @@ public:
 	CombFilterBank(float samplerate, float initgain);
 	void filterout(float *smp, int period);
 
+	void cleanup();
+
 	static constexpr int max_strings = 76 * 3;
 	static constexpr int max_samples = 6048;
 
