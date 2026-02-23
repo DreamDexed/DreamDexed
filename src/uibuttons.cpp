@@ -121,7 +121,7 @@ unsigned CUIButton::getPinNumber(void)
 	return m_pinNumber;
 }
 	
-CUIButton::BtnTrigger CUIButton::ReadTrigger (void)
+CUIButton::BtnTrigger CUIButton::ReadTrigger (unsigned nTick)
 {
 	unsigned value;
 
@@ -164,15 +164,15 @@ CUIButton::BtnTrigger CUIButton::ReadTrigger (void)
 	}
 
 	if (m_timer < m_longPressTimeout) {
-		m_timer++;
+		m_timer += nTick;
 
-		if (m_timer == m_doubleClickTimeout && m_lastValue == 1 && m_numClicks == 1) {
+		if (m_timer >= m_doubleClickTimeout && m_lastValue == 1 && m_numClicks == 1) {
 			// The user has clicked and released the button once within the
 			// timeout - this must be a single click
 			reset();
 			return BtnTriggerClick;
 		}
-		if (m_timer == m_longPressTimeout) {
+		if (m_timer >= m_longPressTimeout) {
 			if (m_lastValue == 0 && m_numClicks == 1) {
 				// Single long press
 				reset();
@@ -187,7 +187,7 @@ CUIButton::BtnTrigger CUIButton::ReadTrigger (void)
 
 	// Debounce here - we don't need to do anything if the debounce timer is active
 	if (m_debounceTimer < DEBOUNCE_TIME) {
-		m_debounceTimer++;
+		m_debounceTimer += nTick;
 		return BtnTriggerNone;
 	}
 	
@@ -253,8 +253,8 @@ void CUIButton::Write (unsigned nValue) {
 	}
 }
 
-CUIButton::BtnEvent CUIButton::Read (void) {
-	BtnTrigger trigger = ReadTrigger();
+CUIButton::BtnEvent CUIButton::Read (unsigned nTick) {
+	BtnTrigger trigger = ReadTrigger(nTick);
 
 	if (trigger == BtnTriggerClick) {
 		return m_clickEvent;
@@ -532,10 +532,12 @@ void CUIButtons::Update (void)
 		return;
 	}
 
+	unsigned nTick = (currentTick - m_lastTick) / BUTTONS_UPDATE_NUM_TICKS;
+
 	m_lastTick = currentTick;
 
 	for (unsigned i=0; i<MAX_BUTTONS; i++) {
-		CUIButton::BtnEvent event = m_buttons[i].Read();
+		CUIButton::BtnEvent event = m_buttons[i].Read(nTick);
 		if (event != CUIButton::BtnEventNone) {
 //			LOGDBG("Event: %u", event);
 			(*m_eventHandler) (event, m_eventParam);

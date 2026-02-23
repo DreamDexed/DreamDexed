@@ -77,8 +77,8 @@ public:
 
 	unsigned getPinNumber(void);
 	
-	BtnTrigger ReadTrigger (void);
-	BtnEvent Read (void);
+	BtnTrigger ReadTrigger (unsigned nTick);
+	BtnEvent Read (unsigned nTick);
 	void Write (unsigned nValue); // MIDI buttons only!
 
 	static BtnTrigger triggerTypeFromString(const char* triggerString);
