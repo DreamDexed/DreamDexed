@@ -294,6 +294,7 @@ CMiniDexed::CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
 	// END setup reverb
 
 	SetParameter (ParameterMasterVolume, pConfig->GetMasterVolume());
+	SetParameter (ParameterSDFilter, 0);
 	SetParameter (ParameterMixerDryLevel, 99);
 	SetParameter (ParameterFXBypass, 0);
 
