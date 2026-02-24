@@ -28,6 +28,7 @@
 #include <Properties/propertiesfatfsfile.h>
 #include <fatfs/ff.h>
 
+#include "bus.h"
 #include "config.h"
 #include "effect.h"
 
@@ -160,11 +161,9 @@ public:
 	int GetFXParameter(FX::Parameter nParameter, int nFX) const;
 	void SetFXParameter(FX::Parameter nParameter, int nValue, int nFX);
 
-	int GetMixerDryLevel() const;
-	void SetMixerDryLevel(int nValue);
-
-	int GetFXBypass() const;
-	void SetFXBypass(int nValue);
+	// Buses
+	int GetBusParameter(Bus::Parameter nParameter, int nBus) const;
+	void SetBusParameter(Bus::Parameter nParameter, int nValue, int nBus);
 
 	bool VoiceDataFilled(int nTG);
 	bool ListPerformances();
@@ -197,6 +196,7 @@ private:
 	CPropertiesFatFsFile m_Properties;
 
 	int m_nToneGenerators;
+	int m_nBuses;
 
 	int m_nBankNumber[CConfig::AllToneGenerators];
 	int m_nVoiceNumber[CConfig::AllToneGenerators];
@@ -264,7 +264,5 @@ private:
 	std::string NewPerformanceName = "";
 
 	int m_nFXParameter[CConfig::FXChains][FX::Parameter::Unknown];
-
-	int m_nMixerDryLevel;
-	int m_nFXBypass;
+	int m_nBusParameter[CConfig::Buses][Bus::Parameter::Unknown];
 };
