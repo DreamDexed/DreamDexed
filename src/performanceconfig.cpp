@@ -35,6 +35,7 @@
 #include <circle/string.h>
 #include <fatfs/ff.h>
 
+#include "bus.h"
 #include "common.h"
 #include "config.h"
 #include "effect.h"
@@ -71,6 +72,7 @@ bool CPerformanceConfig::Init(int nToneGenerators)
 	// will include all 16 TG configurations.
 	//
 	m_nToneGenerators = nToneGenerators;
+	m_nBuses = nToneGenerators / 8;
 
 	// Check intermal performance directory exists
 	DIR Directory;
@@ -311,6 +313,19 @@ bool CPerformanceConfig::Load()
 		m_nEQPreHighcut[nTG] = m_Properties.GetSignedNumber(PropertyName, 60);
 	}
 
+	for (int nBus = 0; nBus < m_nBuses; ++nBus)
+	{
+		CString PropertyName;
+
+		for (int nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
+
+			PropertyName.Format("Bus%d%s", nBus + 1, p.Name);
+			m_nBusParameter[nBus][nParam] = m_Properties.GetSignedNumber(PropertyName, p.Default);
+		}
+	}
+
 	for (int nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
 		CString PropertyName;
@@ -320,9 +335,19 @@ bool CPerformanceConfig::Load()
 			const FX::ParameterType &p = FX::s_Parameter[nParam];
 
 			if (nFX == CConfig::MasterFX)
-				PropertyName.Format("MasterFX%s", p.Name);
+			{
+				PropertyName.Format("Out1MasterFX%s", p.Name);
+			}
 			else
-				PropertyName.Format("SendFX%d%s", nFX + 1, p.Name);
+			{
+				int idFX = nFX % CConfig::BusFXChains;
+				int nBus = nFX / CConfig::BusFXChains;
+
+				if (nBus >= m_nBuses)
+					continue;
+
+				PropertyName.Format("Bus%dSendFX%d%s", nBus + 1, idFX + 1, p.Name);
+			}
 
 			if (p.Flags & FX::Flag::SaveAsString)
 				m_nFXParameter[nFX][nParam] = FX::getIDFromName(FX::Parameter(nParam), m_Properties.GetString(PropertyName, ""));
@@ -335,9 +360,6 @@ bool CPerformanceConfig::Load()
 	{
 		m_nFXParameter[CConfig::MasterFX][FX::Parameter::ReturnLevel] = FX::s_Parameter[FX::Parameter::ReturnLevel].Maximum;
 	}
-
-	m_nMixerDryLevel = m_Properties.GetNumber("MixerDryLevel", 99);
-	m_nFXBypass = m_Properties.GetNumber("FXBypass", 0);
 
 	// Compatibility
 	if (m_Properties.IsSet("CompressorEnable") && CConfig::FXChains)
@@ -352,6 +374,8 @@ bool CPerformanceConfig::Load()
 		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorRelease] = 200;
 		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorHPFilterEnable] = 1;
 		m_nFXParameter[CConfig::MasterFX][FX::Parameter::CompressorBypass] = 0;
+
+		m_nBusParameter[0][Bus::Parameter::ReturnLevel] = Bus::s_Parameter[Bus::Parameter::ReturnLevel].Maximum;
 	}
 
 	if (m_Properties.IsSet("ReverbEnable") && CConfig::FXChains)
@@ -560,15 +584,36 @@ bool CPerformanceConfig::Save()
 		m_Properties.SetSignedNumber(PropertyName, m_nEQPreHighcut[nTG]);
 	}
 
+	for (int nBus = 0; nBus < m_nBuses; ++nBus)
+	{
+		CString PropertyName;
+
+		for (int nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			PropertyName.Format("Bus%d%s", nBus + 1, Bus::s_Parameter[nParam].Name);
+			m_Properties.SetSignedNumber(PropertyName, m_nBusParameter[nBus][nParam]);
+		}
+	}
+
 	for (int nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
 		CString PropertyName;
 
 		CString FXName;
 		if (nFX == CConfig::MasterFX)
-			FXName = "MasterFX";
+		{
+			FXName = "Out1MasterFX";
+		}
 		else
-			FXName.Format("SendFX%d", nFX + 1);
+		{
+			int idFX = nFX % CConfig::BusFXChains;
+			int nBus = nFX / CConfig::BusFXChains;
+
+			if (nBus >= m_nBuses)
+				continue;
+
+			FXName.Format("Bus%dSendFX%d", nBus + 1, idFX + 1);
+		}
 
 		for (int nSlot = 0; nSlot < 3; ++nSlot)
 		{
@@ -609,9 +654,6 @@ bool CPerformanceConfig::Save()
 		PropertyName.Format("%s%s", FXName.c_str(), FX::s_Parameter[FX::Parameter::Bypass].Name);
 		m_Properties.SetSignedNumber(PropertyName, m_nFXParameter[nFX][FX::Parameter::Bypass]);
 	}
-
-	m_Properties.SetNumber("MixerDryLevel", m_nMixerDryLevel);
-	m_Properties.SetNumber("FXBypass", m_nFXBypass);
 
 	return m_Properties.Save();
 }
@@ -954,24 +996,18 @@ void CPerformanceConfig::SetFXParameter(FX::Parameter nParameter, int nValue, in
 	m_nFXParameter[nFX][nParameter] = nValue;
 }
 
-int CPerformanceConfig::GetMixerDryLevel() const
+int CPerformanceConfig::GetBusParameter(Bus::Parameter nParameter, int nBus) const
 {
-	return m_nMixerDryLevel;
+	assert(nBus < CConfig::Buses);
+	assert(nParameter < Bus::Parameter::Unknown);
+	return m_nBusParameter[nBus][nParameter];
 }
 
-void CPerformanceConfig::SetMixerDryLevel(int nValue)
+void CPerformanceConfig::SetBusParameter(Bus::Parameter nParameter, int nValue, int nBus)
 {
-	m_nMixerDryLevel = nValue;
-}
-
-int CPerformanceConfig::GetFXBypass() const
-{
-	return m_nFXBypass;
-}
-
-void CPerformanceConfig::SetFXBypass(int nValue)
-{
-	m_nFXBypass = nValue;
+	assert(nBus < CConfig::Buses);
+	assert(nParameter < Bus::Parameter::Unknown);
+	m_nBusParameter[nBus][nParameter] = nValue;
 }
 
 // Pitch bender and portamento:

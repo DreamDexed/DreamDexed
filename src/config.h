@@ -44,37 +44,34 @@ public:
 	static constexpr int MinToneGenerators = 1;
 	static constexpr int AllToneGenerators = 1;
 	static constexpr int DefToneGenerators = AllToneGenerators;
-	static constexpr int FXMixers = 0;
-	static constexpr int FXChains = 0;
-	static constexpr int MasterFX = FXMixers;
+	static constexpr int Buses = 0;
+	static constexpr int BusFXChains = 0;
 #else
-#if (RASPPI == 4 || RASPPI == 5)
-	// Pi 4 and 5 quad core
-	// These are max values, default is to support 8 in total with optional 16 TGs
 	static constexpr int TGsCore1 = 2; // process 2 TGs on core 1
 	static constexpr int TGsCore23 = 3; // process 3 TGs on core 2 and 3 each
-	static constexpr int TGsCore1Opt = 2; // process optional additional 2 TGs on core 1
-	static constexpr int TGsCore23Opt = 3; // process optional additional 3 TGs on core 2 and 3 each
+#if (RASPPI == 4)
+	static constexpr int TGsCore1Opt = 4; // process optional additional 4 TGs on core 1
+	static constexpr int TGsCore23Opt = 6; // process optional additional 6 TGs on core 2 and 3 each
+	static constexpr int Buses = 3;
+#elif (RASPPI == 5)
+	static constexpr int TGsCore1Opt = 6; // process optional additional 6 TGs on core 1
+	static constexpr int TGsCore23Opt = 9; // process optional additional 9 TGs on core 2 and 3 each
+	static constexpr int Buses = 4;
+#else // Pi 2 or 3 quad core
+	static constexpr int TGsCore1Opt = 0;
+	static constexpr int TGsCore23Opt = 0;
+	static constexpr int Buses = 1;
+#endif
 	static constexpr int MinToneGenerators = TGsCore1 + 2 * TGsCore23;
 	static constexpr int AllToneGenerators = TGsCore1 + TGsCore1Opt + 2 * TGsCore23 + 2 * TGsCore23Opt;
 	static constexpr int DefToneGenerators = MinToneGenerators;
-	static constexpr int FXMixers = 2;
-	static constexpr int FXChains = FXMixers + 1;
-	static constexpr int MasterFX = FXMixers;
-#else
-	// Pi 2 or 3 quad core
-	static constexpr int TGsCore1 = 2; // process 2 TGs on core 1
-	static constexpr int TGsCore23 = 3; // process 3 TGs on core 2 and 3 each
-	static constexpr int TGsCore1Opt = 0;
-	static constexpr int TGsCore23Opt = 0;
-	static constexpr int MinToneGenerators = TGsCore1 + 2 * TGsCore23;
-	static constexpr int AllToneGenerators = MinToneGenerators;
-	static constexpr int DefToneGenerators = AllToneGenerators;
-	static constexpr int FXMixers = 2;
-	static constexpr int FXChains = FXMixers + 1;
-	static constexpr int MasterFX = FXMixers;
+
+	static constexpr int BusFXChains = 2;
 #endif
-#endif
+	static constexpr int Outputs = 1;
+	static constexpr int FXMixers = BusFXChains * Buses;
+	static constexpr int FXChains = FXMixers + Outputs;
+	static constexpr int MasterFX = FXMixers;
 
 // Set maximum polyphony, depending on PI version.  This can be changed via config settings
 #if RASPPI == 1
