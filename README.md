@@ -11,8 +11,8 @@ DreamDexed is a [MiniDexed](https://github.com/probonopd/MiniDexed) fork with th
 - [x] 3-band EQ (per TG and Master)
 - [x] TG-Link
 - [x] Two Send FX + Master FX with ZynDistortion, YKChrous, ZynChorus, ZynSympathetic, ZynAPhaser, ZynPhaser, DreamDelay, PlateReverb, CloudSeed2, Compressor, EQ
-- [ ] 8 channel mixer (Rpi4+)
-- [ ] Multiple parts (RPi4+)
+- [x] 8 channel mixer (RPi4, RPi5)
+- [x] Multiple buses/parts (RPi4: 3 Bus - 24TG, RPi5: 4 Bus - 32TG)
 - [ ] Overlay Menu for easier parameter changes
 - [ ] MIDI Controller DAW integration
 
