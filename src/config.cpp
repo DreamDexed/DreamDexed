@@ -278,7 +278,7 @@ void CConfig::Load()
 	m_bNetworkEnabled = m_Properties.GetNumber("NetworkEnabled", 0) != 0;
 	m_bNetworkDHCP = m_Properties.GetNumber("NetworkDHCP", 0) != 0;
 	m_NetworkType = m_Properties.GetString("NetworkType", "wlan");
-	m_NetworkHostname = m_Properties.GetString("NetworkHostname", "MiniDexed");
+	m_NetworkHostname = m_Properties.GetString("NetworkHostname", "DreamDexed");
 	if (const uint8_t *pIP = m_Properties.GetIPAddress("NetworkIPAddress")) m_INetworkIPAddress.Set(pIP);
 	if (const uint8_t *pIP = m_Properties.GetIPAddress("NetworkSubnetMask")) m_INetworkSubnetMask.Set(pIP);
 	if (const uint8_t *pIP = m_Properties.GetIPAddress("NetworkDefaultGateway")) m_INetworkDefaultGateway.Set(pIP);

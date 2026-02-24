@@ -819,7 +819,7 @@ bool CAppleMIDIParticipant::SendAcceptInvitationPacket(CSocket *pSocket, CIPAddr
 	if (m_pSessionName && m_pSessionName[0])
 		strncpy(AcceptPacket.Name, m_pSessionName, sizeof(AcceptPacket.Name));
 	else
-		strncpy(AcceptPacket.Name, "MiniDexed", sizeof(AcceptPacket.Name));
+		strncpy(AcceptPacket.Name, "DreamDexed", sizeof(AcceptPacket.Name));
 
 	AcceptPacket.Name[sizeof(AcceptPacket.Name) - 1] = 0;
 
