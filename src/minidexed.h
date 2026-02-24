@@ -19,176 +19,180 @@
 //
 #pragma once
 
-#include "dexedadapter.h"
-#include "config.h"
-#include "userinterface.h"
-#include "sysexfileloader.h"
-#include "performanceconfig.h"
-#include "midikeyboard.h"
-#include "pckeyboard.h"
-#include "sdfilter.h"
-#include "serialmididevice.h"
-#include "perftimer.h"
-#include <fatfs/ff.h>
 #include <atomic>
 #include <cstdint>
 #include <string>
-#include <circle/types.h>
-#include <circle/interrupt.h>
+
 #include <circle/gpiomanager.h>
 #include <circle/i2cmaster.h>
-#include <circle/spimaster.h>
+#include <circle/interrupt.h>
+#include <circle/memorymap.h>
 #include <circle/multicore.h>
-#include <circle/sound/soundbasedevice.h>
-#include <circle/sched/scheduler.h>
+#include <circle/net/ipaddress.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/netdevice.h>
+#include <circle/sched/scheduler.h>
+#include <circle/sound/soundbasedevice.h>
+#include <circle/spimaster.h>
+#include <circle/spinlock.h>
+#include <fatfs/ff.h>
 #include <wlan/bcm4343.h>
 #include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
-#include "net/mdnspublisher.h"
-#include <circle/spinlock.h>
-#include "common.h"
-#include "status.h"
-#include "effect_mixer.hpp"
-#include "udpmididevice.h"
-#include "net/ftpdaemon.h"
+
+#include "config.h"
+#include "dexedadapter.h"
+#include "effect.h"
 #include "effect_chain.h"
+#include "effect_mixer.hpp"
+#include "midikeyboard.h"
+#include "net/ftpdaemon.h"
+#include "net/mdnspublisher.h"
+#include "pckeyboard.h"
+#include "performanceconfig.h"
+#include "perftimer.h"
+#include "sdfilter.h"
+#include "serialmididevice.h"
+#include "status.h"
+#include "sysexfileloader.h"
+#include "udpmididevice.h"
+#include "userinterface.h"
 
 class CMiniDexed
 #ifdef ARM_ALLOW_MULTI_CORE
-:	public CMultiCoreSupport
+: public CMultiCoreSupport
 #endif
 {
 public:
-	CMiniDexed (CConfig *pConfig, CInterruptSystem *pInterrupt,
-		    CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, FATFS *pFileSystem);
-	~CMiniDexed (void); // Add destructor
+	CMiniDexed(CConfig *pConfig, CInterruptSystem *pInterrupt,
+		   CGPIOManager *pGPIOManager, CI2CMaster *pI2CMaster, CSPIMaster *pSPIMaster, FATFS *pFileSystem);
+	~CMiniDexed(); // Add destructor
 
-	bool Initialize (void);
+	bool Initialize();
 
-	void Process (bool bPlugAndPlayUpdated);
+	void Process(bool bPlugAndPlayUpdated);
 
 #ifdef ARM_ALLOW_MULTI_CORE
-	void Run (unsigned nCore);
+	void Run(unsigned nCore);
 #endif
 
-	CSysExFileLoader *GetSysExFileLoader (void);
-	CPerformanceConfig *GetPerformanceConfig (void);
+	CSysExFileLoader *GetSysExFileLoader();
+	CPerformanceConfig *GetPerformanceConfig();
 
-	void BankSelect    (unsigned nBank, unsigned nTG);
-	void BankSelectPerformance    (unsigned nBank);
-	void BankSelectMSB (unsigned nBankMSB, unsigned nTG);
-	void BankSelectMSBPerformance (unsigned nBankMSB);
-	void BankSelectLSB (unsigned nBankLSB, unsigned nTG);
-	void BankSelectLSBPerformance (unsigned nBankLSB);
-	void ProgramChange (unsigned nProgram, unsigned nTG);
-	void ProgramChangePerformance (unsigned nProgram);
-	void SetVolume (unsigned nVolume, unsigned nTG);
-	void SetExpression (unsigned nExpression, unsigned nTG);
-	void SetPan (unsigned nPan, unsigned nTG);			// 0 .. 127
-	void SetMasterTune (int nMasterTune, unsigned nTG);		// -99 .. 99
-	void SetCutoff (int nCutoff, unsigned nTG);			// 0 .. 99
-	void SetResonance (int nResonance, unsigned nTG);		// 0 .. 99
-	void SetMIDIChannel (uint8_t uchChannel, unsigned nTG);
-	void SetSysExChannel (uint8_t uchChannel, unsigned nTG);
-	void SetSysExEnable (bool value, unsigned nTG);
-	void SetMIDIRxSustain (bool value, unsigned nTG);
-	void SetMIDIRxPortamento (bool value, unsigned nTG);
-	void SetMIDIRxSostenuto (bool value, unsigned nTG);
-	void SetMIDIRxHold2 (bool value, unsigned nTG);
+	void BankSelect(int nBank, int nTG);
+	void BankSelectPerformance(int nBank);
+	void BankSelectMSB(int nBankMSB, int nTG);
+	void BankSelectMSBPerformance(int nBankMSB);
+	void BankSelectLSB(int nBankLSB, int nTG);
+	void BankSelectLSBPerformance(int nBankLSB);
+	void ProgramChange(int nProgram, int nTG);
+	void ProgramChangePerformance(int nProgram);
+	void SetVolume(int nVolume, int nTG);
+	void SetExpression(int nExpression, int nTG);
+	void SetPan(int nPan, int nTG); // 0 .. 127
+	void SetMasterTune(int nMasterTune, int nTG); // -99 .. 99
+	void SetCutoff(int nCutoff, int nTG); // 0 .. 99
+	void SetResonance(int nResonance, int nTG); // 0 .. 99
+	void SetMIDIChannel(int nChannel, int nTG);
+	void SetSysExChannel(int nChannel, int nTG);
+	void SetSysExEnable(bool value, int nTG);
+	void SetMIDIRxSustain(bool value, int nTG);
+	void SetMIDIRxPortamento(bool value, int nTG);
+	void SetMIDIRxSostenuto(bool value, int nTG);
+	void SetMIDIRxHold2(bool value, int nTG);
 
-	uint8_t GetSysExChannel (unsigned nTG);
-	bool GetSysExEnable (unsigned nTG);
+	int GetSysExChannel(int nTG);
+	bool GetSysExEnable(int nTG);
 
-	void keyup (int16_t pitch, unsigned nTG);
-	void keydown (int16_t pitch, uint8_t velocity, unsigned nTG);
+	void keyup(int pitch, int nTG);
+	void keydown(int pitch, int velocity, int nTG);
 
-	void setSustain (bool sustain, unsigned nTG);
-	void setSostenuto (bool sostenuto, unsigned nTG);
-	void setHoldMode(bool holdmode, unsigned nTG);
-	void panic (uint8_t value, unsigned nTG);
-	void notesOff (uint8_t value, unsigned nTG);
-	void setModWheel (uint8_t value, unsigned nTG);
-	void setPitchbend (int16_t value, unsigned nTG);
-	void ControllersRefresh (unsigned nTG);
+	void setSustain(bool sustain, int nTG);
+	void setSostenuto(bool sostenuto, int nTG);
+	void setHoldMode(bool holdmode, int nTG);
+	void panic(int value, int nTG);
+	void notesOff(int value, int nTG);
+	void setModWheel(int value, int nTG);
+	void setPitchbend(int16_t value, int nTG);
+	void ControllersRefresh(int nTG);
 
-	void setFootController (uint8_t value, unsigned nTG);
-	void setBreathController (uint8_t value, unsigned nTG);
-	void setAftertouch (uint8_t value, unsigned nTG);
+	void setFootController(uint8_t value, int nTG);
+	void setBreathController(uint8_t value, int nTG);
+	void setAftertouch(uint8_t value, int nTG);
 
-	void SetFX1Send (unsigned nFXSend, unsigned nTG);		// 0 .. 99
-	void SetFX2Send (unsigned nFXSend, unsigned nTG);		// 0 .. 99
+	void SetFX1Send(int nFXSend, int nTG); // 0 .. 99
+	void SetFX2Send(int nFXSend, int nTG); // 0 .. 99
 
-	void SetCompressorEnable (bool compressor, unsigned nTG);	// 0 .. 1 (default 1)
-	void SetCompressorPreGain (int preGain, unsigned nTG);		// -20 .. 20 dB (default 0)
-	void SetCompressorThresh (int thresh, unsigned nTG);		// -60 .. 0 dBFS (default -20)
-	void SetCompressorRatio (unsigned ratio, unsigned nTG);		// 1 .. 20 (default 5)
-	void SetCompressorAttack (unsigned attack, unsigned nTG);	// 0 .. 1000 ms (default 5)
-	void SetCompressorRelease (unsigned release, unsigned nTG);	// 0 .. 1000 ms (default 200)
-	void SetCompressorMakeupGain (int makeupGain, unsigned nTG);	// -20 .. 20 dB (default 0)
+	void SetCompressorEnable(bool compressor, int nTG); // 0 .. 1 (default 1)
+	void SetCompressorPreGain(int preGain, int nTG); // -20 .. 20 dB (default 0)
+	void SetCompressorThresh(int thresh, int nTG); // -60 .. 0 dBFS (default -20)
+	void SetCompressorRatio(int ratio, int nTG); // 1 .. 20 (default 5)
+	void SetCompressorAttack(int attack, int nTG); // 0 .. 1000 ms (default 5)
+	void SetCompressorRelease(int release, int nTG); // 0 .. 1000 ms (default 200)
+	void SetCompressorMakeupGain(int makeupGain, int nTG); // -20 .. 20 dB (default 0)
 
-	void SetEQLow (int nValue, unsigned nTG);
-	void SetEQMid (int nValue, unsigned nTG);
-	void SetEQHigh (int nValue, unsigned nTG);
-	void SetEQGain (int nValue, unsigned nTG);
-	void SetEQLowMidFreq (unsigned nValue, unsigned nTG);
-	void SetEQMidHighFreq (unsigned nValue, unsigned nTG);
-	void SetEQPreLowcut (unsigned nValue, unsigned nTG);
-	void SetEQPreHighcut (unsigned nValue, unsigned nTG);
+	void SetEQLow(int nValue, int nTG);
+	void SetEQMid(int nValue, int nTG);
+	void SetEQHigh(int nValue, int nTG);
+	void SetEQGain(int nValue, int nTG);
+	void SetEQLowMidFreq(int nValue, int nTG);
+	void SetEQMidHighFreq(int nValue, int nTG);
+	void SetEQPreLowcut(int nValue, int nTG);
+	void SetEQPreHighcut(int nValue, int nTG);
 
-	void setMonoMode(uint8_t mono, uint8_t nTG);
+	void setMonoMode(bool mono, int nTG);
 
-	void setTGLink(uint8_t nTGLink, uint8_t nTG);
+	void setTGLink(int nTGLink, int nTG);
 
-	void setPitchbendRange(uint8_t range, uint8_t nTG);
-	void setPitchbendStep(uint8_t step, uint8_t nTG);
-	void setPortamentoMode(uint8_t mode, uint8_t nTG);
-	void setPortamentoGlissando(uint8_t glissando, uint8_t nTG);
-	void setPortamentoTime(uint8_t time, uint8_t nTG);
-	void setNoteLimitLow(unsigned limit, uint8_t nTG);
-	void setNoteLimitHigh(unsigned limit, uint8_t nTG);
-	void setNoteShift(int shift, uint8_t nTG);
-	void setModWheelRange(uint8_t range, uint8_t nTG);
-	void setModWheelTarget(uint8_t target, uint8_t nTG);
-	void setFootControllerRange(uint8_t range, uint8_t nTG);
-	void setFootControllerTarget(uint8_t target, uint8_t nTG);
-	void setBreathControllerRange(uint8_t range, uint8_t nTG);
-	void setBreathControllerTarget(uint8_t target, uint8_t nTG);
-	void setAftertouchRange(uint8_t range, uint8_t nTG);
-	void setAftertouchTarget(uint8_t target, uint8_t nTG);
-	void loadVoiceParameters(const uint8_t* data, uint8_t nTG);
-	void setVoiceDataElement(uint8_t data, uint8_t number, uint8_t nTG);
-	void getSysExVoiceDump(uint8_t* dest, uint8_t nTG);
-	void setOPMask(uint8_t uchOPMask, uint8_t nTG);
+	void setPitchbendRange(int range, int nTG);
+	void setPitchbendStep(int step, int nTG);
+	void setPortamentoMode(int mode, int nTG);
+	void setPortamentoGlissando(int glissando, int nTG);
+	void setPortamentoTime(int time, int nTG);
+	void setNoteLimitLow(int limit, int nTG);
+	void setNoteLimitHigh(int limit, int nTG);
+	void setNoteShift(int shift, int nTG);
+	void setModWheelRange(int range, int nTG);
+	void setModWheelTarget(int target, int nTG);
+	void setFootControllerRange(int range, int nTG);
+	void setFootControllerTarget(int target, int nTG);
+	void setBreathControllerRange(int range, int nTG);
+	void setBreathControllerTarget(int target, int nTG);
+	void setAftertouchRange(int range, int nTG);
+	void setAftertouchTarget(int target, int nTG);
+	void loadVoiceParameters(const uint8_t *data, int nTG);
+	void setVoiceDataElement(int address, int value, int nTG);
+	void getSysExVoiceDump(uint8_t *dest, int nTG);
+	void setOPMask(uint8_t uchOPMask, int nTG);
 
-	void setModController (unsigned controller, unsigned parameter, uint8_t value, uint8_t nTG);
-	unsigned getModController (unsigned controller, unsigned parameter, uint8_t nTG);
+	void setModController(int controller, int parameter, int value, int nTG);
+	int getModController(int controller, int parameter, int nTG);
 
-	int16_t checkSystemExclusive(const uint8_t* pMessage, const uint16_t nLength, uint8_t nTG);
+	int16_t checkSystemExclusive(const uint8_t *pMessage, int nLength, int nTG);
 
-	std::string GetPerformanceFileName(unsigned nID);
-	std::string GetPerformanceName(unsigned nID);
-	unsigned GetLastPerformance();
-	unsigned GetPerformanceBank();
-	unsigned GetLastPerformanceBank();
-	unsigned GetActualPerformanceID();
-	void SetActualPerformanceID(unsigned nID);
-	unsigned GetActualPerformanceBankID();
-	void SetActualPerformanceBankID(unsigned nBankID);
-	bool SetNewPerformance(unsigned nID);
-	bool SetNewPerformanceBank(unsigned nBankID);
-	void SetFirstPerformance(void);
-	void DoSetFirstPerformance(void);
-	bool SavePerformanceNewFile ();
-	
-	bool DoSavePerformanceNewFile (void);
-	bool DoSetNewPerformance (void);
-	bool DoSetNewPerformanceBank (void);
-	bool GetPerformanceSelectToLoad(void);
-	bool SavePerformance (bool bSaveAsDeault);
-	unsigned GetPerformanceSelectChannel (void);
-	void SetPerformanceSelectChannel (unsigned uCh);
-	bool IsValidPerformance(unsigned nID);
-	bool IsValidPerformanceBank(unsigned nBankID);
+	std::string GetPerformanceFileName(int nID);
+	std::string GetPerformanceName(int nID);
+	int GetLastPerformance();
+	int GetPerformanceBank();
+	int GetLastPerformanceBank();
+	int GetActualPerformanceID();
+	void SetActualPerformanceID(int nID);
+	int GetActualPerformanceBankID();
+	void SetActualPerformanceBankID(int nBankID);
+	bool SetNewPerformance(int nID);
+	bool SetNewPerformanceBank(int nBankID);
+	void SetFirstPerformance();
+	void DoSetFirstPerformance();
+	bool SavePerformanceNewFile();
+
+	bool DoSavePerformanceNewFile();
+	bool DoSetNewPerformance();
+	bool DoSetNewPerformanceBank();
+	bool GetPerformanceSelectToLoad();
+	bool SavePerformance(bool bSaveAsDeault);
+	int GetPerformanceSelectChannel();
+	void SetPerformanceSelectChannel(int nCh);
+	bool IsValidPerformance(int nID);
+	bool IsValidPerformanceBank(int nBankID);
 
 	int GetLastKeyDown();
 
@@ -204,17 +208,17 @@ public:
 		ParameterUnknown
 	};
 
-	void SetParameter (TParameter Parameter, int nValue);
-	int GetParameter (TParameter Parameter);
+	void SetParameter(TParameter Parameter, int nValue);
+	int GetParameter(TParameter Parameter);
 
-	std::string GetNewPerformanceDefaultName(void);
+	std::string GetNewPerformanceDefaultName();
 	void SetNewPerformanceName(const std::string &Name);
-	void SetVoiceName (const std::string &VoiceName, unsigned nTG);
-	bool DeletePerformance(unsigned nID);
-	bool DoDeletePerformance(void);
+	void SetVoiceName(const std::string &VoiceName, int nTG);
+	bool DeletePerformance(int nID);
+	bool DoDeletePerformance();
 
-	void SetFXParameter (FX::TFXParameter Parameter, int nValue, unsigned nFX, bool bSaveOnly = false);
-	int GetFXParameter (FX::TFXParameter Parameter, unsigned nFX);
+	void SetFXParameter(FX::TFXParameter Parameter, int nValue, int nFX, bool bSaveOnly = false);
+	int GetFXParameter(FX::TFXParameter Parameter, int nFX);
 
 	// Must match the order in CUIMenu::TGParameter
 	enum TTGParameter
@@ -237,7 +241,7 @@ public:
 		TGParameterMIDIRxHold2,
 		TGParameterFX1Send,
 		TGParameterFX2Send,
-		TGParameterPitchBendRange, 
+		TGParameterPitchBendRange,
 		TGParameterPitchBendStep,
 		TGParameterPortamentoMode,
 		TGParameterPortamentoGlissando,
@@ -245,24 +249,24 @@ public:
 		TGParameterNoteLimitLow,
 		TGParameterNoteLimitHigh,
 		TGParameterNoteShift,
-		TGParameterMonoMode,  
+		TGParameterMonoMode,
 		TGParameterTGLink,
-				
+
 		TGParameterMWRange,
 		TGParameterMWPitch,
 		TGParameterMWAmplitude,
 		TGParameterMWEGBias,
-		
+
 		TGParameterFCRange,
 		TGParameterFCPitch,
 		TGParameterFCAmplitude,
 		TGParameterFCEGBias,
-		
+
 		TGParameterBCRange,
 		TGParameterBCPitch,
 		TGParameterBCAmplitude,
 		TGParameterBCEGBias,
-		
+
 		TGParameterATRange,
 		TGParameterATPitch,
 		TGParameterATAmplitude,
@@ -275,7 +279,7 @@ public:
 		TGParameterCompressorAttack,
 		TGParameterCompressorRelease,
 		TGParameterCompressorMakeupGain,
-		
+
 		TGParameterEQLow,
 		TGParameterEQMid,
 		TGParameterEQHigh,
@@ -288,33 +292,33 @@ public:
 		TGParameterUnknown
 	};
 
-	void SetTGParameter (TTGParameter Parameter, int nValue, unsigned nTG);
-	int GetTGParameter (TTGParameter Parameter, unsigned nTG);
+	void SetTGParameter(TTGParameter Parameter, int nValue, int nTG);
+	int GetTGParameter(TTGParameter Parameter, int nTG);
 
 	// access (global or OP-related) parameter of the active voice of a TG
-	static const unsigned NoOP = 6;		// for global parameters
-	void SetVoiceParameter (uint8_t uchOffset, uint8_t uchValue, unsigned nOP, unsigned nTG);
-	uint8_t GetVoiceParameter (uint8_t uchOffset, unsigned nOP, unsigned nTG);
+	static constexpr int NoOP = 6; // for global parameters
+	void SetVoiceParameter(int nOffset, int nValue, int nOP, int nTG);
+	int GetVoiceParameter(int nOffset, int nOP, int nTG);
 
-	std::string GetVoiceName (unsigned nTG);
+	std::string GetVoiceName(int nTG);
 
-	bool SavePerformance (void);
-	bool DoSavePerformance (void);
+	bool SavePerformance();
+	bool DoSavePerformance();
 
-	void setMasterVolume (float32_t vol);
+	void setMasterVolume(float vol);
 
-	bool SDFilterOut (uint8_t nTG);
+	bool SDFilterOut(int nTG);
 
 	bool InitNetwork();
 	void UpdateNetwork();
-	const CIPAddress& GetNetworkIPAddress();
+	const CIPAddress &GetNetworkIPAddress();
 
 private:
-	int16_t ApplyNoteLimits (int16_t pitch, unsigned nTG);	// returns < 0 to ignore note
+	bool ApplyNoteLimits(int *pitch, int nTG); // returns < 0 to ignore note
 	uint8_t m_uchOPMask[CConfig::AllToneGenerators];
-	void LoadPerformanceParameters(void); 
-	void ProcessSound (void);
-	const char* GetNetworkDeviceShortName() const;
+	void LoadPerformanceParameters();
+	void ProcessSound();
+	const char *GetNetworkDeviceShortName() const;
 
 #ifdef ARM_ALLOW_MULTI_CORE
 	enum TCoreStatus
@@ -330,76 +334,75 @@ private:
 private:
 	CConfig *m_pConfig;
 
-	int m_nParameter[ParameterUnknown];			// global (non-TG) parameters
-	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown];	// FX parameters
+	int m_nParameter[ParameterUnknown]; // global (non-TG) parameters
+	int m_nFXParameter[CConfig::FXChains][FX::FXParameterUnknown]; // FX parameters
 
-	unsigned m_nToneGenerators;
-	unsigned m_nPolyphony;
+	int m_nToneGenerators;
+	int m_nPolyphony;
 
 	CDexedAdapter *m_pTG[CConfig::AllToneGenerators];
 
-	unsigned m_nVoiceBankID[CConfig::AllToneGenerators];
-	unsigned m_nVoiceBankIDMSB[CConfig::AllToneGenerators];
-	unsigned m_nVoiceBankIDPerformance;
-	unsigned m_nVoiceBankIDMSBPerformance;
-	unsigned m_nProgram[CConfig::AllToneGenerators];
-	unsigned m_nVolume[CConfig::AllToneGenerators];
-	unsigned m_nExpression[CConfig::AllToneGenerators];
-	unsigned m_nPan[CConfig::AllToneGenerators];
+	int m_nVoiceBankID[CConfig::AllToneGenerators];
+	int m_nVoiceBankIDMSB[CConfig::AllToneGenerators];
+	int m_nVoiceBankIDPerformance;
+	int m_nVoiceBankIDMSBPerformance;
+	int m_nProgram[CConfig::AllToneGenerators];
+	int m_nVolume[CConfig::AllToneGenerators];
+	int m_nExpression[CConfig::AllToneGenerators];
+	int m_nPan[CConfig::AllToneGenerators];
 	int m_nMasterTune[CConfig::AllToneGenerators];
 	int m_nCutoff[CConfig::AllToneGenerators];
 	int m_nResonance[CConfig::AllToneGenerators];
-	unsigned m_nMIDIChannel[CConfig::AllToneGenerators];
-	unsigned m_nSysExChannel[CConfig::AllToneGenerators];
+	int m_nMIDIChannel[CConfig::AllToneGenerators];
+	int m_nSysExChannel[CConfig::AllToneGenerators];
 	bool m_bSysExEnable[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSustain[CConfig::AllToneGenerators];
 	bool m_bMIDIRxPortamento[CConfig::AllToneGenerators];
 	bool m_bMIDIRxSostenuto[CConfig::AllToneGenerators];
 	bool m_bMIDIRxHold2[CConfig::AllToneGenerators];
-	unsigned m_nPitchBendRange[CConfig::AllToneGenerators];	
-	unsigned m_nPitchBendStep[CConfig::AllToneGenerators];	
-	unsigned m_nPortamentoMode[CConfig::AllToneGenerators];	
-	unsigned m_nPortamentoGlissando[CConfig::AllToneGenerators];	
-	unsigned m_nPortamentoTime[CConfig::AllToneGenerators];	
-	bool m_bMonoMode[CConfig::AllToneGenerators]; 
+	int m_nPitchBendRange[CConfig::AllToneGenerators];
+	int m_nPitchBendStep[CConfig::AllToneGenerators];
+	int m_nPortamentoMode[CConfig::AllToneGenerators];
+	int m_nPortamentoGlissando[CConfig::AllToneGenerators];
+	int m_nPortamentoTime[CConfig::AllToneGenerators];
+	bool m_bMonoMode[CConfig::AllToneGenerators];
 
-	unsigned m_nTGLink[CConfig::AllToneGenerators];
-				
-	unsigned m_nModulationWheelRange[CConfig::AllToneGenerators];
-	unsigned m_nModulationWheelTarget[CConfig::AllToneGenerators];
-	unsigned m_nFootControlRange[CConfig::AllToneGenerators];
-	unsigned m_nFootControlTarget[CConfig::AllToneGenerators];
-	unsigned m_nBreathControlRange[CConfig::AllToneGenerators];	
-	unsigned m_nBreathControlTarget[CConfig::AllToneGenerators];	
-	unsigned m_nAftertouchRange[CConfig::AllToneGenerators];	
-	unsigned m_nAftertouchTarget[CConfig::AllToneGenerators];
-		
-	unsigned m_nNoteLimitLow[CConfig::AllToneGenerators];
-	unsigned m_nNoteLimitHigh[CConfig::AllToneGenerators];
+	int m_nTGLink[CConfig::AllToneGenerators];
+
+	int m_nModulationWheelRange[CConfig::AllToneGenerators];
+	int m_nModulationWheelTarget[CConfig::AllToneGenerators];
+	int m_nFootControlRange[CConfig::AllToneGenerators];
+	int m_nFootControlTarget[CConfig::AllToneGenerators];
+	int m_nBreathControlRange[CConfig::AllToneGenerators];
+	int m_nBreathControlTarget[CConfig::AllToneGenerators];
+	int m_nAftertouchRange[CConfig::AllToneGenerators];
+	int m_nAftertouchTarget[CConfig::AllToneGenerators];
+
+	int m_nNoteLimitLow[CConfig::AllToneGenerators];
+	int m_nNoteLimitHigh[CConfig::AllToneGenerators];
 	int m_nNoteShift[CConfig::AllToneGenerators];
 
-	unsigned m_nFX1Send[CConfig::AllToneGenerators];
-	unsigned m_nFX2Send[CConfig::AllToneGenerators];
+	int m_nFX1Send[CConfig::AllToneGenerators];
+	int m_nFX2Send[CConfig::AllToneGenerators];
 
 	bool m_bCompressorEnable[CConfig::AllToneGenerators];
 	int m_nCompressorPreGain[CConfig::AllToneGenerators];
 	int m_nCompressorThresh[CConfig::AllToneGenerators];
-	unsigned m_nCompressorRatio[CConfig::AllToneGenerators];
-	unsigned m_nCompressorAttack[CConfig::AllToneGenerators];
-	unsigned m_nCompressorRelease[CConfig::AllToneGenerators];
+	int m_nCompressorRatio[CConfig::AllToneGenerators];
+	int m_nCompressorAttack[CConfig::AllToneGenerators];
+	int m_nCompressorRelease[CConfig::AllToneGenerators];
 	int m_nCompressorMakeupGain[CConfig::AllToneGenerators];
-  
+
 	int m_nEQLow[CConfig::AllToneGenerators];
 	int m_nEQMid[CConfig::AllToneGenerators];
 	int m_nEQHigh[CConfig::AllToneGenerators];
 	int m_nEQGain[CConfig::AllToneGenerators];
-	unsigned m_nEQLowMidFreq[CConfig::AllToneGenerators];
-	unsigned m_nEQMidHighFreq[CConfig::AllToneGenerators];
-	unsigned m_nEQPreLowcut[CConfig::AllToneGenerators];
-	unsigned m_nEQPreHighcut[CConfig::AllToneGenerators];
+	int m_nEQLowMidFreq[CConfig::AllToneGenerators];
+	int m_nEQMidHighFreq[CConfig::AllToneGenerators];
+	int m_nEQPreLowcut[CConfig::AllToneGenerators];
+	int m_nEQPreHighcut[CConfig::AllToneGenerators];
 
-	uint8_t m_nRawVoiceData[156]; 
-	
+	uint8_t m_nRawVoiceData[156];
 
 	CUserInterface m_UI;
 	CSysExFileLoader m_SysExFileLoader;
@@ -408,8 +411,8 @@ private:
 	CMIDIKeyboard *m_pMIDIKeyboard[CConfig::MaxUSBMIDIDevices];
 	CPCKeyboard m_PCKeyboard;
 	CSerialMIDIDevice m_SerialMIDI;
-	float32_t m_fMasterVolume[8];
-	float32_t m_fMasterVolumeW;
+	float m_fMasterVolume[8];
+	float m_fMasterVolumeW;
 
 	SDFilter m_SDFilter;
 
@@ -418,13 +421,13 @@ private:
 
 	CSoundBaseDevice *m_pSoundDevice;
 	bool m_bChannelsSwapped;
-	unsigned m_nQueueSizeFrames;
+	int m_nQueueSizeFrames;
 
 #ifdef ARM_ALLOW_MULTI_CORE
-//	unsigned m_nActiveTGsLog2;
+	//	int m_nActiveTGsLog2;
 	std::atomic<TCoreStatus> m_CoreStatus[CORES];
-	std::atomic<unsigned> m_nFramesToProcess;
-	float32_t m_OutputLevel[CConfig::AllToneGenerators][CConfig::MaxChunkSize];
+	std::atomic<int> m_nFramesToProcess;
+	float m_OutputLevel[CConfig::AllToneGenerators][CConfig::MaxChunkSize];
 #endif
 
 	int m_nLastKeyDown;
@@ -432,34 +435,34 @@ private:
 	CPerformanceTimer m_GetChunkTimer;
 	bool m_bProfileEnabled;
 
-	AudioFXChain* fx_chain[CConfig::FXChains];
-	AudioStereoMixer<CConfig::AllToneGenerators>* tg_mixer;
-	AudioStereoMixer<CConfig::AllToneGenerators>* sendfx_mixer[CConfig::FXMixers];
+	AudioFXChain *fx_chain[CConfig::FXChains];
+	AudioStereoMixer<CConfig::AllToneGenerators> *tg_mixer;
+	AudioStereoMixer<CConfig::AllToneGenerators> *sendfx_mixer[CConfig::FXMixers];
 
 	CSpinLock m_FXSpinLock;
 
 	CStatus m_Status;
 
 	// Network
-	CNetSubSystem* m_pNet;
-	CNetDevice* m_pNetDevice;
-	CBcm4343Device* m_WLAN; // Changed to pointer
-	CWPASupplicant* m_WPASupplicant; // Changed to pointer
+	CNetSubSystem *m_pNet;
+	CNetDevice *m_pNetDevice;
+	CBcm4343Device *m_WLAN; // Changed to pointer
+	CWPASupplicant *m_WPASupplicant; // Changed to pointer
 	bool m_bNetworkReady;
 	bool m_bNetworkInit;
-	CUDPMIDIDevice* m_UDPMIDI; // Changed to pointer
-	CFTPDaemon* m_pFTPDaemon;
+	CUDPMIDIDevice *m_UDPMIDI; // Changed to pointer
+	CFTPDaemon *m_pFTPDaemon;
 	CmDNSPublisher *m_pmDNSPublisher;
 
 	bool m_bSavePerformance;
 	bool m_bSavePerformanceNewFile;
 	bool m_bSetNewPerformance;
-	unsigned m_nSetNewPerformanceID;	
+	int m_nSetNewPerformanceID;
 	bool m_bSetNewPerformanceBank;
-	unsigned m_nSetNewPerformanceBankID;	
+	int m_nSetNewPerformanceBankID;
 	bool m_bSetFirstPerformance;
-	bool	m_bDeletePerformance;
-	unsigned m_nDeletePerformanceID;
+	bool m_bDeletePerformance;
+	int m_nDeletePerformanceID;
 	bool m_bLoadPerformanceBusy;
 	bool m_bLoadPerformanceBankBusy;
 	bool m_bSaveAsDeault;
@@ -467,5 +470,5 @@ private:
 	std::atomic<bool> m_bVolRampDownWait;
 	std::atomic<bool> m_bVolRampedDown;
 
-	const float32_t m_fRamp;
+	const float m_fRamp;
 };
