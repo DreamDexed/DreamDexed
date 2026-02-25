@@ -20,6 +20,7 @@
 
 #include "minidexed.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -90,6 +91,7 @@ m_pConfig{pConfig},
 m_pTG{},
 m_UI{this, pGPIOManager, pI2CMaster, pSPIMaster, pConfig},
 m_PerformanceConfig{pFileSystem},
+m_BusPerformanceConfig{},
 m_pMIDIKeyboard{},
 m_PCKeyboard{this, pConfig, &m_UI},
 m_SerialMIDI{this, pInterrupt, pConfig, &m_UI},
@@ -122,7 +124,9 @@ m_pmDNSPublisher{},
 m_bSavePerformance{},
 m_bSavePerformanceNewFile{},
 m_bSetNewPerformance{},
+m_bSetNewBusPerformance{},
 m_bSetNewPerformanceBank{},
+m_bSetNewBusPerformanceBank{},
 m_bSetFirstPerformance{},
 m_bDeletePerformance{},
 m_bVolRampDownWait{},
@@ -209,6 +213,11 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 	unsigned nUSBGadgetPin = pConfig->GetUSBGadgetPin();
 	bool bUSBGadget = pConfig->GetUSBGadget();
 	bool bUSBGadgetMode = pConfig->GetUSBGadgetMode();
+
+	for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		m_BusPerformanceConfig[nBus] = new CPerformanceConfig(pFileSystem);
+	}
 
 	if (bUSBGadgetMode)
 	{
@@ -316,7 +325,8 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 		for (int nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
 		{
 			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
-			SetBusParameter(Bus::Parameter(nParam), p.Default, nBus);
+			bool bSaveOnly = p.Flags & Bus::Flag::UIOnly;
+			SetBusParameter(Bus::Parameter(nParam), p.Default, nBus, bSaveOnly);
 		}
 	}
 
@@ -436,6 +446,11 @@ bool CMiniDexed::Initialize()
 		SetMIDIChannel(CMIDIDevice::OmniMode, 0);
 	}
 
+	for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		m_BusPerformanceConfig[nBus]->Init(m_nToneGenerators);
+	}
+
 	// setup and start the sound device
 	unsigned Channels = 1; // 16-bit Mono
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -539,6 +554,22 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		}
 	}
 
+	if (m_bSetNewBusPerformanceBank)
+	{
+		for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
+		{
+			int nBankID = m_nBusParameter[nBus][Bus::Parameter::PerformanceBank];
+			CPerformanceConfig *config = m_BusPerformanceConfig[nBus];
+			if (nBankID != config->GetPerformanceBankID())
+			{
+				config->SetNewPerformanceBank(nBankID);
+				SetBusParameter(Bus::Parameter::Performance, config->FindFirstPerformance(), nBus);
+			}
+		}
+
+		m_bSetNewBusPerformanceBank = false;
+	}
+
 	if (m_bSetNewPerformance && m_bVolRampedDown && !m_bSetNewPerformanceBank)
 	{
 		for (int i = 0; i < m_nToneGenerators; ++i)
@@ -556,6 +587,50 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		if (m_nSetNewPerformanceID == GetActualPerformanceID())
 		{
 			m_bSetNewPerformance = false;
+			m_bVolRampedDown = false;
+		}
+	}
+
+	if (m_bSetNewBusPerformance && m_bVolRampedDown && !m_bSetNewBusPerformanceBank)
+	{
+		bool bDone = false;
+
+		for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
+		{
+			int nPerfID = m_nBusParameter[nBus][Bus::Parameter::Performance];
+			int nLoadType = m_nBusParameter[nBus][Bus::Parameter::LoadType];
+			int nChannel = m_nBusParameter[nBus][Bus::Parameter::MIDIChannel];
+			CPerformanceConfig *config = m_BusPerformanceConfig[nBus];
+			if (nPerfID != config->GetPerformanceID())
+			{
+				for (int i = nBus * 8; i < (nBus + 1) * 8; ++i)
+				{
+					m_pTG[i]->resetState();
+				}
+
+				config->SetNewPerformance(nPerfID);
+				if (config->Load())
+				{
+					LoadPerformanceParameters(config, 0, 1, nBus, nLoadType, nChannel);
+				}
+
+				for (int idFX = 0; idFX < CConfig::BusFXChains; ++idFX)
+				{
+					int nFX = idFX + nBus * CConfig::BusFXChains;
+					fx_chain[nFX]->resetState();
+				}
+
+				nPerfID = m_nBusParameter[nBus][Bus::Parameter::Performance];
+				if (nPerfID == config->GetPerformanceID())
+				{
+					bDone = true;
+				}
+			}
+		}
+
+		if (bDone)
+		{
+			m_bSetNewBusPerformance = false;
 			m_bVolRampedDown = false;
 		}
 	}
@@ -655,6 +730,13 @@ CSysExFileLoader *CMiniDexed::GetSysExFileLoader()
 CPerformanceConfig *CMiniDexed::GetPerformanceConfig()
 {
 	return &m_PerformanceConfig;
+}
+
+CPerformanceConfig *CMiniDexed::GetBusPerformanceConfig(int nBus)
+{
+	assert(nBus < CConfig::Buses);
+
+	return m_BusPerformanceConfig[nBus];
 }
 
 void CMiniDexed::BankSelect(int nBank, int nTG)
@@ -1770,7 +1852,7 @@ int CMiniDexed::GetFXParameter(FX::Parameter Parameter, int nFX)
 	return m_nFXParameter[nFX][Parameter];
 }
 
-void CMiniDexed::SetBusParameter(Bus::Parameter Parameter, int nValue, int nBus)
+void CMiniDexed::SetBusParameter(Bus::Parameter Parameter, int nValue, int nBus, bool bSaveOnly)
 {
 	assert(nBus < CConfig::Buses);
 	assert(Parameter < Bus::Parameter::Unknown);
@@ -1780,8 +1862,48 @@ void CMiniDexed::SetBusParameter(Bus::Parameter Parameter, int nValue, int nBus)
 
 	m_nBusParameter[nBus][Parameter] = nValue;
 
+	if (bSaveOnly) return;
+
 	switch (Parameter)
 	{
+	case Bus::Parameter::PerformanceBank:
+		if (m_BusPerformanceConfig[nBus]->IsValidPerformanceBank(nValue))
+			m_bSetNewBusPerformanceBank = true;
+		break;
+	case Bus::Parameter::Performance:
+		if (m_BusPerformanceConfig[nBus]->IsValidPerformance(nValue))
+		{
+			m_bSetNewBusPerformance = true;
+			if (!m_bVolRampedDown)
+				m_bVolRampDownWait = true;
+		}
+		break;
+	case Bus::Parameter::LoadType:
+		break;
+	case Bus::Parameter::MIDIChannel:
+	{
+		if (nValue == CMIDIDevice::Disabled) break;
+
+		int nFromTG = nBus * 8;
+		int nToTG = (nBus + 1) * 8;
+
+		int nMinCh = *std::min_element(&m_nMIDIChannel[nFromTG], &m_nMIDIChannel[nToTG]);
+
+		for (int nTG = nFromTG; nTG < nToTG; ++nTG)
+		{
+			int nCh = m_nMIDIChannel[nTG];
+			if (nCh != CMIDIDevice::Disabled)
+			{
+				if (nValue == CMIDIDevice::OmniMode)
+					nCh = CMIDIDevice::OmniMode;
+				else if (nValue < CMIDIDevice::Channels)
+					nCh = (nCh + nValue - nMinCh) % CMIDIDevice::Channels;
+
+				SetMIDIChannel(nCh, nTG);
+			}
+		}
+	}
+	break;
 	case Bus::Parameter::MixerDryLevel:
 		bus_mixer[nBus]->gain(mapfloat(nValue, 0, 99, 0.0f, 1.0f));
 		break;
@@ -3275,93 +3397,167 @@ bool CMiniDexed::DoSavePerformanceNewFile()
 	}
 }
 
-void CMiniDexed::LoadPerformanceParameters(void)
+void CMiniDexed::LoadPerformanceParameters()
 {
+	LoadPerformanceParameters(&m_PerformanceConfig, 0, CConfig::Buses, 0, Bus::LoadType::BusAndMasterFX, CMIDIDevice::Disabled);
+}
+
+void CMiniDexed::LoadPerformanceParameters(CPerformanceConfig *config, int nBusFrom, int nBusCount, int nBusTarget, int LoadType, int nChannelTarget)
+{
+	int nMinCh = CMIDIDevice::ChannelUnknown - 1;
+
+	if (nChannelTarget < CMIDIDevice::Channels)
+	{
+		int nFromTG = nBusFrom * 8;
+		int nToTG = (nBusFrom + nBusCount) * 8;
+
+		for (int nTG = nFromTG; nTG < nToTG; nTG++)
+		{
+			int nCh = config->GetMIDIChannel(nTG);
+			if (nCh < nMinCh) nMinCh = nCh;
+		}
+	}
+
 	for (int nTG = 0; nTG < CConfig::AllToneGenerators; nTG++)
 	{
-		BankSelect(m_PerformanceConfig.GetBankNumber(nTG), nTG);
-		ProgramChange(m_PerformanceConfig.GetVoiceNumber(nTG), nTG);
-		SetMIDIChannel(m_PerformanceConfig.GetMIDIChannel(nTG), nTG);
-		SetSysExChannel(m_PerformanceConfig.GetSysExChannel(nTG), nTG);
-		SetSysExEnable(m_PerformanceConfig.GetSysExEnable(nTG), nTG);
-		SetMIDIRxSustain(m_PerformanceConfig.GetMIDIRxSustain(nTG), nTG);
-		SetMIDIRxPortamento(m_PerformanceConfig.GetMIDIRxPortamento(nTG), nTG);
-		SetMIDIRxSostenuto(m_PerformanceConfig.GetMIDIRxSostenuto(nTG), nTG);
-		SetMIDIRxHold2(m_PerformanceConfig.GetMIDIRxHold2(nTG), nTG);
-		SetVolume(m_PerformanceConfig.GetVolume(nTG), nTG);
-		SetPan(m_PerformanceConfig.GetPan(nTG), nTG);
-		SetMasterTune(m_PerformanceConfig.GetDetune(nTG), nTG);
-		SetCutoff(m_PerformanceConfig.GetCutoff(nTG), nTG);
-		SetResonance(m_PerformanceConfig.GetResonance(nTG), nTG);
-		setPitchbendRange(m_PerformanceConfig.GetPitchBendRange(nTG), nTG);
-		setPitchbendStep(m_PerformanceConfig.GetPitchBendStep(nTG), nTG);
-		setPortamentoMode(m_PerformanceConfig.GetPortamentoMode(nTG), nTG);
-		setPortamentoGlissando(m_PerformanceConfig.GetPortamentoGlissando(nTG), nTG);
-		setPortamentoTime(m_PerformanceConfig.GetPortamentoTime(nTG), nTG);
+		if (LoadType != Bus::LoadType::BusAndMasterFX && LoadType != Bus::LoadType::TGsSendFXs && LoadType != Bus::LoadType::TGs) break;
+		if (nTG < nBusFrom * 8 || nTG >= (nBusFrom + nBusCount) * 8) continue;
+		int nTTG = nTG + nBusTarget * 8;
 
-		setNoteLimitLow(m_PerformanceConfig.GetNoteLimitLow(nTG), nTG);
-		setNoteLimitHigh(m_PerformanceConfig.GetNoteLimitHigh(nTG), nTG);
-		setNoteShift(m_PerformanceConfig.GetNoteShift(nTG), nTG);
+		BankSelect(config->GetBankNumber(nTG), nTTG);
+		ProgramChange(config->GetVoiceNumber(nTG), nTTG);
 
-		if (m_PerformanceConfig.VoiceDataFilled(nTG) && nTG < m_nToneGenerators)
+		int nCh = config->GetMIDIChannel(nTG);
+		if (nCh != CMIDIDevice::Disabled)
 		{
-			uint8_t tVoiceData[156];
-			m_PerformanceConfig.GetVoiceDataFromTxt(tVoiceData, nTG);
-			m_pTG[nTG]->loadVoiceParameters(tVoiceData);
-			setOPMask(0b111111, nTG);
+			if (nChannelTarget < CMIDIDevice::Channels)
+				nCh = (nCh + nChannelTarget - nMinCh) % CMIDIDevice::Channels;
+			else if (nChannelTarget == CMIDIDevice::OmniMode)
+				nCh = CMIDIDevice::OmniMode;
 		}
 
-		setMonoMode(m_PerformanceConfig.GetMonoMode(nTG) ? 1 : 0, nTG);
-		setTGLink(m_PerformanceConfig.GetTGLink(nTG), nTG);
+		SetMIDIChannel(nCh, nTTG);
+		SetSysExChannel(config->GetSysExChannel(nTG), nTTG);
+		SetSysExEnable(config->GetSysExEnable(nTG), nTTG);
+		SetMIDIRxSustain(config->GetMIDIRxSustain(nTG), nTTG);
+		SetMIDIRxPortamento(config->GetMIDIRxPortamento(nTG), nTTG);
+		SetMIDIRxSostenuto(config->GetMIDIRxSostenuto(nTG), nTTG);
+		SetMIDIRxHold2(config->GetMIDIRxHold2(nTG), nTTG);
+		SetVolume(config->GetVolume(nTG), nTTG);
+		SetPan(config->GetPan(nTG), nTTG);
+		SetMasterTune(config->GetDetune(nTG), nTTG);
+		SetCutoff(config->GetCutoff(nTG), nTTG);
+		SetResonance(config->GetResonance(nTG), nTTG);
+		setPitchbendRange(config->GetPitchBendRange(nTG), nTTG);
+		setPitchbendStep(config->GetPitchBendStep(nTG), nTTG);
+		setPortamentoMode(config->GetPortamentoMode(nTG), nTTG);
+		setPortamentoGlissando(config->GetPortamentoGlissando(nTG), nTTG);
+		setPortamentoTime(config->GetPortamentoTime(nTG), nTTG);
 
-		SetFX1Send(m_PerformanceConfig.GetFX1Send(nTG), nTG);
-		SetFX2Send(m_PerformanceConfig.GetFX2Send(nTG), nTG);
+		setNoteLimitLow(config->GetNoteLimitLow(nTG), nTTG);
+		setNoteLimitHigh(config->GetNoteLimitHigh(nTG), nTTG);
+		setNoteShift(config->GetNoteShift(nTG), nTTG);
 
-		setModWheelRange(m_PerformanceConfig.GetModulationWheelRange(nTG), nTG);
-		setModWheelTarget(m_PerformanceConfig.GetModulationWheelTarget(nTG), nTG);
-		setFootControllerRange(m_PerformanceConfig.GetFootControlRange(nTG), nTG);
-		setFootControllerTarget(m_PerformanceConfig.GetFootControlTarget(nTG), nTG);
-		setBreathControllerRange(m_PerformanceConfig.GetBreathControlRange(nTG), nTG);
-		setBreathControllerTarget(m_PerformanceConfig.GetBreathControlTarget(nTG), nTG);
-		setAftertouchRange(m_PerformanceConfig.GetAftertouchRange(nTG), nTG);
-		setAftertouchTarget(m_PerformanceConfig.GetAftertouchTarget(nTG), nTG);
+		if (config->VoiceDataFilled(nTG) && nTTG < m_nToneGenerators)
+		{
+			uint8_t tVoiceData[156];
+			config->GetVoiceDataFromTxt(tVoiceData, nTG);
+			m_pTG[nTTG]->loadVoiceParameters(tVoiceData);
+			setOPMask(0b111111, nTTG);
+		}
 
-		SetCompressorEnable(m_PerformanceConfig.GetCompressorEnable(nTG), nTG);
-		SetCompressorPreGain(m_PerformanceConfig.GetCompressorPreGain(nTG), nTG);
-		SetCompressorThresh(m_PerformanceConfig.GetCompressorThresh(nTG), nTG);
-		SetCompressorRatio(m_PerformanceConfig.GetCompressorRatio(nTG), nTG);
-		SetCompressorAttack(m_PerformanceConfig.GetCompressorAttack(nTG), nTG);
+		setMonoMode(config->GetMonoMode(nTG) ? 1 : 0, nTTG);
+		setTGLink(config->GetTGLink(nTG), nTTG);
 
-		SetCompressorRelease(m_PerformanceConfig.GetCompressorRelease(nTG), nTG);
-		SetCompressorMakeupGain(m_PerformanceConfig.GetCompressorMakeupGain(nTG), nTG);
+		SetFX1Send(config->GetFX1Send(nTG), nTTG);
+		SetFX2Send(config->GetFX2Send(nTG), nTTG);
 
-		SetEQLow(m_PerformanceConfig.GetEQLow(nTG), nTG);
-		SetEQMid(m_PerformanceConfig.GetEQMid(nTG), nTG);
-		SetEQHigh(m_PerformanceConfig.GetEQHigh(nTG), nTG);
-		SetEQGain(m_PerformanceConfig.GetEQGain(nTG), nTG);
-		SetEQLowMidFreq(m_PerformanceConfig.GetEQLowMidFreq(nTG), nTG);
-		SetEQMidHighFreq(m_PerformanceConfig.GetEQMidHighFreq(nTG), nTG);
-		SetEQPreLowcut(m_PerformanceConfig.GetEQPreLowcut(nTG), nTG);
-		SetEQPreHighcut(m_PerformanceConfig.GetEQPreHighcut(nTG), nTG);
+		setModWheelRange(config->GetModulationWheelRange(nTG), nTTG);
+		setModWheelTarget(config->GetModulationWheelTarget(nTG), nTTG);
+		setFootControllerRange(config->GetFootControlRange(nTG), nTTG);
+		setFootControllerTarget(config->GetFootControlTarget(nTG), nTTG);
+		setBreathControllerRange(config->GetBreathControlRange(nTG), nTTG);
+		setBreathControllerTarget(config->GetBreathControlTarget(nTG), nTTG);
+		setAftertouchRange(config->GetAftertouchRange(nTG), nTTG);
+		setAftertouchTarget(config->GetAftertouchTarget(nTG), nTTG);
+
+		SetCompressorEnable(config->GetCompressorEnable(nTG), nTTG);
+		SetCompressorPreGain(config->GetCompressorPreGain(nTG), nTTG);
+		SetCompressorThresh(config->GetCompressorThresh(nTG), nTTG);
+		SetCompressorRatio(config->GetCompressorRatio(nTG), nTTG);
+		SetCompressorAttack(config->GetCompressorAttack(nTG), nTTG);
+
+		SetCompressorRelease(config->GetCompressorRelease(nTG), nTTG);
+		SetCompressorMakeupGain(config->GetCompressorMakeupGain(nTG), nTTG);
+
+		SetEQLow(config->GetEQLow(nTG), nTTG);
+		SetEQMid(config->GetEQMid(nTG), nTTG);
+		SetEQHigh(config->GetEQHigh(nTG), nTTG);
+		SetEQGain(config->GetEQGain(nTG), nTTG);
+		SetEQLowMidFreq(config->GetEQLowMidFreq(nTG), nTTG);
+		SetEQMidHighFreq(config->GetEQMidHighFreq(nTG), nTTG);
+		SetEQPreLowcut(config->GetEQPreLowcut(nTG), nTTG);
+		SetEQPreHighcut(config->GetEQPreHighcut(nTG), nTTG);
+	}
+
+	for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
+	{
+		if (LoadType != Bus::LoadType::BusAndMasterFX && LoadType != Bus::LoadType::TGsSendFXs && LoadType != Bus::LoadType::SendFXs) break;
+		if (nBus < nBusFrom || nBus >= nBusFrom + nBusCount) continue;
+
+		int nTBus = nBus + nBusTarget - nBusFrom;
+		if (nTBus >= CConfig::Buses) break;
+
+		for (int nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
+		{
+			Bus::Parameter param = Bus::Parameter(nParam);
+			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
+
+			if (p.Flags & Bus::Flag::UIOnly) continue;
+			if (param == Bus::MIDIChannel && LoadType == Bus::LoadType::SendFXs) continue;
+
+			SetBusParameter(param, config->GetBusParameter(param, nBus), nTBus);
+		}
 	}
 
 	for (int nFX = 0; nFX < CConfig::FXChains; ++nFX)
 	{
+		if (LoadType == Bus::LoadType::MasterFX && nFX != CConfig::MasterFX) continue;
+		if (LoadType == Bus::LoadType::TGs) break;
+
+		int nTFX = nFX;
+
+		if (nFX != CConfig::MasterFX)
+		{
+			int idFX = nFX % CConfig::BusFXChains;
+			int idTFX = idFX;
+			int nBus = nFX / CConfig::BusFXChains;
+
+			if ((LoadType == Bus::LoadType::SendFX1 || LoadType == Bus::LoadType::SendFX1ToFX2) && idFX != 0) continue;
+			if ((LoadType == Bus::LoadType::SendFX2 || LoadType == Bus::LoadType::SendFX2ToFX1) && idFX != 1) continue;
+
+			if (LoadType == Bus::LoadType::SendFX1ToFX2) idTFX = 1;
+			if (LoadType == Bus::LoadType::SendFX2ToFX1) idTFX = 0;
+
+			if (nBusFrom > nBus || (nBusFrom + nBusCount) <= nBus) continue;
+
+			int nTBus = nBus + nBusTarget - nBusFrom;
+			if (nTBus >= CConfig::Buses) break;
+
+			nTFX = idTFX + nTBus * CConfig::BusFXChains;
+		}
+		else
+		{
+			if (LoadType != Bus::LoadType::MasterFX && LoadType != Bus::LoadType::BusAndMasterFX)
+				continue;
+		}
+
 		for (int nParam = 0; nParam < FX::Parameter::Unknown; ++nParam)
 		{
 			FX::Parameter param = FX::Parameter(nParam);
 			const FX::ParameterType &p = FX::s_Parameter[nParam];
 			bool bSaveOnly = p.Flags & FX::Flag::Composite;
-			SetFXParameter(param, m_PerformanceConfig.GetFXParameter(param, nFX), nFX, bSaveOnly);
-		}
-	}
-
-	for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
-	{
-		for (int nParam = 0; nParam < Bus::Parameter::Unknown; ++nParam)
-		{
-			Bus::Parameter param = Bus::Parameter(nParam);
-			SetBusParameter(param, m_PerformanceConfig.GetBusParameter(param, nBus), nBus);
+			SetFXParameter(param, config->GetFXParameter(param, nFX), nTFX, bSaveOnly);
 		}
 	}
 

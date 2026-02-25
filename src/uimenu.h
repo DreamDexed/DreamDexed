@@ -109,6 +109,8 @@ private:
 	static void PerformanceMenu(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void SavePerformanceNewFile(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void EditPerformanceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusPerformanceBank(CUIMenu *pUIMenu, TMenuEvent Event);
+	static void EditBusPerformance(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void ShowCPUTemp(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void ShowCPUSpeed(CUIMenu *pUIMenu, TMenuEvent Event);
 	static void ShowIPAddr(CUIMenu *pUIMenu, TMenuEvent Event);
@@ -170,6 +172,7 @@ private:
 	static const TMenuItem s_TGMenu[];
 	static const TMenuItem s_EffectsMenu[];
 	static const TMenuItem s_BusMenu[];
+	static const TMenuItem s_BusLoadMenu[];
 	static const TMenuItem s_OutputMenu[];
 	static const TMenuItem s_SendFXMenu[];
 	static const TMenuItem s_MasterFXMenu[];

@@ -252,11 +252,21 @@ const CUIMenu::TMenuItem CUIMenu::s_EffectsMenu[] =
 
 const CUIMenu::TMenuItem CUIMenu::s_BusMenu[] =
 {
+	{"Load", MenuHandler, s_BusLoadMenu},
 	{"Dry Level", EditBusParameter, 0, Bus::Parameter::MixerDryLevel},
 	{"SendFX1", MenuHandler, s_SendFXMenu, 0},
 	{"SendFX2", MenuHandler, s_SendFXMenu, 1},
 	{"Return Level", EditBusParameter, 0, Bus::Parameter::ReturnLevel},
 	{"SendFX Bypass", EditBusParameter, 0, Bus::Parameter::FXBypass},
+	{0},
+};
+
+const CUIMenu::TMenuItem CUIMenu::s_BusLoadMenu[] =
+{
+	{"Performance", EditBusPerformance},
+	{"Bank", EditBusPerformanceBank},
+	{"Type", EditBusParameter, 0, Bus::Parameter::LoadType},
+	{"MIDI Ch", EditBusParameter, 0, Bus::Parameter::MIDIChannel},
 	{0},
 };
 
@@ -2788,6 +2798,204 @@ void CUIMenu::EditPerformanceBankNumber(CUIMenu *pUIMenu, TMenuEvent Event)
 	nPSelected = nPSelected.substr(nPSelected.length() - 3, 3);
 
 	if (bPerformanceSelectToLoad && nValue == pUIMenu->m_pMiniDexed->GetParameter(CMiniDexed::ParameterPerformanceBank))
+	{
+		nPSelected += " [L]";
+	}
+
+	pUIMenu->m_pUI->DisplayWrite(pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
+				     Value.c_str(), true, true);
+}
+
+void CUIMenu::EditBusPerformanceBank(CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	bool bPerformanceSelectToLoad = pUIMenu->m_pMiniDexed->GetPerformanceSelectToLoad();
+	bool bPerfSaveOnly = bPerformanceSelectToLoad;
+	int nBus = pUIMenu->m_nMenuStackParameter[1];
+	CPerformanceConfig *config = pUIMenu->m_pMiniDexed->GetBusPerformanceConfig(nBus);
+	int nLastPerformanceBank = config->GetLastPerformanceBank();
+	int nValue = pUIMenu->m_pMiniDexed->GetBusParameter(Bus::Parameter::PerformanceBank, nBus);
+	int nStart = nValue;
+	std::string Value;
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+		break;
+
+	case MenuEventStepDown:
+		do
+		{
+			if (nValue == 0)
+			{
+				// Wrap around
+				nValue = nLastPerformanceBank;
+			}
+			else if (nValue > 0)
+			{
+				--nValue;
+			}
+		} while ((config->IsValidPerformanceBank(nValue) != true) && (nValue != nStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::PerformanceBank, nValue, nBus, bPerfSaveOnly);
+		break;
+
+	case MenuEventStepUp:
+		do
+		{
+			if (nValue == nLastPerformanceBank)
+			{
+				// Wrap around
+				nValue = 0;
+			}
+			else if (nValue < nLastPerformanceBank)
+			{
+				++nValue;
+			}
+		} while ((config->IsValidPerformanceBank(nValue) != true) && (nValue != nStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::PerformanceBank, nValue, nBus, bPerfSaveOnly);
+		break;
+
+	case MenuEventSelect:
+		if (bPerformanceSelectToLoad)
+		{
+			pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::PerformanceBank, nValue, nBus);
+		}
+		break;
+
+	default:
+		return;
+	}
+
+	Value = config->GetPerformanceBankName(nValue);
+	std::string nPSelected = "000";
+	nPSelected += std::to_string(nValue + 1); // Convert to user-facing number rather than index
+	nPSelected = nPSelected.substr(nPSelected.length() - 3, 3);
+
+	if (bPerformanceSelectToLoad && nValue == config->GetPerformanceBankID())
+	{
+		nPSelected += " [L]";
+	}
+
+	pUIMenu->m_pUI->DisplayWrite(pUIMenu->m_pParentMenu[pUIMenu->m_nCurrentMenuItem].Name, nPSelected.c_str(),
+				     Value.c_str(), true, true);
+}
+
+void CUIMenu::EditBusPerformance(CUIMenu *pUIMenu, TMenuEvent Event)
+{
+	bool bPerformanceSelectToLoad = pUIMenu->m_pMiniDexed->GetPerformanceSelectToLoad();
+	bool bPerfSaveOnly = bPerformanceSelectToLoad;
+	int nBus = pUIMenu->m_nMenuStackParameter[1];
+	CPerformanceConfig *config = pUIMenu->m_pMiniDexed->GetBusPerformanceConfig(nBus);
+	int nLastPerformance = config->GetLastPerformance();
+	int nValue = pUIMenu->m_pMiniDexed->GetBusParameter(Bus::Parameter::Performance, nBus);
+	int nStart = nValue;
+
+	int nLastPerformanceBank = config->GetLastPerformanceBank();
+	int nBankValue = pUIMenu->m_pMiniDexed->GetBusParameter(Bus::Parameter::PerformanceBank, nBus);
+	int nBankStart = nBankValue;
+
+	if (config->IsValidPerformance(nValue) != true)
+	{
+		// A bank change has left the selected performance out of sync
+		nValue = config->GetPerformanceID();
+	}
+	std::string Value;
+
+	switch (Event)
+	{
+	case MenuEventUpdate:
+		break;
+
+	case MenuEventStepDown:
+		do
+		{
+			if (nValue == 0)
+			{
+				// Wrap around
+				nValue = nLastPerformance;
+			}
+			else if (nValue > 0)
+			{
+				--nValue;
+			}
+		} while ((config->IsValidPerformance(nValue) != true) && (nValue != nStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::Performance, nValue, nBus, bPerfSaveOnly);
+		break;
+
+	case MenuEventStepUp:
+		do
+		{
+			if (nValue == nLastPerformance)
+			{
+				// Wrap around
+				nValue = 0;
+			}
+			else if (nValue < nLastPerformance)
+			{
+				++nValue;
+			}
+		} while ((config->IsValidPerformance(nValue) != true) && (nValue != nStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::Performance, nValue, nBus, bPerfSaveOnly);
+		break;
+
+	case MenuEventPressAndStepDown:
+		do
+		{
+			if (nBankValue == 0)
+			{
+				// Wrap around
+				nBankValue = nLastPerformanceBank;
+			}
+			else if (nBankValue > 0)
+			{
+				--nBankValue;
+			}
+		} while ((config->IsValidPerformanceBank(nBankValue) != true) && (nBankValue != nBankStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::PerformanceBank, nBankValue, nBus);
+		break;
+
+	case MenuEventPressAndStepUp:
+		do
+		{
+			if (nBankValue == nLastPerformanceBank)
+			{
+				// Wrap around
+				nBankValue = 0;
+			}
+			else if (nBankValue < nLastPerformanceBank)
+			{
+				++nBankValue;
+			}
+		} while ((config->IsValidPerformanceBank(nBankValue) != true) && (nBankValue != nBankStart));
+
+		pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::PerformanceBank, nBankValue, nBus);
+		break;
+
+	case MenuEventSelect:
+		if (bPerformanceSelectToLoad)
+		{
+			pUIMenu->m_pMiniDexed->SetBusParameter(Bus::Parameter::Performance, nValue, nBus);
+		}
+		break;
+	default:
+		return;
+	}
+
+	Value = config->GetPerformanceName(nValue);
+
+	std::string nPSelected = "000";
+	nPSelected += std::to_string(nBankValue + 1); // Convert to user-facing bank number rather than index
+	nPSelected = nPSelected.substr(nPSelected.length() - 3, 3);
+	std::string nPPerf = "000";
+	nPPerf += std::to_string(nValue + 1); // Convert to user-facing performance number rather than index
+	nPPerf = nPPerf.substr(nPPerf.length() - 3, 3);
+
+	nPSelected += ":" + nPPerf;
+	if (bPerformanceSelectToLoad && nValue == config->GetPerformanceID())
 	{
 		nPSelected += " [L]";
 	}
