@@ -22,6 +22,8 @@
 #include <circle/interrupt.h>
 #include <circle/screen.h>
 #include <circle/serial.h>
+#include <circle/usb/usbcontroller.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/writebuffer.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
@@ -160,6 +162,7 @@ public:
                 : CStdlibAppScreen (kernel),
                   mpPartitionName (pPartitionName),
                   mEMMC (&mInterrupt, &mTimer, &mActLED),
+                  m_pUSB (),
 #if !defined(__aarch64__) || !defined(LEAVE_QEMU_ON_HALT)
                   //mConsole (&mScreen, TRUE)
                   mConsole (&mNullDevice, &mScreen)
@@ -178,7 +181,15 @@ public:
 
                 if (!mEMMC.Initialize ())
                 {
-                        return false;
+                        mLogger.Write (GetKernelName (), LogNotice, "Cannot initialize EMMC, using USB");
+                        mpPartitionName = "USB:";
+
+                        m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, true);
+
+                        if (!m_pUSB->Initialize ())
+                        {
+                                return false;
+                        }
                 }
 
                 char const *partitionName = mpPartitionName;
@@ -226,6 +237,7 @@ public:
 
 protected:
         CEMMCDevice     mEMMC;
+        CUSBController *m_pUSB;
         FATFS           mFileSystem;
         CConsole        mConsole;
 };

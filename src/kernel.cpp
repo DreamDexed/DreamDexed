@@ -143,26 +143,30 @@ bool CKernel::Initialize (void)
 		}
 	}
 
-	if (bUSBGadgetMode)
+	// if the USB boot has not already initialized m_pUSB
+	if (!m_pUSB)
 	{
+		if (bUSBGadgetMode)
+		{
 #if RASPPI==5
 #warning No support for USB Gadget Mode on RPI 5 yet
 #else
-		// Run the USB stack in USB Gadget (device) mode
-		m_pUSB = new CUSBMiniDexedMIDIGadget (&mInterrupt);
+			// Run the USB stack in USB Gadget (device) mode
+			m_pUSB = new CUSBMiniDexedMIDIGadget (&mInterrupt);
 #endif
-	}
-	else
-	{
-		// Run the USB stack in USB Host (default) mode
-		m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, TRUE);
-	}
-	m_Config.SetUSBGadgetMode(bUSBGadgetMode);
+		}
+		else
+		{
+			// Run the USB stack in USB Host (default) mode
+			m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, TRUE);
+		}
+		m_Config.SetUSBGadgetMode(bUSBGadgetMode);
 
-    if (!m_pUSB->Initialize ())
-    {
-		return FALSE;
-    }
+		if (!m_pUSB->Initialize ())
+		{
+			return FALSE;
+		}
+	}
 	
 	m_pDexed = new CMiniDexed (&m_Config, &mInterrupt, &m_GPIOManager, &m_I2CMaster, m_pSPIMaster,
 				   &mFileSystem);
