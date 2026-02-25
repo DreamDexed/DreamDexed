@@ -197,6 +197,11 @@ public:
                         return false;
                 }
 
+                if (f_chdrive (partitionName) != FR_OK)
+                {
+                        mLogger.Write (GetKernelName (), LogNotice, "Can't set default drive to: %s", partitionName);
+                }
+
                 if (!mConsole.Initialize ())
                 {
                         return false;
