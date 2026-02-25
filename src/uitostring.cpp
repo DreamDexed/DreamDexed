@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <string>
 
+#include "bus.h"
 #include "effect.h"
 #include "effect_compressor.h"
 #include "midi.h"
@@ -339,4 +340,31 @@ std::string ToTGLinkName(int nValue, int nWidth)
 {
 	if (nValue == 0) return "-";
 	return std::string{static_cast<char>(nValue + 'A' - 1)};
+}
+
+std::string ToLoadType(int nValue, int nWidth)
+{
+	switch (nValue)
+	{
+	case Bus::LoadType::TGsSendFXs:
+		return "TGs + SendFXs";
+	case Bus::LoadType::TGs:
+		return "TGs";
+	case Bus::LoadType::SendFXs:
+		return "SendFXs";
+	case Bus::LoadType::SendFX1:
+		return "SendFX1";
+	case Bus::LoadType::SendFX2:
+		return "SendFX2";
+	case Bus::LoadType::SendFX1ToFX2:
+		return "SendFX1 to FX2";
+	case Bus::LoadType::SendFX2ToFX1:
+		return "SendFX2 to FX1";
+	case Bus::LoadType::MasterFX:
+		return "Master FX";
+	case Bus::LoadType::BusAndMasterFX:
+		return "Bus + MasterFX";
+	default:
+		return std::to_string(nValue);
+	}
 }

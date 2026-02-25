@@ -5,8 +5,31 @@
 class Bus
 {
 public:
+	enum Flag
+	{
+		UIOnly = 1 << 0, // it shouldn't update the controls at startup and performance load
+	};
+
+	enum LoadType
+	{
+		TGsSendFXs,
+		TGs,
+		SendFXs,
+		SendFX1,
+		SendFX2,
+		SendFX1ToFX2,
+		SendFX2ToFX1,
+		MasterFX,
+		BusAndMasterFX,
+		LoadTypeUnknown,
+	};
+
 	enum Parameter
 	{
+		PerformanceBank,
+		Performance,
+		LoadType,
+		MIDIChannel,
 		MixerDryLevel,
 		ReturnLevel,
 		FXBypass,
