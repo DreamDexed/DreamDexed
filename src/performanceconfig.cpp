@@ -65,7 +65,7 @@ bool CPerformanceConfig::Init (unsigned nToneGenerators)
 	DIR Directory;
 	FRESULT Result;
 	//Check if internal "performance" directory exists
-	Result = f_opendir (&Directory, "SD:/" PERFORMANCE_DIR);
+	Result = f_opendir (&Directory, PERFORMANCE_DIR);
 	if (Result == FR_OK)
 	{
 		m_bPerformanceDirectoryExists=true;		
@@ -1293,7 +1293,7 @@ std::string CPerformanceConfig::GetPerformanceFileName(unsigned nID)
 std::string CPerformanceConfig::GetPerformanceFullFilePath(unsigned nID)
 {
 	assert (nID < NUM_PERFORMANCES);
-	std::string FileN = "SD:/";
+	std::string FileN;
 	if ((m_nPerformanceBank == 0) && (nID == 0))
 	{
 		// Special case for the legacy Bank 1/Default performance
@@ -1438,8 +1438,7 @@ bool CPerformanceConfig::CreateNewPerformanceFile(void)
 	nFileName += ".ini";
 	m_PerformanceFileName[nNewPerformance]= sPerformanceName;
 	
-	nPath = "SD:/" ;
-	nPath += PERFORMANCE_DIR;
+	nPath = PERFORMANCE_DIR;
 	nPath += AddPerformanceBankDirName(m_nPerformanceBank);
 	nPath += "/";
 	nFileName = nPath + nFileName;
@@ -1484,7 +1483,7 @@ bool CPerformanceConfig::ListPerformances()
 		DIR Directory;
 		FILINFO FileInfo;
 		FRESULT Result;
-		std::string PerfDir = "SD:/" PERFORMANCE_DIR + AddPerformanceBankDirName(m_nPerformanceBank);
+		std::string PerfDir = PERFORMANCE_DIR + AddPerformanceBankDirName(m_nPerformanceBank);
 #ifdef VERBOSE_DEBUG
 		LOGNOTE("Listing Performances from %s", PerfDir.c_str());
 #endif
@@ -1606,8 +1605,7 @@ bool CPerformanceConfig::DeletePerformance(unsigned nID)
 	if((m_nPerformanceBank == 0) && (nID == 0)){return bOK;} // default (performance.ini at root directory) can't be deleted
 	DIR Directory;
 	FILINFO FileInfo;
-	std::string FileN = "SD:/";
-	FileN += PERFORMANCE_DIR;
+	std::string FileN = PERFORMANCE_DIR;
 	FileN += AddPerformanceBankDirName(m_nPerformanceBank);
 	
 	FRESULT Result = f_findfirst (&Directory, &FileInfo, FileN.c_str(), GetPerformanceFileName(nID).c_str());
@@ -1651,7 +1649,7 @@ bool CPerformanceConfig::ListPerformanceBanks()
 	DIR Directory;
 	FILINFO FileInfo;
 	FRESULT Result;
-	Result = f_opendir (&Directory, "SD:/" PERFORMANCE_DIR);
+	Result = f_opendir (&Directory, PERFORMANCE_DIR);
 	if (Result != FR_OK)
 	{
 		// No performance directory, so no performance banks.
@@ -1665,7 +1663,7 @@ bool CPerformanceConfig::ListPerformanceBanks()
 	m_nLastPerformanceBank = 0;
 
 	// List directories with names in format 01_Perf Bank Name
-	Result = f_findfirst (&Directory, &FileInfo, "SD:/" PERFORMANCE_DIR, "*");
+	Result = f_findfirst (&Directory, &FileInfo, PERFORMANCE_DIR, "*");
 	for (unsigned i = 0; Result == FR_OK && FileInfo.fname[0]; i++)
 	{
 		// Check to see if it is a directory
