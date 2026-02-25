@@ -33,8 +33,8 @@
 #include "arm_scale_zip_f32.h"
 #include "arm_zip_f32.h"
 
-const char WLANFirmwarePath[] = "SD:firmware/";
-const char WLANConfigFile[]   = "SD:wpa_supplicant.conf";
+const char WLANFirmwarePath[] = "firmware/";
+const char WLANConfigFile[]   = "wpa_supplicant.conf";
 #define FTPUSERNAME "admin"
 #define FTPPASSWORD "admin"
 
