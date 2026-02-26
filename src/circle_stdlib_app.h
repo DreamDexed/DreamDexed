@@ -152,9 +152,6 @@ private:
         char const *mpPartitionName;
 
 public:
-        // TODO transform to constexpr
-        // constexpr char static DefaultPartition[] = "emmc1-1";
-#define CSTDLIBAPP_LEGACY_DEFAULT_PARTITION "emmc1-1"
 #define CSTDLIBAPP_DEFAULT_PARTITION "SD:"
 
         CStdlibAppStdio (const char *kernel,
@@ -193,12 +190,6 @@ public:
                 }
 
                 char const *partitionName = mpPartitionName;
-
-                // Recognize the old default partion name
-                if (strcmp(partitionName, CSTDLIBAPP_LEGACY_DEFAULT_PARTITION) == 0)
-                {
-                        partitionName = CSTDLIBAPP_DEFAULT_PARTITION;
-                }
 
                 if (f_mount (&mFileSystem, partitionName, 1) != FR_OK)
                 {
