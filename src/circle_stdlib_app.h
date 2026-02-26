@@ -17,6 +17,8 @@
 #include <circle/string.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
+#include <circle/devicetreeblob.h>
+#include <circle/machineinfo.h>
 #include <circle/nulldevice.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
@@ -176,9 +178,33 @@ public:
                         return false;
                 }
 
+                bool bBootFromUSB = false;
+
+#if RASPPI >= 4
+                const CDeviceTreeBlob *pDTB = CMachineInfo::Get()->GetDTB();
+                const TDeviceTreeNode *pNode;
+                const TDeviceTreeProperty *pBootMode;
+
+                if (pDTB &&
+                   (pNode = pDTB->FindNode("/chosen/bootloader")) &&
+                   (pBootMode = pDTB->FindProperty(pNode, "boot-mode")) &&
+                   (pDTB->GetPropertyValueLength(pBootMode) == 4))
+                {
+                        u32 nBootMode = pDTB->GetPropertyValueWord(pBootMode, 0);
+                        mLogger.Write(GetKernelName(), LogNotice, "/chosen/bootloader/boot-mode: %x", nBootMode);
+                        if (nBootMode == 4 || nBootMode == 5)
+                                bBootFromUSB = true;
+                }
+#endif
+
                 if (!mEMMC.Initialize ())
                 {
-                        mLogger.Write (GetKernelName (), LogNotice, "Cannot initialize EMMC, using USB");
+                        mLogger.Write (GetKernelName (), LogNotice, "Cannot initialize EMMC");
+                        bBootFromUSB = true;
+                }
+
+                if (bBootFromUSB)
+                {
                         mpPartitionName = "USB:";
 
                         m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, true);
@@ -198,6 +224,8 @@ public:
 
                         return false;
                 }
+
+               	mLogger.Write (GetKernelName (), LogNotice, "Set default drive to: %s", partitionName);
 
                 if (f_chdrive (partitionName) != FR_OK)
                 {
