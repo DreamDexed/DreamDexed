@@ -12,31 +12,34 @@
  */
 #pragma once
 
+#include <cstdint>
+#include <cstring>
+
+#include <SDCard/emmc.h>
 #include <circle/actled.h>
-#include <circle/string.h>
-#include <circle/koptions.h>
+#include <circle/device.h>
 #include <circle/devicenameservice.h>
 #include <circle/devicetreeblob.h>
-#include <circle/machineinfo.h>
-#include <circle/nulldevice.h>
 #include <circle/exceptionhandler.h>
+#include <circle/input/console.h>
 #include <circle/interrupt.h>
+#include <circle/koptions.h>
+#include <circle/logger.h>
+#include <circle/machineinfo.h>
+#include <circle/net/netsubsystem.h>
+#include <circle/nulldevice.h>
+#include <circle/sched/scheduler.h>
 #include <circle/screen.h>
 #include <circle/serial.h>
+#include <circle/string.h>
+#include <circle/timer.h>
 #include <circle/usb/usbcontroller.h>
 #include <circle/usb/usbhcidevice.h>
 #include <circle/writebuffer.h>
-#include <circle/timer.h>
-#include <circle/logger.h>
-#include <SDCard/emmc.h>
-#include <circle/input/console.h>
-#include <circle/sched/scheduler.h>
-#include <circle/net/netsubsystem.h>
+#include <circle_glue.h>
+#include <fatfs/ff.h>
 #include <wlan/bcm4343.h>
 #include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
-
-#include <circle_glue.h>
-#include <string.h>
 
 /**
  * Basic Circle Stdlib application that supports GPIO access.
@@ -44,48 +47,48 @@
 class CStdlibApp
 {
 public:
-        enum TShutdownMode
-        {
-                ShutdownNone,
-                ShutdownHalt,
-                ShutdownReboot
-        };
+	enum TShutdownMode
+	{
+		ShutdownNone,
+		ShutdownHalt,
+		ShutdownReboot
+	};
 
-        CStdlibApp (const char *kernel) :
-                FromKernel (kernel)
-        {
-        }
+	CStdlibApp(const char *kernel) :
+	FromKernel{kernel}
+	{
+	}
 
-        virtual ~CStdlibApp (void)
-        {
-        }
+	virtual ~CStdlibApp()
+	{
+	}
 
-        virtual bool Initialize (void)
-        {
-                return mInterrupt.Initialize ();
-        }
+	virtual bool Initialize()
+	{
+		return mInterrupt.Initialize();
+	}
 
-        virtual void Cleanup (void)
-        {
-        }
+	virtual void Cleanup()
+	{
+	}
 
-        virtual TShutdownMode Run (void) = 0;
+	virtual TShutdownMode Run() = 0;
 
-        const char *GetKernelName(void) const
-        {
-                return FromKernel;
-        }
+	const char *GetKernelName() const
+	{
+		return FromKernel;
+	}
 
 protected:
-        CActLED            mActLED;
-        CKernelOptions     mOptions;
-        CDeviceNameService mDeviceNameService;
-        CNullDevice        mNullDevice;
-        CExceptionHandler  mExceptionHandler;
-        CInterruptSystem   mInterrupt;
+	CActLED mActLED;
+	CKernelOptions mOptions;
+	CDeviceNameService mDeviceNameService;
+	CNullDevice mNullDevice;
+	CExceptionHandler mExceptionHandler;
+	CInterruptSystem mInterrupt;
 
 private:
-        char const *FromKernel;
+	char const *FromKernel;
 };
 
 /**
@@ -95,167 +98,165 @@ private:
 class CStdlibAppScreen : public CStdlibApp
 {
 public:
-        CStdlibAppScreen(const char *kernel)
-                : CStdlibApp (kernel),
-                  mScreenUnbuffered (mOptions.GetWidth (), mOptions.GetHeight ()),
-                  mScreen (&mScreenUnbuffered),
-                  mbScreenAvailable (false),
-                  mTimer (&mInterrupt),
-                  mLogger (mOptions.GetLogLevel (), &mTimer)
-        {
-        }
+	CStdlibAppScreen(const char *kernel) :
+	CStdlibApp{kernel},
+	mScreenUnbuffered{mOptions.GetWidth(), mOptions.GetHeight()},
+	mScreen{&mScreenUnbuffered},
+	mbScreenAvailable{},
+	mTimer{&mInterrupt},
+	mLogger{mOptions.GetLogLevel(), &mTimer}
+	{
+	}
 
-        virtual bool Initialize (void)
-        {
-                if (!CStdlibApp::Initialize ())
-                {
-                        return false;
-                }
+	virtual bool Initialize()
+	{
+		if (!CStdlibApp::Initialize())
+		{
+			return false;
+		}
 
-                mbScreenAvailable = mScreenUnbuffered.Initialize ();
+		mbScreenAvailable = mScreenUnbuffered.Initialize();
 #if 0
-                if (!mSerial.Initialize (115200))
-                {
-                        return false;
-                }
+		if (!mSerial.Initialize(115200))
+		{
+			return false;
+		}
 #endif
-                CDevice *pTarget =
-                        mDeviceNameService.GetDevice (mOptions.GetLogDevice (), false);
-                if (pTarget == 0)
-                {
-                        pTarget = &mScreen;
-                }
+		CDevice *pTarget = mDeviceNameService.GetDevice(mOptions.GetLogDevice(), false);
+		if (pTarget == 0)
+		{
+			pTarget = &mScreen;
+		}
 
-                if (!mLogger.Initialize (pTarget))
-                {
-                        return false;
-                }
+		if (!mLogger.Initialize(pTarget))
+		{
+			return false;
+		}
 
-                return mTimer.Initialize ();
-        }
+		return mTimer.Initialize();
+	}
 
 protected:
-        CScreenDevice   mScreenUnbuffered;
-        //CSerialDevice   mSerial;
-        CWriteBufferDevice mScreen;
-        bool            mbScreenAvailable;
-        CTimer          mTimer;
-        CLogger         mLogger;
+	CScreenDevice mScreenUnbuffered;
+	// CSerialDevice mSerial;
+	CWriteBufferDevice mScreen;
+	bool mbScreenAvailable;
+	CTimer mTimer;
+	CLogger mLogger;
 };
 
 /**
  * Stdlib application that adds stdio support
  * to the CStdlibAppScreen functionality.
  */
-class CStdlibAppStdio: public CStdlibAppScreen
+class CStdlibAppStdio : public CStdlibAppScreen
 {
 private:
-        char const *mpPartitionName;
+	char const *mpPartitionName;
 
 public:
 #define CSTDLIBAPP_DEFAULT_PARTITION "SD:"
 
-        CStdlibAppStdio (const char *kernel,
-                         const char *pPartitionName = CSTDLIBAPP_DEFAULT_PARTITION)
-                : CStdlibAppScreen (kernel),
-                  mpPartitionName (pPartitionName),
-                  mEMMC (&mInterrupt, &mTimer, &mActLED),
-                  m_pUSB (),
+	CStdlibAppStdio(const char *kernel, const char *pPartitionName = CSTDLIBAPP_DEFAULT_PARTITION) :
+	CStdlibAppScreen{kernel},
+	mpPartitionName{pPartitionName},
+	mEMMC{&mInterrupt, &mTimer, &mActLED},
+	m_pUSB{},
 #if !defined(__aarch64__) || !defined(LEAVE_QEMU_ON_HALT)
-                  //mConsole (&mScreen, TRUE)
-                  mConsole (&mNullDevice, &mScreen)
+	// mConsole {&mScreen, TRUE}
+	mConsole{&mNullDevice, &mScreen}
 #else
-                  mConsole (&mScreen)
+	mConsole{&mScreen}
 #endif
-        {
-        }
+	{
+	}
 
-        virtual bool Initialize (void)
-        {
-                if (!CStdlibAppScreen::Initialize ())
-                {
-                        return false;
-                }
+	virtual bool Initialize()
+	{
+		if (!CStdlibAppScreen::Initialize())
+		{
+			return false;
+		}
 
-                bool bBootFromUSB = false;
+		bool bBootFromUSB = false;
 
 #if RASPPI >= 4
-                const CDeviceTreeBlob *pDTB = CMachineInfo::Get()->GetDTB();
-                const TDeviceTreeNode *pNode;
-                const TDeviceTreeProperty *pBootMode;
+		const CDeviceTreeBlob *pDTB = CMachineInfo::Get()->GetDTB();
+		const TDeviceTreeNode *pNode;
+		const TDeviceTreeProperty *pBootMode;
 
-                if (pDTB &&
-                   (pNode = pDTB->FindNode("/chosen/bootloader")) &&
-                   (pBootMode = pDTB->FindProperty(pNode, "boot-mode")) &&
-                   (pDTB->GetPropertyValueLength(pBootMode) == 4))
-                {
-                        u32 nBootMode = pDTB->GetPropertyValueWord(pBootMode, 0);
-                        mLogger.Write(GetKernelName(), LogNotice, "/chosen/bootloader/boot-mode: %x", nBootMode);
-                        if (nBootMode == 4 || nBootMode == 5)
-                                bBootFromUSB = true;
-                }
+		if (pDTB &&
+		    (pNode = pDTB->FindNode("/chosen/bootloader")) &&
+		    (pBootMode = pDTB->FindProperty(pNode, "boot-mode")) &&
+		    (pDTB->GetPropertyValueLength(pBootMode) == 4))
+		{
+			uint32_t nBootMode = pDTB->GetPropertyValueWord(pBootMode, 0);
+			mLogger.Write(GetKernelName(), LogNotice, "/chosen/bootloader/boot-mode: %x", nBootMode);
+			if (nBootMode == 4 || nBootMode == 5)
+				bBootFromUSB = true;
+		}
 #endif
 
-                if (!mEMMC.Initialize ())
-                {
-                        mLogger.Write (GetKernelName (), LogNotice, "Cannot initialize EMMC");
-                        bBootFromUSB = true;
-                }
+		if (!mEMMC.Initialize())
+		{
+			mLogger.Write(GetKernelName(), LogNotice, "Cannot initialize EMMC");
+			bBootFromUSB = true;
+		}
 
-                if (bBootFromUSB)
-                {
-                        mpPartitionName = "USB:";
+		if (bBootFromUSB)
+		{
+			mpPartitionName = "USB:";
 
-                        m_pUSB = new CUSBHCIDevice (&mInterrupt, &mTimer, true);
+			m_pUSB = new CUSBHCIDevice(&mInterrupt, &mTimer, true);
 
-                        if (!m_pUSB->Initialize ())
-                        {
-                                return false;
-                        }
-                }
+			if (!m_pUSB->Initialize())
+			{
+				return false;
+			}
+		}
 
-                char const *partitionName = mpPartitionName;
+		char const *partitionName = mpPartitionName;
 
-                if (f_mount (&mFileSystem, partitionName, 1) != FR_OK)
-                {
-                        mLogger.Write (GetKernelName (), LogError,
-                                         "Cannot mount partition: %s", partitionName);
+		if (f_mount(&mFileSystem, partitionName, 1) != FR_OK)
+		{
+			mLogger.Write(GetKernelName(), LogError,
+				      "Cannot mount partition: %s", partitionName);
 
-                        return false;
-                }
+			return false;
+		}
 
-               	mLogger.Write (GetKernelName (), LogNotice, "Set default drive to: %s", partitionName);
+		mLogger.Write(GetKernelName(), LogNotice, "Set default drive to: %s", partitionName);
 
-                if (f_chdrive (partitionName) != FR_OK)
-                {
-                        mLogger.Write (GetKernelName (), LogNotice, "Can't set default drive to: %s", partitionName);
-                }
+		if (f_chdrive(partitionName) != FR_OK)
+		{
+			mLogger.Write(GetKernelName(), LogNotice, "Can't set default drive to: %s", partitionName);
+		}
 
-                if (!mConsole.Initialize ())
-                {
-                        return false;
-                }
+		if (!mConsole.Initialize())
+		{
+			return false;
+		}
 
-                // Initialize newlib stdio with a reference to Circle's console
-                // (Remove mFileSystem as a parameter to mirror change in circle-stdlib's
-                //  commit "Remove obsolete FATFS-related code", dated Dec 2022)
-                CGlueStdioInit (mConsole);
+		// Initialize newlib stdio with a reference to Circle's console
+		// (Remove mFileSystem as a parameter to mirror change in circle-stdlib's
+		//  commit "Remove obsolete FATFS-related code", dated Dec 2022)
+		CGlueStdioInit(mConsole);
 
-                mLogger.Write (GetKernelName (), LogNotice, "Compile time: " __DATE__ " " __TIME__);
+		mLogger.Write(GetKernelName(), LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-                return true;
-        }
-		
-        virtual void Cleanup (void)
-        {
-                f_mount(0, "", 0);
+		return true;
+	}
 
-                CStdlibAppScreen::Cleanup ();
-        }
+	virtual void Cleanup(void)
+	{
+		f_mount(0, "", 0);
+
+		CStdlibAppScreen::Cleanup();
+	}
 
 protected:
-        CEMMCDevice     mEMMC;
-        CUSBController *m_pUSB;
-        FATFS           mFileSystem;
-        CConsole        mConsole;
+	CEMMCDevice mEMMC;
+	CUSBController *m_pUSB;
+	FATFS mFileSystem;
+	CConsole mConsole;
 };
