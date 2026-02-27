@@ -190,7 +190,7 @@ bool CUserInterface::Initialize()
 		LCDWrite("\x1B[H\x1B[J"); // cursor home and clear screen
 		LCDWrite("\x1B[?25l\x1B"
 			 "d+"); // cursor off, autopage mode
-		LCDWrite("MiniDexed\nLoading...");
+		LCDWrite("DreamDexed\nLoading...");
 		m_pLCDBuffered->Update();
 
 		LOGDBG("LCD initialized");
