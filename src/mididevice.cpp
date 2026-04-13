@@ -392,7 +392,7 @@ void CMIDIDevice::MIDIMessageHandler(const uint8_t *pMessage, int nLength, int n
 				if (m_pSynthesizer->SDFilterOut(nTG))
 					continue;
 
-				if (m_pSynthesizer->GetSysExEnable(nTG) && m_pSynthesizer->GetSysExChannel(nTG) == ucSysExChannel)
+				if (m_pSynthesizer->GetSysExEnable(nTG) && m_ChannelMap[nTG] != TChannel::Disabled && m_pSynthesizer->GetSysExChannel(nTG) == ucSysExChannel)
 				{
 					LOGNOTE("MIDI-SYSEX: channel: %u, len: %d, TG: %d", ucSysExChannel, nLength, nTG);
 
