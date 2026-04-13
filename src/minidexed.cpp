@@ -3514,7 +3514,7 @@ void CMiniDexed::LoadPerformanceParameters(CPerformanceConfig *config, int nBusF
 			const Bus::ParameterType &p = Bus::s_Parameter[nParam];
 
 			if (p.Flags & Bus::Flag::UIOnly) continue;
-			if (param == Bus::MIDIChannel && LoadType == Bus::LoadType::SendFXs) continue;
+			if (param == Bus::MIDIChannel && LoadType != Bus::LoadType::BusAndMasterFX) continue;
 
 			SetBusParameter(param, config->GetBusParameter(param, nBus), nTBus);
 		}
