@@ -24,6 +24,8 @@ DreamDexed is a FM synthesizer closely modeled on the famous DX7 by a well-known
 
 Listen to some examples made with MiniDexed by Banana71 [here](https://soundcloud.com/soundplantage/sets/minidexed2).
 
+Listen to a little demo by [The Blue Cookie Monster](https://soundcloud.com/bigbluecookiemonster/dreamdexed-rpi3-little-demo-of).
+
 ## Features
 
 - [x] Uses [Synth_Dexed](https://codeberg.org/dcoredump/Synth_Dexed) with [circle-stdlib](https://github.com/smuehlst/circle-stdlib)
