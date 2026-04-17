@@ -365,6 +365,8 @@ bool CUIButtons::Initialize()
 	m_selectAction = CUIButton::triggerTypeFromString(m_pConfig->GetButtonActionSelect());
 	m_homePin = m_pConfig->GetButtonPinHome();
 	m_homeAction = CUIButton::triggerTypeFromString(m_pConfig->GetButtonActionHome());
+	m_masterVolPin = m_pConfig->GetButtonPinMasterVol();
+	m_masterVolAction = CUIButton::triggerTypeFromString(m_pConfig->GetButtonActionMasterVol());
 	m_pgmUpPin = m_pConfig->GetButtonPinPgmUp();
 	m_pgmUpAction = CUIButton::triggerTypeFromString(m_pConfig->GetButtonActionPgmUp());
 	m_pgmDownPin = m_pConfig->GetButtonPinPgmDown();
@@ -388,6 +390,8 @@ bool CUIButtons::Initialize()
 	m_selectMidiAction = CUIButton::triggerTypeFromString(m_pConfig->GetMIDIButtonActionSelect());
 	m_homeMidi = ccToMidiPin(m_pConfig->GetMIDIButtonHome());
 	m_homeMidiAction = CUIButton::triggerTypeFromString(m_pConfig->GetMIDIButtonActionHome());
+	m_masterVolMidi = ccToMidiPin(m_pConfig->GetMIDIButtonMasterVol());
+	m_masterVolMidiAction = CUIButton::triggerTypeFromString(m_pConfig->GetMIDIButtonActionMasterVol());
 	m_pgmUpMidi = ccToMidiPin(m_pConfig->GetMIDIButtonPgmUp());
 	m_pgmUpMidiAction = CUIButton::triggerTypeFromString(m_pConfig->GetMIDIButtonActionPgmUp());
 	m_pgmDownMidi = ccToMidiPin(m_pConfig->GetMIDIButtonPgmDown());
@@ -423,8 +427,8 @@ bool CUIButtons::Initialize()
 	// longpress. We may not initialise all of the buttons.
 	// MIDI buttons can be assigned to click, doubleclick, longpress, dec, inc
 	unsigned pins[MAX_BUTTONS] = {
-		m_prevPin, m_nextPin, m_backPin, m_selectPin, m_homePin, m_pgmUpPin, m_pgmDownPin, m_BankUpPin, m_BankDownPin, m_TGUpPin, m_TGDownPin,
-		m_prevMidi, m_nextMidi, m_backMidi, m_selectMidi, m_homeMidi, m_pgmUpMidi, m_pgmDownMidi, m_BankUpMidi, m_BankDownMidi, m_TGUpMidi, m_TGDownMidi};
+		m_prevPin, m_nextPin, m_backPin, m_selectPin, m_homePin, m_masterVolPin, m_pgmUpPin, m_pgmDownPin, m_BankUpPin, m_BankDownPin, m_TGUpPin, m_TGDownPin,
+		m_prevMidi, m_nextMidi, m_backMidi, m_selectMidi, m_homeMidi, m_masterVolMidi, m_pgmUpMidi, m_pgmDownMidi, m_BankUpMidi, m_BankDownMidi, m_TGUpMidi, m_TGDownMidi};
 	CUIButton::BtnTrigger triggers[MAX_BUTTONS] = {
 		// Normal buttons
 		m_prevAction,
@@ -432,6 +436,7 @@ bool CUIButtons::Initialize()
 		m_backAction,
 		m_selectAction,
 		m_homeAction,
+		m_masterVolAction,
 		m_pgmUpAction,
 		m_pgmDownAction,
 		m_BankUpAction,
@@ -444,6 +449,7 @@ bool CUIButtons::Initialize()
 		m_backMidiAction,
 		m_selectMidiAction,
 		m_homeMidiAction,
+		m_masterVolMidiAction,
 		m_pgmUpMidiAction,
 		m_pgmDownMidiAction,
 		m_BankUpMidiAction,
@@ -458,6 +464,7 @@ bool CUIButtons::Initialize()
 		CUIButton::BtnEventBack,
 		CUIButton::BtnEventSelect,
 		CUIButton::BtnEventHome,
+		CUIButton::BtnEventMasterVol,
 		CUIButton::BtnEventPgmUp,
 		CUIButton::BtnEventPgmDown,
 		CUIButton::BtnEventBankUp,
@@ -470,6 +477,7 @@ bool CUIButtons::Initialize()
 		CUIButton::BtnEventBack,
 		CUIButton::BtnEventSelect,
 		CUIButton::BtnEventHome,
+		CUIButton::BtnEventMasterVol,
 		CUIButton::BtnEventPgmUp,
 		CUIButton::BtnEventPgmDown,
 		CUIButton::BtnEventBankUp,

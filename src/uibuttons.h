@@ -28,8 +28,8 @@
 
 #define BUTTONS_UPDATE_NUM_TICKS 100
 #define DEBOUNCE_TIME 20
-#define MAX_GPIO_BUTTONS 11 // 5 UI buttons, 6 Program/Bank/TG Select buttons
-#define MAX_MIDI_BUTTONS 11
+#define MAX_GPIO_BUTTONS 12 // 6 UI buttons, 6 Program/Bank/TG Select buttons
+#define MAX_MIDI_BUTTONS 12
 #define MAX_BUTTONS (MAX_GPIO_BUTTONS + MAX_MIDI_BUTTONS)
 
 class CUIButtons;
@@ -55,13 +55,14 @@ public:
 		BtnEventBack = 3,
 		BtnEventSelect = 4,
 		BtnEventHome = 5,
-		BtnEventPgmUp = 6,
-		BtnEventPgmDown = 7,
-		BtnEventBankUp = 8,
-		BtnEventBankDown = 9,
-		BtnEventTGUp = 10,
-		BtnEventTGDown = 11,
-		BtnEventUnknown = 12
+		BtnEventMasterVol = 6,
+		BtnEventPgmUp = 7,
+		BtnEventPgmDown = 8,
+		BtnEventBankUp = 9,
+		BtnEventBankDown = 10,
+		BtnEventTGUp = 11,
+		BtnEventTGDown = 12,
+		BtnEventUnknown = 13
 	};
 
 	CUIButton();
@@ -154,6 +155,8 @@ private:
 	CUIButton::BtnTrigger m_selectAction;
 	unsigned m_homePin;
 	CUIButton::BtnTrigger m_homeAction;
+	unsigned m_masterVolPin;
+	CUIButton::BtnTrigger m_masterVolAction;
 
 	// Program and TG Selection buttons
 	unsigned m_pgmUpPin;
@@ -182,6 +185,8 @@ private:
 	CUIButton::BtnTrigger m_selectMidiAction;
 	unsigned m_homeMidi;
 	CUIButton::BtnTrigger m_homeMidiAction;
+	unsigned m_masterVolMidi;
+	CUIButton::BtnTrigger m_masterVolMidiAction;
 
 	unsigned m_pgmUpMidi;
 	CUIButton::BtnTrigger m_pgmUpMidiAction;
