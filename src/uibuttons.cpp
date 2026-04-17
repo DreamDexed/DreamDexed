@@ -118,11 +118,13 @@ void CUIButton::setLongPressEvent(BtnEvent longPressEvent)
 void CUIButton::setDecEvent(BtnEvent decEvent)
 {
 	m_decEvent = decEvent;
+	if (m_midipin) m_midipin->Write(MIDIPIN_CENTER);
 }
 
 void CUIButton::setIncEvent(BtnEvent incEvent)
 {
 	m_incEvent = incEvent;
+	if (m_midipin) m_midipin->Write(MIDIPIN_CENTER);
 }
 
 unsigned CUIButton::getPinNumber()
