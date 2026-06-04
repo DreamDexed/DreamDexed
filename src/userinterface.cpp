@@ -424,6 +424,10 @@ void CUserInterface::UIButtonsEventHandler(CUIButton::BtnEvent Event)
 		m_Menu.EventHandler(CUIMenu::MenuEventHome);
 		break;
 
+	case CUIButton::BtnEventMasterVol:
+		m_Menu.EventHandler(CUIMenu::MenuEventMasterVol);
+		break;
+
 	case CUIButton::BtnEventPgmUp:
 		m_Menu.EventHandler(CUIMenu::MenuEventPgmUp);
 		break;

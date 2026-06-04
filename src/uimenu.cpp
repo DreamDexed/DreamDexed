@@ -1012,6 +1012,20 @@ void CUIMenu::EventHandler(TMenuEvent Event)
 		EventHandler(MenuEventUpdate);
 		break;
 
+	case MenuEventMasterVol:
+		EventHandler(MenuEventHome);
+
+		while (m_pCurrentMenu[m_nCurrentSelection].MenuItem != s_MixerMenu)
+			EventHandler(MenuEventStepUp);
+
+		EventHandler(MenuEventSelect);
+
+		while (m_pCurrentMenu[m_nCurrentSelection].Parameter != CMiniDexed::ParameterMasterVolume)
+			EventHandler(MenuEventStepUp);
+
+		EventHandler(MenuEventSelect);
+		break;
+
 	case MenuEventPgmUp:
 	case MenuEventPgmDown:
 		PgmUpDownHandler(Event);
