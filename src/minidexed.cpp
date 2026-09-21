@@ -139,6 +139,10 @@ m_fRamp{10.0f / pConfig->GetSampleRate()}
 	m_nPolyphony = m_pConfig->GetPolyphony();
 	LOGNOTE("Tone Generators=%d, Polyphony=%d", m_nToneGenerators, m_nPolyphony);
 
+	// Keep performance-bank MIDI state deterministic from boot.
+	m_nVoiceBankIDPerformance = 0;
+	m_nVoiceBankIDMSBPerformance = 0;
+
 	for (int i = 0; i < CConfig::AllToneGenerators; i++)
 	{
 		m_nVoiceBankID[i] = 0;
@@ -554,6 +558,23 @@ void CMiniDexed::Process(bool bPlugAndPlayUpdated)
 		}
 	}
 
+	// A MIDI Bank Select and its immediately following Program Change are
+	// received before the deferred bank switch above necessarily completes.
+	// Validate the requested performance only after the target bank is active.
+	// Otherwise the PC is incorrectly tested against the bank we are leaving.
+	if (m_bSetNewPerformance && !m_bSetNewPerformanceBank &&
+	    !m_PerformanceConfig.IsValidPerformance(m_nSetNewPerformanceID))
+	{
+		LOGWARN("Ignoring invalid Performance %d in Performance Bank %d",
+			m_nSetNewPerformanceID + 1,
+			m_PerformanceConfig.GetPerformanceBankID() + 1);
+
+		m_bSetNewPerformance = false;
+		m_bVolRampDownWait = false;
+		if (m_bVolRampedDown)
+			m_bVolRampedDown = false;
+	}
+
 	if (m_bSetNewBusPerformanceBank)
 	{
 		for (int nBus = 0; nBus < CConfig::Buses; ++nBus)
@@ -761,11 +782,27 @@ void CMiniDexed::BankSelectPerformance(int nBank)
 
 	if (GetPerformanceConfig()->IsValidPerformanceBank(nBank))
 	{
+		// If the requested bank is already active and there is no different
+		// bank change pending, do not queue a redundant bank reload. KSP sends
+		// MSB/LSB/PC at every pattern boundary, even when the destination is
+		// unchanged.
+		if (!m_bSetNewPerformanceBank &&
+		    nBank == m_PerformanceConfig.GetPerformanceBankID())
+		{
+			m_nVoiceBankIDPerformance = nBank;
+			return;
+		}
+
 		// Only change if we have the bank loaded
 		m_nVoiceBankIDPerformance = nBank;
 		SetNewPerformanceBank(nBank);
 
 		m_UI.ParameterChanged();
+	}
+	else
+	{
+		LOGWARN("Ignoring invalid MIDI Performance Bank %d (MSB/LSB value %d)",
+			nBank + 1, nBank);
 	}
 }
 
@@ -875,11 +912,24 @@ void CMiniDexed::ProgramChangePerformance(int nProgram)
 {
 	if (m_nParameter[ParameterPerformanceSelectChannel] != CMIDIDevice::Disabled)
 	{
-		// Program Change messages change Performances.
-		if (m_PerformanceConfig.IsValidPerformance(nProgram))
+		// Do not validate here. A preceding Bank Select may only be queued and
+		// not yet applied by Process(). Validating here would inspect the old
+		// bank and makes a valid bank+program transaction depend on whether the
+		// same program number exists in the bank being left.
+		nProgram = constrain(nProgram, 0, NUM_PERFORMANCES - 1);
+
+		// If no real bank change is pending and this performance is already
+		// active, ignore the redundant PC. This avoids the volume ramp,
+		// resetState(), SD reload and FX reset that can erase the Step-1 note
+		// when a KSP pattern/chain boundary re-sends the same MSB/LSB/PC.
+		if (!m_bSetNewPerformanceBank &&
+		    nProgram == GetActualPerformanceID())
 		{
-			SetNewPerformance(nProgram);
+			return;
 		}
+
+		SetNewPerformance(nProgram);
+
 		m_UI.ParameterChanged();
 	}
 }
@@ -2653,7 +2703,7 @@ void CMiniDexed::SetPerformanceSelectChannel(int nCh)
 	{
 		SetParameter(ParameterPerformanceSelectChannel, CMIDIDevice::Disabled);
 	}
-	else if (nCh < CMIDIDevice::Channels)
+	else if (nCh <= CMIDIDevice::Channels)
 	{
 		SetParameter(ParameterPerformanceSelectChannel, nCh - 1);
 	}
