@@ -45,6 +45,7 @@ public:
 		MenuEventSelect,
 		MenuEventBack,
 		MenuEventHome,
+		MenuEventMasterVol,
 		MenuEventStepDown,
 		MenuEventStepUp,
 		MenuEventPressAndStepDown,

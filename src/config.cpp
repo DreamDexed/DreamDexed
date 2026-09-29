@@ -188,6 +188,7 @@ void CConfig::Load()
 	m_nButtonPinBack = m_Properties.GetNumber("ButtonPinBack", 11);
 	m_nButtonPinSelect = m_Properties.GetNumber("ButtonPinSelect", 11);
 	m_nButtonPinHome = m_Properties.GetNumber("ButtonPinHome", 11);
+	m_nButtonPinMasterVol = m_Properties.GetNumber("ButtonPinMasterVol", 0);
 	m_nButtonPinShortcut = m_Properties.GetNumber("ButtonPinShortcut", 11);
 
 	m_ButtonActionPrev = m_Properties.GetString("ButtonActionPrev", "");
@@ -195,6 +196,7 @@ void CConfig::Load()
 	m_ButtonActionBack = m_Properties.GetString("ButtonActionBack", "doubleclick");
 	m_ButtonActionSelect = m_Properties.GetString("ButtonActionSelect", "click");
 	m_ButtonActionHome = m_Properties.GetString("ButtonActionHome", "longpress");
+	m_ButtonActionMasterVol = m_Properties.GetString("ButtonActionMasterVol", "");
 
 	m_nDoubleClickTimeout = m_Properties.GetSignedNumber("DoubleClickTimeout", 400);
 	m_nLongPressTimeout = m_Properties.GetSignedNumber("LongPressTimeout", 600);
@@ -222,12 +224,14 @@ void CConfig::Load()
 	m_nMIDIButtonBack = m_Properties.GetNumber("MIDIButtonBack", 0);
 	m_nMIDIButtonSelect = m_Properties.GetNumber("MIDIButtonSelect", 0);
 	m_nMIDIButtonHome = m_Properties.GetNumber("MIDIButtonHome", 0);
+	m_nMIDIButtonMasterVol = m_Properties.GetNumber("MIDIButtonMasterVol", 0);
 
 	m_MIDIButtonActionPrev = m_Properties.GetString("MIDIButtonActionPrev", "");
 	m_MIDIButtonActionNext = m_Properties.GetString("MIDIButtonActionNext", "");
 	m_MIDIButtonActionBack = m_Properties.GetString("MIDIButtonActionBack", "");
 	m_MIDIButtonActionSelect = m_Properties.GetString("MIDIButtonActionSelect", "");
 	m_MIDIButtonActionHome = m_Properties.GetString("MIDIButtonActionHome", "");
+	m_MIDIButtonActionMasterVol = m_Properties.GetString("MIDIButtonActionMasterVol", "");
 
 	m_nMIDIButtonPgmUp = m_Properties.GetNumber("MIDIButtonPgmUp", 0);
 	m_nMIDIButtonPgmDown = m_Properties.GetNumber("MIDIButtonPgmDown", 0);
@@ -636,6 +640,11 @@ unsigned CConfig::GetButtonPinHome() const
 	return m_nButtonPinHome;
 }
 
+unsigned CConfig::GetButtonPinMasterVol() const
+{
+	return m_nButtonPinMasterVol;
+}
+
 unsigned CConfig::GetButtonPinShortcut() const
 {
 	return m_nButtonPinShortcut;
@@ -664,6 +673,11 @@ const char *CConfig::GetButtonActionSelect() const
 const char *CConfig::GetButtonActionHome() const
 {
 	return m_ButtonActionHome.c_str();
+}
+
+const char *CConfig::GetButtonActionMasterVol() const
+{
+	return m_ButtonActionMasterVol.c_str();
 }
 
 int CConfig::GetDoubleClickTimeout() const
@@ -776,6 +790,11 @@ unsigned CConfig::GetMIDIButtonHome() const
 	return m_nMIDIButtonHome;
 }
 
+unsigned CConfig::GetMIDIButtonMasterVol() const
+{
+	return m_nMIDIButtonMasterVol;
+}
+
 const char *CConfig::GetMIDIButtonActionPrev() const
 {
 	return m_MIDIButtonActionPrev.c_str();
@@ -799,6 +818,11 @@ const char *CConfig::GetMIDIButtonActionSelect() const
 const char *CConfig::GetMIDIButtonActionHome() const
 {
 	return m_MIDIButtonActionHome.c_str();
+}
+
+const char *CConfig::GetMIDIButtonActionMasterVol() const
+{
+	return m_MIDIButtonActionMasterVol.c_str();
 }
 
 unsigned CConfig::GetMIDIButtonPgmUp() const

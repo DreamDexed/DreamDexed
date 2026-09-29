@@ -189,6 +189,7 @@ public:
 	unsigned GetButtonPinBack() const;
 	unsigned GetButtonPinSelect() const;
 	unsigned GetButtonPinHome() const;
+	unsigned GetButtonPinMasterVol() const;
 	unsigned GetButtonPinShortcut() const;
 
 	// Action type for buttons: "click", "doubleclick", "longpress", ""
@@ -197,6 +198,7 @@ public:
 	const char *GetButtonActionBack() const;
 	const char *GetButtonActionSelect() const;
 	const char *GetButtonActionHome() const;
+	const char *GetButtonActionMasterVol() const;
 
 	// Timeouts for button events in milliseconds
 	int GetDoubleClickTimeout() const;
@@ -229,6 +231,7 @@ public:
 	unsigned GetMIDIButtonBack() const;
 	unsigned GetMIDIButtonSelect() const;
 	unsigned GetMIDIButtonHome() const;
+	unsigned GetMIDIButtonMasterVol() const;
 
 	// Action type for Midi buttons: "click", "doubleclick", "longpress", "dec", "inc", ""
 	const char *GetMIDIButtonActionPrev() const;
@@ -236,6 +239,7 @@ public:
 	const char *GetMIDIButtonActionBack() const;
 	const char *GetMIDIButtonActionSelect() const;
 	const char *GetMIDIButtonActionHome() const;
+	const char *GetMIDIButtonActionMasterVol() const;
 
 	// MIDI Button Program and TG Selection
 	unsigned GetMIDIButtonPgmUp() const;
@@ -361,6 +365,7 @@ private:
 	unsigned m_nButtonPinBack;
 	unsigned m_nButtonPinSelect;
 	unsigned m_nButtonPinHome;
+	unsigned m_nButtonPinMasterVol;
 	unsigned m_nButtonPinShortcut;
 	unsigned m_nButtonPinPgmUp;
 	unsigned m_nButtonPinPgmDown;
@@ -374,6 +379,7 @@ private:
 	std::string m_ButtonActionBack;
 	std::string m_ButtonActionSelect;
 	std::string m_ButtonActionHome;
+	std::string m_ButtonActionMasterVol;
 	std::string m_ButtonActionPgmUp;
 	std::string m_ButtonActionPgmDown;
 	std::string m_ButtonActionBankUp;
@@ -386,6 +392,7 @@ private:
 	std::string m_MIDIButtonActionBack;
 	std::string m_MIDIButtonActionSelect;
 	std::string m_MIDIButtonActionHome;
+	std::string m_MIDIButtonActionMasterVol;
 	std::string m_MIDIButtonActionPgmUp;
 	std::string m_MIDIButtonActionPgmDown;
 	std::string m_MIDIButtonActionBankUp;
@@ -404,6 +411,7 @@ private:
 	unsigned m_nMIDIButtonBack;
 	unsigned m_nMIDIButtonSelect;
 	unsigned m_nMIDIButtonHome;
+	unsigned m_nMIDIButtonMasterVol;
 	unsigned m_nMIDIButtonPgmUp;
 	unsigned m_nMIDIButtonPgmDown;
 	unsigned m_nMIDIButtonBankUp;
